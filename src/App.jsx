@@ -732,7 +732,7 @@ export default function GremiCRM() {
         setHqs(prev=>[...prev,created[0]]);
       }
       const company=parent_id?(hqs.find(h=>h.id===parent_id)||{company:locForm.company}).company:locForm.company;
-      const {id,...body}={...locForm,parent_id,company,sales_id:locForm.sales_id||cur.id};
+      const {id,_type,...body}={...locForm,parent_id,company,sales_id:locForm.sales_id||cur.id};
       if(editLocMode){
         const upd=await dbPatch("crm_locs",`id=eq.${locForm.id}`,body);
         setLocs(locs.map(l=>l.id===locForm.id?upd[0]:l));setSelLoc(upd[0]);
@@ -746,7 +746,7 @@ export default function GremiCRM() {
 
   const saveHQ=async()=>{
     try{
-      const{id,...body}=hqForm;
+      const{id,_type,...body}=hqForm;
       await dbPatch("crm_hqs",`id=eq.${id}`,body);
       setHqs(hqs.map(h=>h.id===id?hqForm:h));
       setLocs(locs.map(l=>l.parent_id===id?{...l,company:hqForm.company}:l));
