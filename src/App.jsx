@@ -722,6 +722,13 @@ export default function GremiCRM() {
   })();
 
   // ── Save / Update / Delete ──
+  const reload=async()=>{
+    try{
+      const [h,l]=await Promise.all([dbGet("crm_hqs","order=id.asc"),dbGet("crm_locs","order=id.asc")]);
+      setHqs(h);setLocs(l);
+    }catch(e){}
+  };
+
   const saveLoc=async(newHQData)=>{
     if(!locForm.location)return;
     let parent_id=locForm.parent_id;
@@ -729,18 +736,16 @@ export default function GremiCRM() {
       if(newHQData&&newHQData.company){
         const created=await dbPost("crm_hqs",newHQData);
         parent_id=created[0].id;
-        setHqs(prev=>[...prev,created[0]]);
       }
       const company=parent_id?(hqs.find(h=>h.id===parent_id)||{company:locForm.company}).company:locForm.company;
       const {id,_type,...body}={...locForm,parent_id,company,sales_id:locForm.sales_id||cur.id};
       if(editLocMode){
-        const upd=await dbPatch("crm_locs",`id=eq.${locForm.id}`,body);
-        setLocs(locs.map(l=>l.id===locForm.id?upd[0]:l));setSelLoc(upd[0]);
+        await dbPatch("crm_locs",`id=eq.${locForm.id}`,body);
       }else{
-        const created=await dbPost("crm_locs",body);
-        setLocs(prev=>[...prev,created[0]]);
+        await dbPost("crm_locs",body);
       }
-      setShowLocForm(false);setEditLocMode(false);
+      await reload();
+      setShowLocForm(false);setEditLocMode(false);setSelLoc(null);
     }catch(e){alert("Error saving: "+e.message);}
   };
 
@@ -748,29 +753,27 @@ export default function GremiCRM() {
     try{
       const{id,_type,...body}=hqForm;
       await dbPatch("crm_hqs",`id=eq.${id}`,body);
-      setHqs(hqs.map(h=>h.id===id?hqForm:h));
-      setLocs(locs.map(l=>l.parent_id===id?{...l,company:hqForm.company}:l));
-      if(selLoc?.parent_id===id)setSelLoc({...selLoc,company:hqForm.company});
-      setShowHQForm(false);
-    }catch(e){alert("Error saving.");}
+      await reload();
+      setShowHQForm(false);setSelHQ(null);
+    }catch(e){alert("Error saving: "+e.message);}
   };
 
   const updLoc=async(id,p)=>{
     try{
       await dbPatch("crm_locs",`id=eq.${id}`,p);
-      setLocs(locs.map(l=>l.id===id?{...l,...p}:l));
-      if(selLoc?.id===id)setSelLoc({...selLoc,...p});
-    }catch(e){alert("Error updating.");}
+      setLocs(prev=>prev.map(l=>l.id===id?{...l,...p}:l));
+      if(selLoc?.id===id)setSelLoc(prev=>({...prev,...p}));
+    }catch(e){alert("Error updating: "+e.message);}
   };
 
   const deleteLoc=async(id)=>{
-    try{await dbDel("crm_locs",`id=eq.${id}`);setLocs(locs.filter(l=>l.id!==id));setSelLoc(null);}
-    catch(e){alert("Error deleting.");}
+    try{await dbDel("crm_locs",`id=eq.${id}`);setSelLoc(null);await reload();}
+    catch(e){alert("Error deleting: "+e.message);}
   };
 
   const deleteHQ=async(id)=>{
-    try{await dbDel("crm_hqs",`id=eq.${id}`);setHqs(hqs.filter(h=>h.id!==id));setLocs(locs.filter(l=>l.parent_id!==id));setSelHQ(null);}
-    catch(e){alert("Error deleting.");}
+    try{await dbDel("crm_hqs",`id=eq.${id}`);setSelHQ(null);await reload();}
+    catch(e){alert("Error deleting: "+e.message);}
   };
 
   const exportXLSX=()=>{
