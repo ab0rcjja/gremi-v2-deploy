@@ -184,7 +184,7 @@ const TEMPS     = ["🔥 Hot","🟡 Warm","❄️ Cold"];
 const SOURCES   = ["PL Client Referral","RO Client Referral","PL Sales Team","Cold Call","Cold Email","LinkedIn Outreach","Industry Event","Website Inquiry","Job Portal (eJobs/OLX)","ANOFM Database","Partner Agency","Personal Network","Inbound Request","Other"];
 const INDUSTRIES= ["Auto Parts","Textile","Food Production","Metal Fabrication","Electronics","Logistics","Construction","Pharma","Retail","Agriculture","Other"];
 const COUNTIES  = ["Alba","Arad","Argeș","Bacău","Bihor","Bistrița-Năsăud","Botoșani","Brăila","Brașov","București","Buzău","Călărași","Caraș-Severin","Cluj","Constanța","Covasna","Dâmbovița","Dolj","Galați","Giurgiu","Gorj","Harghita","Hunedoara","Ialomița","Iași","Ilfov","Maramureș","Mehedinți","Mureș","Neamț","Olt","Prahova","Sălaj","Satu Mare","Sibiu","Suceava","Teleorman","Timiș","Tulcea","Vaslui","Vâlcea","Vrancea"];
-const WORKER_TYPES = ["\u{1F1FA}\u{1F1E6} Ukrainian","\u{1F30F} Asian","\u{1F1FA}\u{1F1E6}+\u{1F30F} Mix"];
+const WORKER_TYPES = ["🇺🇦 Ukrainian","🌏 Asian","🌎 Latin American","🌍 African","🇲🇩 Moldovan","🇺🇦+🌏 Mix","Other"];
 const DEF_SERVICES = ["Outsourcing","Leasing","Permanent Recruitment"];
 const DEF_ENTITIES = ["Gremi Personal SRL","Antforce SRL"];
 
@@ -732,42 +732,79 @@ function ActivityLog({loc,onUpdate}) {
   const [show,setShow]=useState(false);
   const [note,setNote]=useState("");
   const [type,setType]=useState("Call");
+  const [editId,setEditId]=useState(null);
+  const [editNote,setEditNote]=useState("");
+  const [editType,setEditType]=useState("Call");
+  const [showAll,setShowAll]=useState(false);
   const TYPES=["Call","Email","Meeting","LinkedIn","SMS","Note"];
   const add=()=>{
     if(!note.trim())return;
     const act={id:Date.now(),type,note:note.trim(),date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};
     const updated=[act,...(loc.activities||[])];
     onUpdate(loc.id,{activities:updated,lastContact:act.date});
-    setNote("");
+    setNote("");setShow(false);
+  };
+  const startEdit=(a)=>{setEditId(a.id);setEditNote(a.note);setEditType(a.type);};
+  const saveEdit=()=>{
+    const updated=(loc.activities||[]).map(a=>a.id===editId?{...a,note:editNote,type:editType}:a);
+    onUpdate(loc.id,{activities:updated});
+    setEditId(null);
+  };
+  const del=(id)=>{
+    if(!confirm("Delete this activity?"))return;
+    const updated=(loc.activities||[]).filter(a=>a.id!==id);
+    onUpdate(loc.id,{activities:updated});
   };
   const acts=loc.activities||[];
+  const visible=showAll?acts:acts.slice(0,5);
   return(
     <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:show||acts.length>0?10:0}}>
         <div className="lbl" style={{marginBottom:0}}>ACTIVITY LOG ({acts.length})</div>
-        <button className="btn" onClick={()=>setShow(!show)} style={{background:`${C.blue}22`,color:C.blue2,padding:"4px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.blue}44`}}>{show?"Cancel":"+ Add"}</button>
+        <button className="btn" onClick={()=>{setShow(!show);setEditId(null);}} style={{background:`${C.blue}22`,color:C.blue2,padding:"4px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.blue}44`}}>{show?"Cancel":"+ Add"}</button>
       </div>
       {show&&(
-        <div style={{marginBottom:10}}>
-          <div style={{display:"flex",gap:6,marginBottom:6}}>
+        <div style={{marginBottom:10,background:C.bg4,borderRadius:8,padding:10}}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
             {TYPES.map(t=>(
-              <button key={t} className="btn" onClick={()=>setType(t)} style={{padding:"4px 8px",fontSize:10,borderRadius:6,background:type===t?`${C.blue}22`:C.bg4,color:type===t?C.blue2:C.txt3,border:`1px solid ${type===t?C.blue+"44":C.border}`}}>{t}</button>
+              <button key={t} className="btn" onClick={()=>setType(t)} style={{padding:"4px 10px",fontSize:11,borderRadius:6,background:type===t?`${C.blue}22`:C.bg2,color:type===t?C.blue2:C.txt3,border:`1px solid ${type===t?C.blue+"44":C.border}`}}>{t}</button>
             ))}
           </div>
-          <div style={{display:"flex",gap:6}}>
-            <input value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} className="fi" style={{flex:1,fontSize:12}} placeholder="What happened?"/>
-            <button className="btn" onClick={add} style={{background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"8px 14px",fontSize:11,borderRadius:8,flexShrink:0}}>Save</button>
-          </div>
+          <textarea value={note} onChange={e=>setNote(e.target.value)} rows={3} className="fi" style={{fontSize:12,resize:"vertical",marginBottom:8}} placeholder="What happened? Be specific — who said what, next steps..."/>
+          <button className="btn" onClick={add} style={{width:"100%",background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"9px",fontSize:12,borderRadius:8}}>Save Activity</button>
         </div>
       )}
-      {acts.slice(0,10).map(a=>(
-        <div key={a.id} style={{padding:"7px 0",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,alignItems:"flex-start"}}>
-          <div style={{fontSize:10,color:C.txt3,minWidth:55,flexShrink:0}}>{a.date?.slice(5)} {a.time}</div>
-          <span className="pill" style={{background:`${C.blue}18`,color:C.blue2,border:`1px solid ${C.blue}33`,flexShrink:0}}>{a.type}</span>
-          <div style={{fontSize:12,color:C.txt2,lineHeight:1.4}}>{a.note}</div>
+      {visible.map(a=>(
+        <div key={a.id} style={{padding:"8px 0",borderTop:`1px solid ${C.border}`}}>
+          {editId===a.id?(
+            <div style={{background:C.bg4,borderRadius:8,padding:10}}>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>
+                {TYPES.map(t=><button key={t} className="btn" onClick={()=>setEditType(t)} style={{padding:"3px 8px",fontSize:10,borderRadius:5,background:editType===t?`${C.blue}22`:C.bg2,color:editType===t?C.blue2:C.txt3,border:`1px solid ${editType===t?C.blue+"44":C.border}`}}>{t}</button>)}
+              </div>
+              <textarea value={editNote} onChange={e=>setEditNote(e.target.value)} rows={3} className="fi" style={{fontSize:12,resize:"vertical",marginBottom:6}}/>
+              <div style={{display:"flex",gap:6}}>
+                <button className="btn" onClick={saveEdit} style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"7px",fontSize:11,borderRadius:7}}>Save</button>
+                <button className="btn" onClick={()=>setEditId(null)} style={{flex:1,background:C.bg2,color:C.txt3,padding:"7px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>Cancel</button>
+              </div>
+            </div>
+          ):(
+            <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:3}}>
+                  <span className="pill" style={{background:`${C.blue}18`,color:C.blue2,border:`1px solid ${C.blue}33`,flexShrink:0}}>{a.type}</span>
+                  <div style={{fontSize:10,color:C.txt3,flexShrink:0}}>{a.date?.slice(5)} {a.time}</div>
+                </div>
+                <div style={{fontSize:12,color:C.txt2,lineHeight:1.6,wordBreak:"break-word"}}>{a.note}</div>
+              </div>
+              <div style={{display:"flex",gap:4,flexShrink:0}}>
+                <button className="btn" onClick={()=>startEdit(a)} style={{background:`${C.blue}18`,color:C.blue2,padding:"3px 7px",fontSize:10,borderRadius:5,border:`1px solid ${C.blue}33`}}>✎</button>
+                <button className="btn" onClick={()=>del(a.id)} style={{background:`${C.red}18`,color:C.red,padding:"3px 7px",fontSize:10,borderRadius:5,border:`1px solid ${C.red}33`}}>✕</button>
+              </div>
+            </div>
+          )}
         </div>
       ))}
-      {acts.length>10&&<div style={{fontSize:11,color:C.txt3,padding:"6px 0",textAlign:"center"}}>+{acts.length-10} more</div>}
+      {acts.length>5&&<button className="btn" onClick={()=>setShowAll(!showAll)} style={{width:"100%",background:"transparent",color:C.txt3,padding:"6px",fontSize:11,border:`1px dashed ${C.border}`,borderRadius:7,marginTop:4}}>{showAll?"Show less ↑":"Show all "+acts.length+" entries ↓"}</button>}
       {acts.length===0&&!show&&<div style={{fontSize:11,color:C.txt3,fontStyle:"italic",padding:"4px 0"}}>No activities recorded yet</div>}
     </div>
   );
@@ -814,7 +851,17 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
         <div><div className="lbl">LOCATION NAME *</div><input type="text" value={form.location} onChange={e=>setForm({...form,location:e.target.value})} className="fi" placeholder="e.g. Plant Cluj, Warehouse North"/></div>
         <div><div className="lbl">ADDRESS</div><input type="text" value={form.address||""} onChange={e=>setForm({...form,address:e.target.value})} className="fi" placeholder="Street, City, County"/></div>
         <div><div className="lbl">LOCAL CONTACT</div><input type="text" value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})} className="fi" placeholder="Name of person who orders"/></div>
-        <div><div className="lbl">CONTACT ROLE</div><select value={form.role} onChange={e=>setForm({...form,role:e.target.value})} className="fi"><option value="">— select —</option>{["HR Director","HR Manager","Plant Manager","Production Manager","Operations Director","Operations Manager","General Manager","Owner","CEO","COO","Logistics Manager","Procurement Manager","Other"].map(r=><option key={r}>{r}</option>)}</select></div>
+        <div>
+          <div className="lbl">CONTACT ROLE</div>
+          <div style={{display:"flex",gap:6}}>
+            <select value={["HR Director","HR Manager","Plant Manager","Production Manager","Operations Director","Operations Manager","General Manager","Owner","CEO","COO","Logistics Manager","Procurement Manager"].includes(form.role)?form.role:"__custom"} onChange={e=>{if(e.target.value!=="__custom")setForm({...form,role:e.target.value});else setForm({...form,role:""}); }} className="fi" style={{flex:"0 0 auto",width:"50%"}}>
+              <option value="">— select —</option>
+              {["HR Director","HR Manager","Plant Manager","Production Manager","Operations Director","Operations Manager","General Manager","Owner","CEO","COO","Logistics Manager","Procurement Manager"].map(r=><option key={r}>{r}</option>)}
+              <option value="__custom">✏ Type custom...</option>
+            </select>
+            <input type="text" value={form.role} onChange={e=>setForm({...form,role:e.target.value})} className="fi" style={{flex:1}} placeholder="or type any role"/>
+          </div>
+        </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div><div className="lbl">PHONE</div><input type="tel" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} className="fi"/></div>
           <div><div className="lbl">EMAIL</div><input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className="fi"/></div>
@@ -843,10 +890,10 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
         <div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12}}>
           <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,fontWeight:600,color:C.indigo,letterSpacing:"0.08em",marginBottom:8}}>SPIN DISCOVERY NOTES</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            <div><div className="lbl">S — SITUATION</div><textarea value={form.spin?.s||""} onChange={e=>setForm({...form,spin:{...form.spin,s:e.target.value}})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}} placeholder="Current staffing, suppliers, headcount..."/></div>
-            <div><div className="lbl">P — PROBLEM</div><textarea value={form.spin?.p||""} onChange={e=>setForm({...form,spin:{...form.spin,p:e.target.value}})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}} placeholder="Turnover, delays, compliance issues..."/></div>
-            <div><div className="lbl">I — IMPLICATION</div><textarea value={form.spin?.i||""} onChange={e=>setForm({...form,spin:{...form.spin,i:e.target.value}})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}} placeholder="Cost of downtime, lost orders..."/></div>
-            <div><div className="lbl">N — NEED-PAYOFF</div><textarea value={form.spin?.n||""} onChange={e=>setForm({...form,spin:{...form.spin,n:e.target.value}})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}} placeholder="What solving this means for them..."/></div>
+            <div><div className="lbl">S — SITUATION</div><textarea value={form.spin?.s||""} onChange={e=>setForm({...form,spin:{...form.spin,s:e.target.value}})} rows={4} className="fi" style={{resize:"vertical",fontSize:12,minHeight:80}} placeholder="Current staffing, suppliers, headcount..."/></div>
+            <div><div className="lbl">P — PROBLEM</div><textarea value={form.spin?.p||""} onChange={e=>setForm({...form,spin:{...form.spin,p:e.target.value}})} rows={4} className="fi" style={{resize:"vertical",fontSize:12,minHeight:80}} placeholder="Turnover, delays, compliance issues..."/></div>
+            <div><div className="lbl">I — IMPLICATION</div><textarea value={form.spin?.i||""} onChange={e=>setForm({...form,spin:{...form.spin,i:e.target.value}})} rows={4} className="fi" style={{resize:"vertical",fontSize:12,minHeight:80}} placeholder="Cost of downtime, lost orders..."/></div>
+            <div><div className="lbl">N — NEED-PAYOFF</div><textarea value={form.spin?.n||""} onChange={e=>setForm({...form,spin:{...form.spin,n:e.target.value}})} rows={4} className="fi" style={{resize:"vertical",fontSize:12,minHeight:80}} placeholder="What solving this means for them..."/></div>
           </div>
         </div>
         <div><div className="lbl">NOTES</div><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} className="fi" style={{resize:"vertical",lineHeight:1.7}}/></div>
@@ -1427,7 +1474,7 @@ export default function GremiCRM() {
     XLSX.writeFile(wb,`SalesTeamCRM_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
-  const TABS=[["leads","LEADS"],["kpi","KPI"],["tpl","TEMPLATES"],["playbook","PLAYBOOK"],["team","TEAM"],...(isAdmin?[["settings","SETTINGS"]]:[]),...(archived.length>0||isAdmin||isTeamLead?[["archive","ARCHIVE"+(archived.length?" ("+archived.length+")":"")]]:[])];
+  const TABS=[["leads","LEADS"],["kpi","KPI"],["tpl","TEMPLATES"],["playbook","PLAYBOOK"],["team","TEAM"],["theme","THEME"],...(isAdmin?[["settings","SETTINGS"]]:[]),...(archived.length>0||isAdmin||isTeamLead?[["archive","ARCHIVE"+(archived.length?" ("+archived.length+")":"")]]:[])];
 
   return(
     <div style={{fontFamily:"'Inter',sans-serif",background:C.bg1,height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",color:C.txt}}>
@@ -1730,7 +1777,33 @@ export default function GremiCRM() {
         </div>
       )}
 
-      {/* ── ARCHIVE ── */}
+
+      {/* ── THEME (all users) ── */}
+      {tab==="theme"&&(
+        <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em"}}>CHOOSE YOUR THEME</div>
+          {Object.entries(THEME_GROUPS).map(([group,keys])=>(
+            <div key={group}>
+              <div style={{fontSize:10,fontWeight:600,color:C.txt3,letterSpacing:"0.08em",marginBottom:6,padding:"0 2px"}}>{group.toUpperCase()}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {keys.map(k=>{const t=THEMES[k];if(!t)return null;return(
+                  <button key={k} className="btn" onClick={()=>setTheme(k)}
+                    style={{padding:"12px",borderRadius:10,border:`2px solid ${theme===k?C.blue:C.border}`,background:t.bg2,color:t.txt,fontSize:12,fontWeight:theme===k?700:400,textAlign:"left",boxShadow:theme===k?`0 0 0 3px ${C.blue}33`:"none"}}>
+                    <div style={{fontWeight:600,fontSize:12,marginBottom:6}}>{t.name}{theme===k?" ✓":""}</div>
+                    <div style={{display:"flex",gap:4}}>
+                      {[t.bg0,t.bg2,t.blue,t.green,t.amber,t.red].map((cl,i)=>(
+                        <div key={i} style={{width:14,height:14,borderRadius:3,background:cl,border:`1px solid ${t.border}`}}/>
+                      ))}
+                    </div>
+                  </button>
+                );})}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── ARCHIVE ── */
       {tab==="archive"&&(
         <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:10}}>
           <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginBottom:2}}>ARCHIVE ({archived.length} items)</div>
