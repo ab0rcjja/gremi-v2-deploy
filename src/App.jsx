@@ -1803,7 +1803,7 @@ export default function GremiCRM() {
         </div>
       )}
 
-      {/* ── ARCHIVE ── */
+      {/* ── ARCHIVE ── */}
       {tab==="archive"&&(
         <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:10}}>
           <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginBottom:2}}>ARCHIVE ({archived.length} items)</div>
