@@ -251,7 +251,7 @@ const INIT_LOCS = [
   {id:6,isHQ:false,parentId:103,company:"Cris-Tim",location:"Warehouse Prahova",address:"",contact:"Florin Negru",role:"Ops Manager",county:"Prahova",employees:"120",stage:"Interested",temp:"🟡 Warm",workers:"10",workerType:"UA Ukrainian",nextAction:"2026-03-18",lastContact:"2026-03-01",source:"RO Client Referral",service:"Outsourcing",companyName:"Gremi Personal SRL",salesId:1,phone:"",email:"",activities:[],spin:{s:"",p:"",i:"",n:""},notes:"Interested after Ilfov contract."},
 ];
 
-const EMPTY_LOC = {id:null,isHQ:false,parentId:null,company:"",location:"",address:"",contact:"",role:"",phone:"",email:"",county:"",industry:"",employees:"",stage:"New",temp:"❄️ Cold",workers:"",workerType:"",nextAction:"",lastContact:"",source:"",service:"Outsourcing",companyName:"Gremi Personal SRL",salesId:null,notes:"",activities:[],spin:{s:"",p:"",i:"",n:"",painSummary:""},decisionProcess:"",champion:"",painScore:null,nextStep:"",nextStepDate:""};
+const EMPTY_LOC = {id:null,isHQ:false,parentId:null,company:"",location:"",address:"",contact:"",role:"",phone:"",email:"",county:"",industry:"",employees:"",stage:"New",temp:"❄️ Cold",workers:"",workerType:"",nextAction:"",lastContact:"",source:"",service:"Outsourcing",companyName:"Gremi Personal SRL",salesId:null,notes:"",activities:[],spin:{s:"",p:"",i:"",n:"",painSummary:""},decisionProcess:"",economicBuyer:"",decisionCriteria:"",champion:"",painScore:null,nextStep:"",nextStepDate:"",lostReason:""};
 const EMPTY_HQ  = {id:null,isHQ:true,company:"",industry:"",centralContact:"",centralRole:"",centralPhone:"",centralEmail:"",address:"",website:"",notes:"",annualTurnover:"",employees:"",seasonality:"",leadSource:"",intelligence:""};
 
 // ─── HELPERS ─────────────────────────────────────────────────────
@@ -290,8 +290,7 @@ const getCSS = () => `
   .chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid;transition:all 0.15s;white-space:nowrap;}
   .row-hover{transition:background 0.1s;cursor:pointer;}
   .row-hover:hover{background:${C.bg3};}
-  textarea.fi{min-height:40px;overflow:hidden;transition:height 0.15s;}
-  textarea.fi:focus{min-height:80px;}
+  textarea.fi{min-height:40px;overflow:hidden;transition:height 0.1s;resize:none;display:block;}
 `;
 
 // ─── LOGIN ───────────────────────────────────────────────────────
@@ -1059,13 +1058,15 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
         ))}
         {isAdmin&&<div><div className="lbl">SALESPERSON</div><select value={form.salesId||""} onChange={e=>setForm({...form,salesId:Number(e.target.value)})} className="fi"><option value="">— select —</option>{users.filter(u=>u.active).map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></div>}
         <div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12}}>
-          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,fontWeight:600,color:C.indigo,letterSpacing:"0.08em",marginBottom:8}}>SPIN DISCOVERY NOTES</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            <div><div className="lbl">S — SITUATION</div><textarea value={form.spin?.s||""} onChange={e=>setForm({...form,spin:{...form.spin,s:e.target.value}})} rows={4} className="fi" style={{resize:"vertical",fontSize:12,minHeight:80}} placeholder="Current staffing, suppliers, headcount..."/></div>
-            <div><div className="lbl">P — PROBLEM</div><textarea value={form.spin?.p||""} onChange={e=>setForm({...form,spin:{...form.spin,p:e.target.value}})} rows={4} className="fi" style={{resize:"vertical",fontSize:12,minHeight:80}} placeholder="Turnover, delays, compliance issues..."/></div>
-            <div><div className="lbl">I — IMPLICATION</div><textarea value={form.spin?.i||""} onChange={e=>setForm({...form,spin:{...form.spin,i:e.target.value}})} rows={4} className="fi" style={{resize:"vertical",fontSize:12,minHeight:80}} placeholder="Cost of downtime, lost orders..."/></div>
-            <div><div className="lbl">N — NEED-PAYOFF</div><textarea value={form.spin?.n||""} onChange={e=>setForm({...form,spin:{...form.spin,n:e.target.value}})} rows={4} className="fi" style={{resize:"vertical",fontSize:12,minHeight:80}} placeholder="What solving this means for them..."/></div>
+          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,fontWeight:600,color:C.indigo,letterSpacing:"0.08em",marginBottom:4}}>SPIN DISCOVERY NOTES</div>
+          <div style={{display:"flex",gap:5,marginBottom:10}}>
+            {["s","p","i","n"].map(k=>(<span key={k} className="pill" style={{background:form.spin?.[k]?`${C.indigo}22`:C.bg2,color:form.spin?.[k]?C.indigo:C.txt3,border:`1px solid ${form.spin?.[k]?C.indigo+"44":C.border}`}}>{k.toUpperCase()}{form.spin?.[k]?" ✅":" ⬜"}</span>))}
           </div>
+          <SpinField label="S — SITUATION" hint={["How many employees? How many shifts?","Do they work with a staffing supplier?","How many open positions right now?"]} value={form.spin?.s||""} onChange={v=>setForm({...form,spin:{...form.spin,s:v}})}/>
+          <SpinField label="P — PROBLEM" hint={["How long to fill a vacancy?","What happens when the team is not full?","Have they had ITM or compliance issues?"]} value={form.spin?.p||""} onChange={v=>setForm({...form,spin:{...form.spin,p:v}})}/>
+          <SpinField label="I — IMPLICATION" hint={["What happens to orders when understaffed?","What does one day of production loss cost?","If this continues next quarter — what does that mean?"]} value={form.spin?.i||""} onChange={v=>setForm({...form,spin:{...form.spin,i:v}})}/>
+          <SpinField label="N — NEED-PAYOFF" hint={["If we get you workers in 3 weeks — how does that change things?","What would it mean to not manage staffing admin?","Would a partner handling contracts and housing help?"]} value={form.spin?.n||""} onChange={v=>setForm({...form,spin:{...form.spin,n:v}})}/>
+          <div><div className="lbl" style={{color:C.red}}>PAIN SUMMARY (one sentence for proposal)</div><textarea value={form.spin?.painSummary||""} onChange={e=>setForm({...form,spin:{...form.spin,painSummary:e.target.value}})} rows={2} className="fi" style={{fontSize:12}} placeholder='e.g. "Factory loses 8,000 RON/hour due to 15 missing workers in peak season"'/></div>
         </div>
         {/* Decision process + Champion */}
         <div style={{height:1,background:C.border}}/>
@@ -1449,6 +1450,25 @@ export default function GremiCRM() {
   const [filters,setFilters]     = useState({stage:"All",temp:"All",service:"All",entity:"All",county:"All",industry:"All",salesId:"All",overdueOnly:false,myOnly:false,showLocs:false});
   const [showAdmin,setShowAdmin] = useState(false);
   const [showPwd,setShowPwd]     = useState(false);
+
+  // ── Global textarea auto-resize ──
+  useEffect(()=>{
+    const grow = (e) => {
+      if(e.target.tagName !== "TEXTAREA") return;
+      e.target.style.height = "auto";
+      e.target.style.height = e.target.scrollHeight + "px";
+    };
+    const shrink = (e) => {
+      if(e.target.tagName !== "TEXTAREA") return;
+      e.target.style.height = "";
+    };
+    document.addEventListener("focus", grow, true);
+    document.addEventListener("blur", shrink, true);
+    return () => {
+      document.removeEventListener("focus", grow, true);
+      document.removeEventListener("blur", shrink, true);
+    };
+  }, []);
 
   const loadAll = useCallback(async () => {
     try{
