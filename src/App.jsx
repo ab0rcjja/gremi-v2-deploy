@@ -1484,8 +1484,6 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
       </div>
       {filterStage&&<div style={{background:`${C.blue}12`,border:`1px solid ${C.blue}33`,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.blue2}}>Showing cards relevant for: <strong>{filterStage}</strong>. Other cards are dimmed.</div>}
 
-      </div>
-
       {playbook.stages.map(s=>{
         const sc=stageColors[s.stage]||C.txt3;
         const isEditing=editId==="stage-"+s.id;
