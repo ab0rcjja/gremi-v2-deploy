@@ -27,15 +27,19 @@ const dbDel   = (t, match)    => sbFetch(`${t}?${match}`,{ method:"DELETE", pref
 
 // ── Mappers: camelCase ↔ snake_case ──
 const hqToDb  = ({id,isHQ,_type,...h}) => ({
-  company:h.company, industry:h.industry, notes:h.notes, address:h.address||"", website:h.website||"",
+  company:h.company, industry:h.industry, notes:h.notes||"", address:h.address||"", website:h.website||"",
   central_contact:h.centralContact||"", central_role:h.centralRole||"",
   central_phone:h.centralPhone||"", central_email:h.centralEmail||"",
+  annual_turnover:h.annualTurnover||"", employees:h.employees||"",
+  seasonality:h.seasonality||"", lead_source:h.leadSource||"", intelligence:h.intelligence||"",
 });
 const hqFromDb = (r) => ({
   id:r.id, isHQ:true, company:r.company||"", industry:r.industry||"",
   centralContact:r.central_contact||"", centralRole:r.central_role||"",
   centralPhone:r.central_phone||"", centralEmail:r.central_email||"",
   address:r.address||"", website:r.website||"", notes:r.notes||"",
+  annualTurnover:r.annual_turnover||"", employees:r.employees||"",
+  seasonality:r.seasonality||"", leadSource:r.lead_source||"", intelligence:r.intelligence||"",
 });
 const locToDb = ({id,isHQ,_type,...l}) => ({
   parent_id:l.parentId||null, company:l.company||"", location:l.location||"",
@@ -46,7 +50,10 @@ const locToDb = ({id,isHQ,_type,...l}) => ({
   next_action:l.nextAction||"", last_contact:l.lastContact||"",
   source:l.source||"", service:l.service||"", company_name:l.companyName||"",
   sales_id:l.salesId||null, notes:l.notes||"",
-  activities:JSON.stringify(l.activities||[]), spin:JSON.stringify(l.spin||{s:"",p:"",i:"",n:""}),
+  activities:JSON.stringify(l.activities||[]),
+  spin:JSON.stringify(l.spin||{s:"",p:"",i:"",n:"",painSummary:""}),
+  decision_process:l.decisionProcess||"", champion:l.champion||"",
+  pain_score:l.painScore||null, next_step:l.nextStep||"", next_step_date:l.nextStepDate||"",
 });
 const locFromDb = (r) => ({
   id:r.id, isHQ:false, parentId:r.parent_id||null, company:r.company||"",
@@ -58,7 +65,9 @@ const locFromDb = (r) => ({
   source:r.source||"", service:r.service||"", companyName:r.company_name||"",
   salesId:r.sales_id||null, notes:r.notes||"",
   activities:typeof r.activities==="string"?JSON.parse(r.activities||"[]"):r.activities||[],
-  spin:typeof r.spin==="string"?JSON.parse(r.spin||"{}"):r.spin||{s:"",p:"",i:"",n:""},
+  spin:typeof r.spin==="string"?JSON.parse(r.spin||"{}"):r.spin||{s:"",p:"",i:"",n:"",painSummary:""},
+  decisionProcess:r.decision_process||"", champion:r.champion||"",
+  painScore:r.pain_score||null, nextStep:r.next_step||"", nextStepDate:r.next_step_date||"",
 });
 
 
@@ -185,6 +194,7 @@ const SOURCES   = ["PL Client Referral","RO Client Referral","PL Sales Team","Co
 const INDUSTRIES= ["Auto Parts","Textile","Food Production","Metal Fabrication","Electronics","Logistics","Construction","Pharma","Retail","Agriculture","Other"];
 const COUNTIES  = ["Alba","Arad","Argeș","Bacău","Bihor","Bistrița-Năsăud","Botoșani","Brăila","Brașov","București","Buzău","Călărași","Caraș-Severin","Cluj","Constanța","Covasna","Dâmbovița","Dolj","Galați","Giurgiu","Gorj","Harghita","Hunedoara","Ialomița","Iași","Ilfov","Maramureș","Mehedinți","Mureș","Neamț","Olt","Prahova","Sălaj","Satu Mare","Sibiu","Suceava","Teleorman","Timiș","Tulcea","Vaslui","Vâlcea","Vrancea"];
 const WORKER_TYPES = ["UA Ukrainian","Asian","Latin American","African","MD Moldovan","UA+Asian Mix","Other"];
+const LEAD_SOURCES = ["LinkedIn","ANOFM","Cold Call","Own Research","Client Referral","Polish Team","Industry Event","Inbound","Partner","Other"];
 const DEF_SERVICES = ["Outsourcing","Leasing","Permanent Recruitment"];
 const DEF_ENTITIES = ["Gremi Personal SRL","Antforce SRL"];
 
@@ -212,6 +222,7 @@ const INIT_PLAYBOOK = {
   extras: [
     {id:"dm",title:"Decision Maker Approach",color:"indigo",text:"HR DIRECTOR / HR MANAGER\nCares about: compliance, ITM risk, contract terms, worker documentation\nSpeak their language: conformitate, contracte conforme, zero risc legal\nKey question: 'Ce se intampla daca ITM vine cu o inspectie?'\n\nPLANT MANAGER / PRODUCTION MANAGER\nCares about: capacity, speed of delivery, worker quality, shift coverage\nSpeak their language: capacitate, termen de livrare, calitate, schimburi complete\nKey question: 'Cat va costa o zi in care linia nu functioneaza la capacitate?'\n\nOPERATIONS DIRECTOR\nCares about: total cost, scalability, supplier reliability, process efficiency\nSpeak their language: cost total, flexibilitate, fiabilitate, eficienta\nKey question: 'Cum arata costul real al rotatiei de personal per an?'\n\nOWNER / CEO / GENERAL MANAGER\nCares about: bottom line, risk, strategic partnership, long-term value\nSpeak their language: ROI, parteneriat strategic, zero risc, crestere\nKey question: 'Ce ar insemna pentru business daca ati avea echipa stabila pe 2 ani?'\n\nRULE: Never pitch the same way to all four."},
     {id:"daily",title:"Daily Activity Standard",color:"amber",text:"MINIMUM DAILY TARGETS:\n— 15 outreach actions (calls + emails + LinkedIn)\n— 3 meaningful conversations with decision makers\n— 1 meeting scheduled or proposal sent\n\nWEEKLY REVIEW:\n— Pipeline review with team leader every Monday\n— Update all Next Action dates\n— Identify and address stale deals (14+ days no contact)\n\nMONTHLY:\n— KPI review: conversion rate, average deal size, time-to-close\n— Template review: what messaging works, what does not\n— Client satisfaction check on all active contracts"},
+    {id:"preCallChecklist",title:"Pre-Call Research Checklist",color:"indigo",text:"WHAT TO FIND BEFORE THE FIRST CALL (and where to log it):\n\n[see full text in CRM]"},
     {id:"principles",title:"Key Principles",color:"txt",text:"1. LISTEN MORE THAN YOU TALK — Discovery is about understanding, not pitching.\n2. NEVER SEND AN OFFER WITHOUT DISCOVERY — A proposal without SPIN data is a guess.\n3. LOG EVERYTHING — If it is not in the CRM, it did not happen.\n4. FOLLOW UP OR FOLLOW OUT — No response is not rejection. Most deals close after follow-up #3.\n5. RESPECT THE PROCESS — Skip a step and the deal quality drops.\n6. ASK FOR HELP — Escalation is not weakness. It is professionalism.\n7. PROTECT THE RELATIONSHIP — One honest 'I do not know, let me check' is worth more than a wrong promise."},
   ],
 };
@@ -225,7 +236,7 @@ const INIT_USERS = [
 // LOC = {id, isHQ:false, parentId, company, location, address, contact, role, phone, email, county, employees, stage, temp, workers, nextAction, lastContact, source, service, companyName, salesId, notes}
 
 const INIT_HQS = [
-  {id:100,isHQ:true,company:"Autoliv Romania",industry:"Auto Parts",centralContact:"Ion Popescu",centralRole:"HR Director",centralPhone:"+40 721 000 001",centralEmail:"i.popescu@autoliv.ro",address:"Bd. Pipera 42, Voluntari, Ilfov",website:"www.autoliv.com",notes:"Group HQ in Bucharest. Central procurement."},
+  {id:100,isHQ:true,company:"Autoliv Romania",industry:"Auto Parts",centralContact:"Ion Popescu",centralRole:"HR Director",centralPhone:"+40 721 000 001",centralEmail:"i.popescu@autoliv.ro",address:"Bd. Pipera 42, Voluntari, Ilfov",website:"www.autoliv.com",notes:"Group HQ in Bucharest. Central procurement.",annualTurnover:"",employees:"",seasonality:"",leadSource:"",intelligence:""},
   {id:101,isHQ:true,company:"Dacia Parts",industry:"Auto Parts",centralContact:"Andrei Marin",centralRole:"Production Director",centralPhone:"+40 723 000 003",centralEmail:"a.marin@daciaparts.ro",address:"Str. Industriilor 5, Pitesti, Arges",website:"",notes:""},
   {id:102,isHQ:true,company:"Mondostar Textiles",industry:"Textile",centralContact:"Elena Dumitrescu",centralRole:"HR Manager",centralPhone:"",centralEmail:"",address:"",website:"www.mondostar.ro",notes:"Posted 15 jobs on eJobs."},
   {id:103,isHQ:true,company:"Cris-Tim",industry:"Food Production",centralContact:"Bogdan Stancu",centralRole:"General Manager",centralPhone:"+40 724 000 005",centralEmail:"b.stancu@cristim.ro",address:"Sos. Bucuresti-Ploiesti 42, Ilfov",website:"www.cristim.ro",notes:"Group decision maker."},
@@ -240,8 +251,8 @@ const INIT_LOCS = [
   {id:6,isHQ:false,parentId:103,company:"Cris-Tim",location:"Warehouse Prahova",address:"",contact:"Florin Negru",role:"Ops Manager",county:"Prahova",employees:"120",stage:"Interested",temp:"🟡 Warm",workers:"10",workerType:"UA Ukrainian",nextAction:"2026-03-18",lastContact:"2026-03-01",source:"RO Client Referral",service:"Outsourcing",companyName:"Gremi Personal SRL",salesId:1,phone:"",email:"",activities:[],spin:{s:"",p:"",i:"",n:""},notes:"Interested after Ilfov contract."},
 ];
 
-const EMPTY_LOC = {id:null,isHQ:false,parentId:null,company:"",location:"",address:"",contact:"",role:"",phone:"",email:"",county:"",industry:"",employees:"",stage:"New",temp:"❄️ Cold",workers:"",workerType:"",nextAction:"",lastContact:"",source:"",service:"Outsourcing",companyName:"Gremi Personal SRL",salesId:null,notes:"",activities:[],spin:{s:"",p:"",i:"",n:""}};
-const EMPTY_HQ  = {id:null,isHQ:true,company:"",industry:"",centralContact:"",centralRole:"",centralPhone:"",centralEmail:"",address:"",website:"",notes:""};
+const EMPTY_LOC = {id:null,isHQ:false,parentId:null,company:"",location:"",address:"",contact:"",role:"",phone:"",email:"",county:"",industry:"",employees:"",stage:"New",temp:"❄️ Cold",workers:"",workerType:"",nextAction:"",lastContact:"",source:"",service:"Outsourcing",companyName:"Gremi Personal SRL",salesId:null,notes:"",activities:[],spin:{s:"",p:"",i:"",n:"",painSummary:""},decisionProcess:"",champion:"",painScore:null,nextStep:"",nextStepDate:""};
+const EMPTY_HQ  = {id:null,isHQ:true,company:"",industry:"",centralContact:"",centralRole:"",centralPhone:"",centralEmail:"",address:"",website:"",notes:"",annualTurnover:"",employees:"",seasonality:"",leadSource:"",intelligence:""};
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 const fmtDate  = d => { if(!d) return "—"; try { return new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short"}); } catch(e){ return "—"; }};
@@ -279,6 +290,8 @@ const getCSS = () => `
   .chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid;transition:all 0.15s;white-space:nowrap;}
   .row-hover{transition:background 0.1s;cursor:pointer;}
   .row-hover:hover{background:${C.bg3};}
+  textarea.fi{min-height:40px;overflow:hidden;transition:height 0.15s;}
+  textarea.fi:focus{min-height:80px;}
 `;
 
 // ─── LOGIN ───────────────────────────────────────────────────────
@@ -602,6 +615,8 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
             })}
           </div>
         )}
+        <HqDetailsSection hq={hq}/>
+
         {hq.notes&&<div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}><div className="lbl">NOTES</div><div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{hq.notes}</div></div>}
         {/* Locations list */}
         <div>
@@ -624,9 +639,11 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
                   <span className="pill" style={{background:sc+"22",color:sc,border:`1px solid ${sc}44`}}>{l.stage}</span>
                   {l.service&&<span className="pill" style={{background:`${C.blue}18`,color:C.blue2,border:`1px solid ${C.blue}33`}}>{l.service}</span>}
                   {l.workers&&<span className="pill" style={{background:`${C.amber}18`,color:C.amber,border:`1px solid ${C.amber}33`}}>👷 {l.workers}</span>}
+                  {l.painScore&&<span className="pill" style={{background:l.painScore>=4?`${C.red}22`:l.painScore>=3?`${C.amber}22`:`${C.green}22`,color:l.painScore>=4?C.red:l.painScore>=3?C.amber:C.green,border:`1px solid ${l.painScore>=4?C.red:l.painScore>=3?C.amber:C.green}44`}}>Pain {l.painScore}</span>}
+                  {!l.nextStep&&!["Closed Won","Closed Lost"].includes(l.stage)&&<span className="pill" style={{background:`${C.red}18`,color:C.red,border:`1px solid ${C.red}44`}}>⚠ No next step</span>}
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.txt3}}>
-                  {l.address?<span>📍 {l.address.substring(0,30)}{l.address.length>30?"...":""}</span>:<span/>}
+                  {l.nextStep?<span style={{color:C.amber,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"55%"}}>{l.nextStep}</span>:<span/>}
                   <span style={{color:od?C.red:(dl!==null&&dl<=3)?C.amber:C.txt3,fontWeight:(od||(dl!==null&&dl<=3))?600:400}}>{od?"⚠ ":""}{fmtDate(l.nextAction)}{(!od&&dl!==null&&dl<=3)?" ("+dl+"d)":""}</span>
                 </div>
               </div>
@@ -673,9 +690,10 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
       </div>
       <div className="ms">
         <div style={{display:"flex",gap:8}}>
-          <select value={loc.stage} onChange={e=>onUpdate(loc.id,{stage:e.target.value})} className="fi" style={{flex:1,fontSize:13}}>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
+          <select value={loc.stage} onChange={e=>{onUpdate(loc.id,{stage:e.target.value});}} className="fi" style={{flex:1,fontSize:13}}>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
           <select value={loc.temp} onChange={e=>onUpdate(loc.id,{temp:e.target.value})} className="fi" style={{width:105,fontSize:13}}>{TEMPS.map(t=><option key={t}>{t}</option>)}</select>
         </div>
+        <StageHint stage={loc.stage} spin={loc.spin} nextStep={loc.nextStep}/>
         <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderLeft:`3px solid ${sc}`,borderRadius:10,padding:13}}>
           <div className="lbl">LOCAL CONTACT</div>
           <div style={{fontWeight:700,fontSize:15,color:C.txt}}>{loc.contact||"—"}</div>
@@ -691,15 +709,46 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
         </div>
         {loc.address&&<a href={mapsUrl(loc.address)} target="_blank" rel="noopener" style={{display:"block",background:`${C.green}18`,border:`1px solid ${C.green}44`,color:C.green,padding:"10px",fontSize:12,fontWeight:600,textAlign:"center",textDecoration:"none",borderRadius:8}}>📍 {loc.address}</a>}
         {loc.notes&&<div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}><div className="lbl">NOTES</div><div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{loc.notes}</div></div>}
+        {/* Pain Score + Next Step */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div className="kv">
+            <div className="lbl">PAIN SCORE</div>
+            <div style={{display:"flex",gap:4,marginTop:4}}>
+              {[1,2,3,4,5].map(n=>(
+                <button key={n} className="btn" onClick={()=>onUpdate(loc.id,{painScore:n})} style={{width:28,height:28,borderRadius:6,fontSize:12,fontWeight:700,background:loc.painScore>=n?`${n>=4?C.red:n>=3?C.amber:C.green}33`:C.bg4,color:loc.painScore>=n?(n>=4?C.red:n>=3?C.amber:C.green):C.txt3,border:`1px solid ${loc.painScore>=n?(n>=4?C.red:n>=3?C.amber:C.green)+"44":C.border}`}}>{n}</button>
+              ))}
+            </div>
+          </div>
+          <div className="kv"><div className="lbl">NEXT STEP DATE</div><div style={{fontSize:13,color:loc.nextStepDate?C.amber:C.txt3,fontWeight:500}}>{fmtDate(loc.nextStepDate)||"—"}</div></div>
+        </div>
+        {loc.nextStep&&<div style={{background:loc.nextStep?`${C.amber}18`:C.bg3,border:`1px solid ${loc.nextStep?C.amber+"44":C.border}`,borderRadius:8,padding:"10px 12px"}}><div className="lbl">NEXT STEP</div><div style={{fontSize:13,color:C.txt,lineHeight:1.5}}>{loc.nextStep}</div></div>}
+        {!loc.nextStep&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}44`,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.red}}>⚠ No next step defined — add one in Edit</div>}
+        {/* Decision Process + Champion */}
+        {(loc.decisionProcess||loc.economicBuyer||loc.decisionCriteria||loc.champion)&&(
+          <div style={{background:C.bg3,border:`1px solid ${C.indigo}33`,borderRadius:10,padding:12}}>
+            <div className="lbl" style={{color:C.indigo,marginBottom:8}}>MEDDIC</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {loc.decisionProcess&&<div className="kv"><div className="lbl">DECISION PROCESS</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.decisionProcess}</div></div>}
+              {loc.economicBuyer&&<div className="kv"><div className="lbl">ECONOMIC BUYER</div><div style={{fontSize:12,color:C.amber,lineHeight:1.5}}>{loc.economicBuyer}</div></div>}
+              {loc.decisionCriteria&&<div className="kv" style={{gridColumn:"1/-1"}}><div className="lbl">DECISION CRITERIA</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.decisionCriteria}</div></div>}
+              {loc.champion&&<div className="kv" style={{gridColumn:"1/-1"}}><div className="lbl">CHAMPION</div><div style={{fontSize:12,color:C.green,lineHeight:1.5}}>{loc.champion}</div></div>}
+            </div>
+          </div>
+        )}
+        {loc.lostReason&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}44`,borderRadius:8,padding:"10px 12px"}}><div className="lbl" style={{color:C.red}}>LOST REASON</div><div style={{fontSize:13,color:C.red,fontWeight:600}}>{loc.lostReason}</div></div>}
         {/* SPIN Notes */}
         {(loc.spin?.s||loc.spin?.p||loc.spin?.i||loc.spin?.n)&&(
           <div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12}}>
             <div className="lbl" style={{color:C.indigo}}>SPIN DISCOVERY</div>
+            <div style={{display:"flex",gap:6,marginBottom:8}}>
+              {["S","P","I","N"].map(k=>(<span key={k} className="pill" style={{background:loc.spin?.[k.toLowerCase()]?`${C.indigo}22`:`${C.bg4}`,color:loc.spin?.[k.toLowerCase()]?C.indigo:C.txt3,border:`1px solid ${loc.spin?.[k.toLowerCase()]?C.indigo+"44":C.border}`}}>{k}{loc.spin?.[k.toLowerCase()]?"✅":"⬜"}</span>))}
+            </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:6}}>
-              {[["S",loc.spin?.s,"Situation"],["P",loc.spin?.p,"Problem"],["I",loc.spin?.i,"Implication"],["N",loc.spin?.n,"Need-Payoff"]].map(([l,v,desc])=>v?(
-                <div key={l} style={{background:C.bg4,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:10,fontWeight:700,color:C.indigo,marginBottom:3}}>{l} — {desc}</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{v}</div></div>
+              {[["s","S","Situation"],["p","P","Problem"],["i","I","Implication"],["n","N","Need-Payoff"]].map(([key,l,desc])=>loc.spin?.[key]?(
+                <div key={l} style={{background:C.bg4,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:10,fontWeight:700,color:C.indigo,marginBottom:3}}>{l} — {desc}</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.spin[key]}</div></div>
               ):null)}
             </div>
+            {loc.spin?.painSummary&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}33`,borderRadius:8,padding:"9px 11px",marginTop:8}}><div className="lbl" style={{color:C.red}}>PAIN SUMMARY</div><div style={{fontSize:13,color:C.txt,fontStyle:"italic",lineHeight:1.5}}>"{loc.spin.painSummary}"</div></div>}
           </div>
         )}
         {/* Activity Log */}
@@ -810,6 +859,128 @@ function ActivityLog({loc,onUpdate}) {
   );
 }
 
+// ─── WORKER TYPE MULTISELECT ────────────────────────────
+function WorkerTypeSelect({value,onChange}) {
+  const types=["UA Ukrainian","Asian","Latin American","African","MD Moldovan"];
+  const [custom,setCustom]=useState("");
+  const selected=value?value.split(",").map(s=>s.trim()).filter(Boolean):[];
+  const toggle=(t)=>{
+    const isOn=selected.includes(t);
+    const next=isOn?selected.filter(x=>x!==t):[...selected,t];
+    onChange(next.join(", "));
+  };
+  const hasOther=selected.some(s=>!types.includes(s));
+  const otherVal=selected.find(s=>!types.includes(s))||"";
+  const setOther=(v)=>{
+    const base=selected.filter(s=>types.includes(s));
+    onChange(v?[...base,v].join(", "):base.join(", "));
+    setCustom(v);
+  };
+  const display=selected.length===0?"—":selected.length===1?selected[0]:selected.join("+")+" Mix";
+  return(
+    <div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:6}}>
+        {types.map(t=>(
+          <button key={t} type="button" className="btn" onClick={()=>toggle(t)}
+            style={{padding:"6px 10px",fontSize:11,borderRadius:7,background:selected.includes(t)?`${C.teal}22`:C.bg4,color:selected.includes(t)?C.teal:C.txt3,border:`1.5px solid ${selected.includes(t)?C.teal:C.border}`}}>
+            {t}
+          </button>
+        ))}
+        <button type="button" className="btn" onClick={()=>{const on=!hasOther;if(!on)setOther("");}}
+          style={{padding:"6px 10px",fontSize:11,borderRadius:7,background:hasOther?`${C.amber}22`:C.bg4,color:hasOther?C.amber:C.txt3,border:`1.5px solid ${hasOther?C.amber:C.border}`}}>
+          ✏ Other
+        </button>
+      </div>
+      {hasOther&&<input type="text" value={otherVal} onChange={e=>setOther(e.target.value)} className="fi" style={{fontSize:12}} placeholder="Specify worker type..."/>}
+      {selected.length>0&&<div style={{fontSize:11,color:C.teal,marginTop:4}}>Selected: {display}</div>}
+    </div>
+  );
+}
+
+// ─── HQ DETAILS SECTION ──────────────────────────────
+function HqDetailsSection({hq}) {
+  const hasDetails = hq.employees||hq.annualTurnover||hq.seasonality||hq.leadSource||hq.intelligence;
+  const [open,setOpen]=useState(false);
+  if(!hasDetails) return null;
+  return(
+    <div>
+      <button type="button" className="btn" onClick={()=>setOpen(!open)} style={{width:"100%",background:"transparent",color:open?C.blue:C.txt3,padding:"8px",fontSize:11,borderRadius:7,border:`1px dashed ${open?C.blue:C.border2}`,letterSpacing:"0.05em",marginBottom:open?8:0}}>
+        {open?"▲ Hide details":"+ Show details (Turnover, Employees, Intelligence)"}
+      </button>
+      {open&&(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {hq.employees&&<div className="kv"><div className="lbl">EMPLOYEES</div><div style={{fontSize:13,color:C.txt,fontWeight:600}}>{hq.employees}</div></div>}
+            {hq.annualTurnover&&<div className="kv"><div className="lbl">ANNUAL TURNOVER</div><div style={{fontSize:13,color:C.txt,fontWeight:600}}>{hq.annualTurnover} RON</div></div>}
+            {hq.seasonality&&<div className="kv" style={{gridColumn:"1/-1"}}><div className="lbl">SEASONALITY</div><div style={{fontSize:12,color:C.txt2}}>{hq.seasonality}</div></div>}
+            {hq.leadSource&&<div className="kv"><div className="lbl">LEAD SOURCE</div><div style={{fontSize:12,color:C.blue2}}>{hq.leadSource}</div></div>}
+          </div>
+          {hq.intelligence&&<div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12}}><div className="lbl" style={{color:C.indigo}}>INTELLIGENCE</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{hq.intelligence}</div></div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── STAGE HINT ──────────────────────────────────────
+function StageHint({stage,spin,nextStep}) {
+  const hints = {
+    "New": {color:"indigo", msg:"Complete Pre-Call Research Checklist before first contact. Fill in HQ: Employees, Turnover, Intelligence."},
+    "Contacted": {color:"blue", msg:"Write SPIN hypotheses before the meeting. Fill S and P fields with what you expect to find."},
+    "Interested": {color:"amber", msg:"Update SPIN with REAL answers from client. Fill Economic Buyer and Decision Criteria."},
+    "Proposal Sent": {color:"teal", msg:"Check: Is Pain Summary filled? Is Next Step set with a date? Follow up in 3 days."},
+    "Closed Lost": {color:"red", msg:"Please select the Lost Reason in Edit — this data helps improve team performance."},
+  };
+  const h = hints[stage];
+  if(!h) return null;
+  const c = C[h.color]||C.txt3;
+  return(
+    <div style={{background:`${c}12`,border:`1px solid ${c}33`,borderRadius:8,padding:"9px 12px",fontSize:11,color:c,lineHeight:1.6}}>
+      💡 {h.msg}
+    </div>
+  );
+}
+
+// ─── MEDDIC SECTION ──────────────────────────────────
+function MeddicSection({form,setForm}) {
+  const [open,setOpen]=useState(!!(form.decisionProcess||form.economicBuyer||form.decisionCriteria||form.champion));
+  return(
+    <div>
+      <button type="button" className="btn" onClick={()=>setOpen(!open)} style={{width:"100%",background:"transparent",color:open?C.indigo:C.txt3,padding:"8px",fontSize:11,borderRadius:7,border:`1px dashed ${open?C.indigo:C.border2}`,letterSpacing:"0.05em",marginBottom:open?8:0}}>
+        {open?"▲ Hide MEDDIC fields":"+ Show MEDDIC fields (Decision Process, Buyer, Criteria, Champion)"}
+      </button>
+      {open&&(
+        <div style={{display:"flex",flexDirection:"column",gap:10,background:C.bg3,border:`1px solid ${C.indigo}33`,borderRadius:10,padding:12}}>
+          <div style={{fontSize:10,color:C.indigo,fontWeight:600,letterSpacing:"0.08em"}}>MEDDIC — DEAL INTELLIGENCE</div>
+          <div><div className="lbl">DECISION PROCESS</div><input type="text" value={form.decisionProcess||""} onChange={e=>setForm({...form,decisionProcess:e.target.value})} className="fi" placeholder='e.g. "HR recommends → Owner signs"'/></div>
+          <div><div className="lbl">ECONOMIC BUYER (who holds the budget)</div><input type="text" value={form.economicBuyer||""} onChange={e=>setForm({...form,economicBuyer:e.target.value})} className="fi" placeholder='e.g. "Vasile Ionescu, GM — signs contracts above 50k RON"'/></div>
+          <div><div className="lbl">DECISION CRITERIA</div><input type="text" value={form.decisionCriteria||""} onChange={e=>setForm({...form,decisionCriteria:e.target.value})} className="fi" placeholder='e.g. "Price/hour, delivery speed, Romanian-speaking coordinator"'/></div>
+          <div><div className="lbl">CHAMPION (internal ally)</div><input type="text" value={form.champion||""} onChange={e=>setForm({...form,champion:e.target.value})} className="fi" placeholder='e.g. "Ana Pop, HR Manager — tired of manual recruiting"'/></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SPIN FIELD WITH HINTS ───────────────────────────────
+function SpinField({label,hint,value,onChange}) {
+  const [showHint,setShowHint]=useState(false);
+  return(
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+        <div className="lbl" style={{marginBottom:0}}>{label}</div>
+        <button type="button" className="btn" onClick={()=>setShowHint(!showHint)} style={{background:"transparent",color:C.indigo,padding:"0 4px",fontSize:11,border:"none",cursor:"pointer"}}>?</button>
+      </div>
+      {showHint&&(
+        <div style={{background:`${C.indigo}18`,border:`1px solid ${C.indigo}33`,borderRadius:7,padding:"8px 10px",marginBottom:6}}>
+          {hint.map((h,i)=><div key={i} style={{fontSize:11,color:C.indigo,marginBottom:2}}>→ {h}</div>)}
+        </div>
+      )}
+      <textarea value={value} onChange={e=>onChange(e.target.value)} rows={3} className="fi" style={{resize:"vertical",fontSize:12,minHeight:72}}/>
+    </div>
+  );
+}
+
 // ─── LOCATION FORM ────────────────────────────────────────────────
 function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,services,entities}) {
   const [newCo,setNewCo]=useState(!form.parentId&&!editMode);
@@ -872,7 +1043,7 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div><div className="lbl">WORKERS NEEDED</div><input type="number" value={form.workers} onChange={e=>setForm({...form,workers:e.target.value})} className="fi"/></div>
-          <div><div className="lbl">WORKER TYPE</div><select value={form.workerType||""} onChange={e=>setForm({...form,workerType:e.target.value})} className="fi"><option value="">— select —</option>{WORKER_TYPES.map(w=><option key={w}>{w}</option>)}</select></div>
+          <div><div className="lbl">WORKER TYPE</div><WorkerTypeSelect value={form.workerType||""} onChange={v=>setForm({...form,workerType:v})}/></div>
           <div><div className="lbl">INDUSTRY</div><select value={form.industry} onChange={e=>setForm({...form,industry:e.target.value})} className="fi"><option value="">— select —</option>{INDUSTRIES.map(o=><option key={o}>{o}</option>)}</select></div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -896,6 +1067,27 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
             <div><div className="lbl">N — NEED-PAYOFF</div><textarea value={form.spin?.n||""} onChange={e=>setForm({...form,spin:{...form.spin,n:e.target.value}})} rows={4} className="fi" style={{resize:"vertical",fontSize:12,minHeight:80}} placeholder="What solving this means for them..."/></div>
           </div>
         </div>
+        {/* Decision process + Champion */}
+        <div style={{height:1,background:C.border}}/>
+        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:600,color:C.txt3,letterSpacing:"0.08em"}}>DEAL INTELLIGENCE</div>
+        <div><div className="lbl">NEXT STEP</div><input type="text" value={form.nextStep||""} onChange={e=>setForm({...form,nextStep:e.target.value})} className="fi" placeholder='e.g. "Send calculation for 50 people"'/></div>
+        <div><div className="lbl">NEXT STEP DATE</div><input type="date" value={form.nextStepDate||""} onChange={e=>setForm({...form,nextStepDate:e.target.value})} className="fi"/></div>
+        <div><div className="lbl">PAIN SCORE (1–5)</div>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            {[1,2,3,4,5].map(n=>(
+              <button key={n} type="button" className="btn" onClick={()=>setForm({...form,painScore:n})} style={{flex:1,padding:"10px",fontSize:14,fontWeight:700,borderRadius:8,background:form.painScore===n?(n>=4?`${C.red}33`:n>=3?`${C.amber}33`:`${C.green}33`):C.bg4,color:form.painScore===n?(n>=4?C.red:n>=3?C.amber:C.green):C.txt3,border:`1.5px solid ${form.painScore===n?(n>=4?C.red:n>=3?C.amber:C.green)+"66":C.border}`}}>{n}</button>
+            ))}
+          </div>
+        </div>
+        <MeddicSection form={form} setForm={setForm}/>
+        {(form.stage==="Closed Lost")&&(
+          <div><div className="lbl">LOST REASON</div>
+            <select value={form.lostReason||""} onChange={e=>setForm({...form,lostReason:e.target.value})} className="fi">
+              <option value="">— select reason —</option>
+              {["Price","Competitor Won","No Budget","No Decision","Legal Concerns","Romanian Only Policy","Other"].map(r=><option key={r}>{r}</option>)}
+            </select>
+          </div>
+        )}
         <div><div className="lbl">NOTES</div><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} className="fi" style={{resize:"vertical",lineHeight:1.7}}/></div>
       </div>
       <div className="mf">
@@ -921,6 +1113,13 @@ function HQFormModal({form,setForm,onSave,onClose}) {
           <div><div className="lbl">HQ PHONE</div><input type="tel" value={form.centralPhone} onChange={e=>setForm({...form,centralPhone:e.target.value})} className="fi"/></div>
           <div><div className="lbl">HQ EMAIL</div><input type="email" value={form.centralEmail} onChange={e=>setForm({...form,centralEmail:e.target.value})} className="fi"/></div>
         </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div><div className="lbl">EMPLOYEES (TOTAL)</div><input type="text" value={form.employees||""} onChange={e=>setForm({...form,employees:e.target.value})} className="fi" placeholder="e.g. 350"/></div>
+          <div><div className="lbl">ANNUAL TURNOVER (RON)</div><input type="text" value={form.annualTurnover||""} onChange={e=>setForm({...form,annualTurnover:e.target.value})} className="fi" placeholder="e.g. 12,000,000"/></div>
+        </div>
+        <div><div className="lbl">SEASONALITY</div><input type="text" value={form.seasonality||""} onChange={e=>setForm({...form,seasonality:e.target.value})} className="fi" placeholder="e.g. April–September (production peak)"/></div>
+        <div><div className="lbl">LEAD SOURCE</div><select value={form.leadSource||""} onChange={e=>setForm({...form,leadSource:e.target.value})} className="fi"><option value="">— select —</option>{LEAD_SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
+        <div><div className="lbl">INTELLIGENCE</div><textarea value={form.intelligence||""} onChange={e=>setForm({...form,intelligence:e.target.value})} rows={4} className="fi" style={{resize:"vertical",lineHeight:1.7}} placeholder="Financials: revenue, growth dynamics...\nProducts & Markets: what they make, for whom, export...\nVacancies: open positions, how long posted, via agency...\nCompetitor: current suppliers, who else they work with...\nDecision Maker LinkedIn: what they post, concerns, activity..."/></div>
         <div><div className="lbl">NOTES</div><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} className="fi" style={{resize:"vertical",lineHeight:1.7}}/></div>
       </div>
       <div className="mf"><button className="btn" onClick={onSave} style={{width:"100%",background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"14px",fontSize:15,borderRadius:10}}>Save</button></div>
@@ -968,7 +1167,13 @@ const TPL_DATA = {
     {cat:"Objection Response",title:"Cost Is High",text:`I understand the concern and I respect it. Allow me an objective comparison:\n\nDirect hiring involves: salary, contributions, recruitment costs, HR administration, housing, plus departure risk and turnover costs.\n\nOur all-inclusive rate covers all these elements. The price difference covers: 100% compliance, replacement included, and zero administrative costs.\n\nI am available to prepare a simulation on your actual numbers — so we can compare objectively.`},
     {cat:"Objection Response",title:"Language Barrier",text:`This is a concern I hear frequently and it is perfectly justified.\n\nIn practice: we select candidates with basic Romanian or English. For groups of 15+ workers we provide a bilingual team leader. Safety instructions are always translated and visualized.\n\nOur experience in Poland, with thousands of workers placed, confirms that after the first month communication is no longer an issue.`},
     {cat:"Objection Response",title:"Not Now",text:`I completely understand. One observation: the preparation process takes 2-4 weeks for Ukrainians and 4-6 months for Asians. Companies that plan ahead have staff available exactly when needed.\n\nI will leave you my details. When the topic becomes current, you can contact me directly. In the meantime, I will send a brief informational document.`},
-    {cat:"Objection Response",title:"Why Not Hire Directly",text:`A very good question. The answer depends on context.\n\nDirect hiring makes sense for few positions, indefinite term, with internal HR resources.\n\nOutsourcing makes sense when: you need volume quickly, want flexibility, or prefer not to manage legal and administrative risk.\n\nMany of our partners started with outsourcing and transitioned to direct hiring for top performers. We support this model as well.`},
+    {cat:"Objection Response",title:"Why Not Hire Directly",text:`A very good question. The answer depends on context.\n\nDirect hiring makes sense for few positions, indefinite term, with internal HR resources.\n\nOutsourcing makes sense when: you need volume quickly, want flexibility, or prefer not to manage legal and administrative risk.\n\nMany of our partners started with outsourcing and transitioned to direct hiring for top performers. We support this model as well.`},,
+    {id:"preCallChecklist",title:"Pre-Call Research Checklist",color:"indigo",text:"WHAT TO FIND BEFORE THE FIRST CALL:\n\n1. Annual Turnover → HQ: Annual Turnover (Termene.ro)\n2. Total Employees → HQ: Employees (website, LinkedIn)\n3. Owner/Admin → HQ: Intelligence (ONRC)\n4. Locations + Addresses → Add as Locations in CRM\n5. Products / clients → HQ: Intelligence (website, press)\n6. Growing or shrinking → HQ: Intelligence (Termene.ro revenue chart)\n7. Open vacancies (how many, how long) → HQ: Intelligence (eJobs, BestJobs)\n8. Work with agency? → Location: Notes (job postings, ask reception)\n9. Decision maker name + role → HQ: Central Contact (LinkedIn, website)\n10. DM email/phone → HQ: Central Phone + Email (Hunter.io, Apollo.io)\n11. DM LinkedIn activity → HQ: Intelligence (what pain do they post about?)\n12. Pain hypothesis (1 sentence) → SPIN-P on Location\n\nSTANDARD: Do NOT move to Contacted until steps 1–9 are complete."},
+    {id:"discoveryCallStructure",title:"Discovery Call Structure",color:"blue",text:"DISCOVERY CALL — 30 min structure:\n\n[0–3 min] OPENING + CALL CONTRACT\nSet the agenda. Build safety. Do NOT pitch yet.\n'I have 30 min — does that work? My goal: understand your situation. I will ask a lot of questions.'\n\n[3–8 min] S — SITUATION (5 min)\n→ How many people at this location? How many shifts?\n→ Do you work with a staffing supplier?\n→ How many open positions right now?\n\n[8–15 min] P — PROBLEM (7 min)\n→ How long to fill a vacancy?\n→ What happens when the team isn't full?\n→ Any ITM / compliance issues?\n\n[15–22 min] I — IMPLICATION (7 min)\n→ What happens to delivery when understaffed?\n→ What does one day of production loss cost?\n→ If this continues next quarter — what does that mean?\n\n[22–27 min] N — NEED-PAYOFF (5 min)\n→ If we get you [X] workers in 3 weeks — how does that change things?\n→ What would it mean to not manage staffing admin?\n→ Would a partner handling contracts/housing/transport help?\n\n[27–30 min] NEXT STEP\nAlways leave with a CONCRETE commitment. No 'I'll think about it'.\n\nAFTER THE CALL: Update SPIN fields + Last Contact + Next Action. Same day."},
+    {id:"valueProposition",title:"Value Proposition by Decision Maker",color:"teal",text:"PITCH DIFFERENTLY TO EACH PERSON:\n\nCFO / FINANCIAL DIRECTOR\n→ Fixed monthly cost vs unpredictable turnover expenses\n→ All-inclusive model = 15–22% savings vs direct employment at scale\n→ Show: cost per worker all-inclusive vs their current total cost\n\nOPERATIONS DIRECTOR\n→ 3–4 week delivery. 7-day replacement. Zero production gaps.\n→ We handle everything. You manage operations, not people admin.\n→ Show: delivery timeline, replacement SLA, client references\n\nHR DIRECTOR / HR MANAGER\n→ We handle: contracts, payroll, work permits, ITM documentation\n→ Zero compliance risk on your side\n→ You stop spending 40% of time on staffing admin\n→ Show: compliance record, documentation process\n\nOWNER / GENERAL MANAGER\n→ Strategic partnership, not a transaction\n→ We take full legal + operational responsibility\n→ Our clients stay 3–5 years. We become part of their HR infrastructure.\n→ Show: client retention stats, references\n\nRULE: Lead with THEIR priority. Never open with company history."},
+    {id:"followUpCadence",title:"Follow-up Cadence by Pain Score",color:"amber",text:"HOW OFTEN TO CONTACT:\n\nPAIN 5 — Critical (Interested/Proposal): every 2–3 days\nMethod: alternate Call → Email → LinkedIn\n\nPAIN 4 — High (Interested): every 5 days\nMethod: Call first, email recap\n\nPAIN 3 — Moderate (Contacted): every 7 days\nMethod: Email with new value (reference, market data)\n\nPAIN 2 — Low (New/Contacted): every 2 weeks\nMethod: LinkedIn + short email\n\nPAIN 1 — Cold: once per month\nMethod: LinkedIn engagement + quarterly email\n\nGENERAL RULES:\n— Always follow up with the SAME person\n— Every follow-up must add value (reference, insight, availability update)\n— 3 attempts no response → No Answer, set 30-day follow-up\n— 90 days silence → Cold, once per month\n— No Next Step date = deal that will be forgotten"},
+    {id:"objectionHandler",title:"Objection Handler",color:"red",text:"TOP 5 OBJECTIONS:\n\n1. WE ALREADY HAVE AN AGENCY\n→ 'Great — it means you see the value. My question: are they fully meeting your needs? Most clients came to us while still working with another agency — more volume, faster delivery, or different worker profile. Would comparing make sense?'\n\n2. FOREIGN WORKERS ARE TOO COMPLICATED LEGALLY\n→ 'That is exactly why clients choose us instead of handling it themselves. We manage 100% of the legal process — permits, ITM, contracts. You don't touch any of it.'\n\n3. NOT THE RIGHT SEASON NOW\n→ 'That is why I am calling now. Our best clients start 6–8 weeks before peak. If April is your peak, we start in February. Can we do a discovery call so you are ready?'\n\n4. TOO EXPENSIVE\n→ 'Let us look at the full picture. What is your current cost per worker — including recruitment, turnover, onboarding, admin, compliance? Our all-inclusive model is typically cheaper once you add everything.'\n\n5. SEND IT BY EMAIL\n→ 'Of course. Before I do — so I send something relevant, not a generic brochure — can I ask: how many people do you need, and what is the timeline?'"},
+    {id:"firstMeetingAgenda",title:"First Meeting Agenda",color:"green",text:"FIRST MEETING STRUCTURE:\n\n[0–3 min] ENTRY + SMALL TALK\nCompliment something specific. Do NOT start with 'Let me tell you about our company.'\n\n[3–5 min] COMPANY INTRO — max 2 minutes\n→ One sentence: 'We place Ukrainian and Asian workers in Romanian manufacturing.'\n→ Scale: 'We work with 50+ companies, 500+ workers under management.'\n→ One relevant case for their industry. Then STOP pitching.\n\n[5–10 min] TRANSITION TO DISCOVERY\n'That is enough about us — tell me about your staffing challenges.'\nListen. Take notes. Do not interrupt.\n\n[10–30 min] SPIN DISCOVERY\nFollow the Discovery Call Structure: S → P → I → N.\n\n[30–33 min] PAIN SUMMARY — verify you understood\n'Let me check I understood correctly. You have [X] open positions, it takes [Y] weeks to fill them, and the cost of that gap is roughly [Z]. Is that right?'\nIf they confirm — you have your SPIN-P for the proposal.\n\n[33–36 min] NEXT STEP — be specific\nNever say 'I will send you something.'\nSay: 'Based on what I heard, I want to prepare a specific proposal for [X] workers by [DATE]. Can we do 20 minutes on [SPECIFIC DATE] to walk through it?'\nGet a YES or a specific alternative. No 'maybe'.\n\n[36 min] EXIT\nLeave immediately after the commitment. Do not linger.\n\nAFTER THE MEETING (same day):\n— Update SPIN with real answers\n— Set Next Step date in CRM\n— Update Last Contact\n— Send thank-you email with summary of what you heard"}
   ],
   pl: [
     {cat:"Inicjacja Kontaktu",title:"Email — Wprowadzenie Ogolne",text:`Szanowny [IMIE],\n\nNazywam sie Walery, jestem dyrektorem operacji Gremi Personal w Rumunii. Koordynuje nasze projekty personalne na rynku rumunskim.\n\nPowod kontaktu: wspolpracujemy z kilkoma producentami z branzy [BRANZA] w [REGION], a profil [FIRMA] jest bardzo bliski typowi partnerstw, ktore rozwijamy.\n\nChcialbym poznac Panstwa obecne priorytety w zakresie zasobow ludzkich. Moze znajdziemy wspolny punkt.\n\nJestem dostepny na rozmowe w dogodnym dla Panstwa terminie.\n\nZ powazaniem,\n[PODPIS]`},
@@ -1395,6 +1600,14 @@ export default function GremiCRM() {
   const kpi=(()=>{
     const won=locs.filter(l=>l.stage==="Closed Won");
     const act=locs.filter(l=>l.stage!=="Closed Won"&&l.stage!=="Closed Lost");
+    const activePipe=act.filter(l=>l.stage!=="No Answer");
+    const painScores=activePipe.filter(l=>l.painScore).map(l=>l.painScore);
+    const avgPain=painScores.length?Math.round(painScores.reduce((a,b)=>a+b,0)/painScores.length*10)/10:0;
+    const noNextStep=activePipe.filter(l=>!l.nextStep).length;
+    const lostDeals=locs.filter(l=>l.stage==="Closed Lost");
+    const lostReasons=Object.fromEntries(["Price","Competitor Won","No Budget","No Decision","Legal Concerns","Romanian Only Policy","Other"].map(r=>[r,lostDeals.filter(l=>l.lostReason===r).length]));
+    const spinFull=locs.filter(l=>l.spin?.s&&l.spin?.p&&l.spin?.i&&l.spin?.n).length;
+    const sourceConv=Object.fromEntries(LEAD_SOURCES.map(s=>{const sl=locs.filter(l=>l.source===s);const sw=sl.filter(l=>l.stage==="Closed Won");return[s,{total:sl.length,won:sw.length,conv:sl.length?Math.round(sw.length/sl.length*100):0}];}));
     return{
       total:hqs.length,locs:locs.length,
       hot:locs.filter(l=>l.temp==="🔥 Hot").length,
@@ -1403,6 +1616,7 @@ export default function GremiCRM() {
       conv:locs.length?Math.round(won.length/locs.length*100):0,
       late:locs.filter(l=>isOD(l.nextAction,l.stage)).length,
       byStage:Object.fromEntries(STAGES.map(s=>[s,locs.filter(l=>l.stage===s).length])),
+      avgPain,noNextStep,lostReasons,spinFull,sourceConv,
     };
   })();
 
@@ -1456,6 +1670,14 @@ export default function GremiCRM() {
       if(p.notes!==undefined)dbPatch2.notes=p.notes;
       if(p.activities!==undefined)dbPatch2.activities=JSON.stringify(p.activities);
       if(p.spin!==undefined)dbPatch2.spin=JSON.stringify(p.spin);
+      if(p.decisionProcess!==undefined)dbPatch2.decision_process=p.decisionProcess;
+      if(p.champion!==undefined)dbPatch2.champion=p.champion;
+      if(p.painScore!==undefined)dbPatch2.pain_score=p.painScore;
+      if(p.nextStep!==undefined)dbPatch2.next_step=p.nextStep;
+      if(p.nextStepDate!==undefined)dbPatch2.next_step_date=p.nextStepDate;
+      if(p.lostReason!==undefined)dbPatch2.lost_reason=p.lostReason;
+      if(p.economicBuyer!==undefined)dbPatch2.economic_buyer=p.economicBuyer;
+      if(p.decisionCriteria!==undefined)dbPatch2.decision_criteria=p.decisionCriteria;
       await dbPatch("crm_locs",`id=eq.${id}`,dbPatch2);
       setLocs(prev=>prev.map(l=>l.id===id?{...l,...p}:l));
       if(selLoc?.id===id)setSelLoc(prev=>({...prev,...p}));
@@ -1589,10 +1811,12 @@ export default function GremiCRM() {
                       {item.companyName&&<span className="pill" style={{background:`${C.teal}18`,color:C.teal,border:`1px solid ${C.teal}33`}}>{item.companyName}</span>}
                       {item.workers&&<span className="pill" style={{background:`${C.amber}18`,color:C.amber,border:`1px solid ${C.amber}33`}}>👷 {item.workers}</span>}
                       {item.workerType&&<span className="pill" style={{background:`${C.teal}18`,color:C.teal,border:`1px solid ${C.teal}33`}}>{item.workerType}</span>}
+                      {item.painScore&&<span className="pill" style={{background:item.painScore>=4?`${C.red}22`:item.painScore>=3?`${C.amber}22`:`${C.green}22`,color:item.painScore>=4?C.red:item.painScore>=3?C.amber:C.green,border:`1px solid ${item.painScore>=4?C.red:item.painScore>=3?C.amber:C.green}44`}}>Pain {item.painScore}</span>}
+                      {!item.nextStep&&!["Closed Won","Closed Lost","No Answer"].includes(item.stage)&&<span className="pill" style={{background:`${C.red}18`,color:C.red,border:`1px solid ${C.red}44`}}>⚠ no next step</span>}
                     </div>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.txt3}}>
-                      <span>{item.county} · {item.industry}</span>
-                      <span style={{color:od?C.red:(dl!==null&&dl<=3)?C.amber:C.txt3,fontWeight:(od||(dl!==null&&dl<=3))?600:400}}>{od?"⚠ ":""}{fmtDate(item.nextAction)}{(!od&&dl!==null&&dl<=3)?" ("+dl+"d)":""}</span>
+                      <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.nextStep?<span style={{color:C.amber}}>→ {item.nextStep}</span>:<span>{item.county} · {item.industry}</span>}</span>
+                      <span style={{color:od?C.red:(dl!==null&&dl<=3)?C.amber:C.txt3,fontWeight:(od||(dl!==null&&dl<=3))?600:400,flexShrink:0,marginLeft:8}}>{od?"⚠ ":""}{fmtDate(item.nextAction)}{(!od&&dl!==null&&dl<=3)?" ("+dl+"d)":""}</span>
                     </div>
                   </div>
                 );
@@ -1646,6 +1870,65 @@ export default function GremiCRM() {
               );
             })}
           </div>
+
+          {/* New KPI metrics */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div style={{background:C.bg2,border:`1px solid ${kpi.noNextStep>0?C.red:C.border}`,borderTop:`3px solid ${kpi.noNextStep>0?C.red:C.green}`,padding:11,textAlign:"center",borderRadius:10}}>
+              <div style={{fontSize:22,fontWeight:700,color:kpi.noNextStep>0?C.red:C.green,fontFamily:"'Space Grotesk',sans-serif"}}>{kpi.noNextStep}</div>
+              <div style={{fontSize:9,color:C.txt3,marginTop:3}}>NO NEXT STEP</div>
+            </div>
+            <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.purple}`,padding:11,textAlign:"center",borderRadius:10}}>
+              <div style={{fontSize:22,fontWeight:700,color:C.purple,fontFamily:"'Space Grotesk',sans-serif"}}>{kpi.avgPain||"—"}</div>
+              <div style={{fontSize:9,color:C.txt3,marginTop:3}}>AVG PAIN SCORE</div>
+            </div>
+          </div>
+
+          {/* SPIN completion */}
+          <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:600,fontSize:11,color:C.txt3,letterSpacing:"0.08em",marginBottom:10}}>SPIN COMPLETION</div>
+            {users.filter(u=>u.active).map(u=>{
+              const ul=locs.filter(l=>l.salesId===u.id);
+              const spinned=ul.filter(l=>l.spin?.s&&l.spin?.p&&l.spin?.i&&l.spin?.n).length;
+              const pct=ul.length?Math.round(spinned/ul.length*100):0;
+              return(
+                <div key={u.id} style={{marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                    <span style={{color:C.txt,fontWeight:500}}>{u.name}</span>
+                    <span style={{color:pct>60?C.green:pct>30?C.amber:C.red}}>{spinned}/{ul.length} ({pct}%)</span>
+                  </div>
+                  <div style={{background:C.bg4,height:5,borderRadius:3}}>
+                    <div style={{background:pct>60?C.green:pct>30?C.amber:C.red,height:5,borderRadius:3,width:pct+"%",transition:"width 0.5s"}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Lead Source conversion */}
+          {isAdmin&&(
+          <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:600,fontSize:11,color:C.txt3,letterSpacing:"0.08em",marginBottom:10}}>LEAD SOURCE CONVERSION</div>
+            {LEAD_SOURCES.map(s=>{const d=kpi.sourceConv[s];if(!d||d.total===0)return null;return(
+              <div key={s} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${C.border}`}}>
+                <div style={{flex:1}}><div style={{fontSize:12,color:C.txt,fontWeight:500}}>{s}</div><div style={{fontSize:10,color:C.txt3}}>{d.total} deals · {d.won} won</div></div>
+                <span className="pill" style={{background:d.conv>30?`${C.green}22`:d.conv>10?`${C.amber}22`:`${C.red}22`,color:d.conv>30?C.green:d.conv>10?C.amber:C.red,border:`1px solid ${d.conv>30?C.green:d.conv>10?C.amber:C.red}44`}}>{d.conv}%</span>
+              </div>
+            );}).filter(Boolean)}
+          </div>
+          )}
+
+          {/* Closed Lost reasons */}
+          {isAdmin&&locs.filter(l=>l.stage==="Closed Lost").length>0&&(
+          <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:600,fontSize:11,color:C.txt3,letterSpacing:"0.08em",marginBottom:10}}>CLOSED LOST REASONS</div>
+            {Object.entries(kpi.lostReasons).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([reason,count])=>(
+              <div key={reason} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${C.border}`}}>
+                <span style={{fontSize:12,color:C.txt}}>{reason}</span>
+                <span style={{fontSize:12,fontWeight:700,color:C.red,fontFamily:"'Space Grotesk',sans-serif"}}>{count}</span>
+              </div>
+            ))}
+          </div>
+          )}
 
           {/* ── ADMIN-ONLY ANALYTICS below ── */}
           {isAdmin&&(()=>{
