@@ -615,7 +615,17 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
         )}
         <HqDetailsSection hq={hq}/>
 
-        <HQPreCallChecklist hq={hq} onSave={onSaveChecklist}/>
+        <HQPreCallChecklist hq={hq} onSave={onSaveChecklist} onNavigate={(fieldId)=>{
+          // For fields that are in the HQ edit form: open edit form, then focus
+          const hqFields = ["#hq-annual-turnover","#hq-employees","#hq-intelligence","#hq-central-contact","#hq-central-phone"];
+          if(hqFields.includes(fieldId)){
+            onEditHQ();
+            setTimeout(()=>{const el=document.querySelector(fieldId);if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.focus();}},300);
+          } else {
+            const el=document.querySelector(fieldId);
+            if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.focus();}
+          }
+        }}/>
         {hq.notes&&<div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}><div className="lbl">NOTES</div><div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{hq.notes}</div></div>}
         {/* Locations list */}
         <div>
@@ -692,7 +702,7 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
           <select value={loc.stage} onChange={e=>{onUpdate(loc.id,{stage:e.target.value});}} className="fi" style={{flex:1,fontSize:13}}>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
           <select value={loc.temp} onChange={e=>onUpdate(loc.id,{temp:e.target.value})} className="fi" style={{width:105,fontSize:13}}>{TEMPS.map(t=><option key={t}>{t}</option>)}</select>
         </div>
-        <StageHint stage={loc.stage} spin={loc.spin} nextStep={loc.nextStep}/>
+        <StageHint stage={loc.stage} spin={loc.spin} nextStep={loc.nextStep} checklistDone={(()=>{const h=hqs.find(x=>x.id===loc.parentId);const d=Object.values(h?.preCallChecklist||{}).filter(Boolean).length;return d===12;})()}/>
         <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderLeft:`3px solid ${sc}`,borderRadius:10,padding:13}}>
           <div className="lbl">LOCAL CONTACT</div>
           <div style={{fontWeight:700,fontSize:15,color:C.txt}}>{loc.contact||"—"}</div>
@@ -885,7 +895,7 @@ function WorkerTypeSelect({value,onChange}) {
             {t}
           </button>
         ))}
-        <button type="button" className="btn" onClick={()=>{const on=!hasOther;if(!on)setOther("");}}
+        <button type="button" className="btn" onClick={()=>{if(hasOther){setOther("");}else{setOther("Other");}}}
           style={{padding:"6px 10px",fontSize:11,borderRadius:7,background:hasOther?`${C.amber}22`:C.bg4,color:hasOther?C.amber:C.txt3,border:`1.5px solid ${hasOther?C.amber:C.border}`}}>
           ✏ Other
         </button>
@@ -898,21 +908,21 @@ function WorkerTypeSelect({value,onChange}) {
 
 // ─── HQ PRE-CALL RESEARCH CHECKLIST ─────────────────
 const PRECALL_ITEMS = [
-  {id:"turnover",   label:"Annual Turnover",              hint:"→ Annual Turnover"},
-  {id:"employees",  label:"Number of Employees",          hint:"→ Employees"},
-  {id:"owner",      label:"Owner / Administrator",        hint:"→ Intelligence"},
-  {id:"locations",  label:"Locations and Addresses",      hint:"→ Add as Locations"},
-  {id:"products",   label:"What they produce / for whom", hint:"→ Intelligence"},
-  {id:"growth",     label:"Growing or shrinking (3yr)",   hint:"→ Intelligence"},
-  {id:"vacancies",  label:"Open vacancies — how many, how long", hint:"→ Intelligence"},
-  {id:"agency",     label:"Work with an agency?",         hint:"→ Location Notes"},
-  {id:"dmName",     label:"Decision maker name + role",   hint:"→ Central Contact"},
-  {id:"dmContact",  label:"DM email / phone",             hint:"→ Central Phone+Email"},
-  {id:"dmLinkedin", label:"DM LinkedIn activity",         hint:"→ Intelligence"},
-  {id:"painHypothesis", label:"Pain hypothesis (1 sentence)", hint:"→ SPIN-P"},
+  {id:"annualTurnover",  label:"Annual Turnover",              hint:"→ Annual Turnover",  fieldId:"#hq-annual-turnover"},
+  {id:"employees",       label:"Number of Employees",          hint:"→ Employees",        fieldId:"#hq-employees"},
+  {id:"owner",           label:"Owner / Administrator",        hint:"→ Intelligence",     fieldId:"#hq-intelligence"},
+  {id:"locations",       label:"Locations and Addresses",      hint:"→ Add as Locations", fieldId:"#hq-locations-section"},
+  {id:"products",        label:"What they produce / for whom", hint:"→ Intelligence",     fieldId:"#hq-intelligence"},
+  {id:"growth",          label:"Growing or shrinking (3yr)",   hint:"→ Intelligence",     fieldId:"#hq-intelligence"},
+  {id:"vacancies",       label:"Open vacancies — how many",    hint:"→ Intelligence",     fieldId:"#hq-intelligence"},
+  {id:"agency",          label:"Work with an agency?",         hint:"→ Location Notes",   fieldId:"#location-notes"},
+  {id:"lprName",         label:"Decision maker name + role",   hint:"→ Central Contact",  fieldId:"#hq-central-contact"},
+  {id:"lprContact",      label:"DM email / phone",             hint:"→ Central Phone",    fieldId:"#hq-central-phone"},
+  {id:"linkedin",        label:"DM LinkedIn activity",         hint:"→ Intelligence",     fieldId:"#hq-intelligence"},
+  {id:"painHypothesis",  label:"Pain hypothesis (1 sentence)", hint:"→ SPIN-P",           fieldId:"#location-spin-p"},
 ];
 
-function HQPreCallChecklist({hq,onSave}) {
+function HQPreCallChecklist({hq,onSave,onNavigate}) {
   const stored = hq.preCallChecklist || {};
   const [checked, setChecked] = useState(stored);
   const [open, setOpen] = useState(false);
@@ -943,13 +953,16 @@ function HQPreCallChecklist({hq,onSave}) {
       {open&&(
         <div style={{background:C.bg3,border:`1px solid ${C.indigo}33`,borderRadius:10,padding:12}}>
           {PRECALL_ITEMS.map(item=>(
-            <div key={item.id} className="row-hover" onClick={()=>toggle(item.id)}
+            <div key={item.id}
               style={{display:"flex",alignItems:"center",gap:10,padding:"8px 6px",borderBottom:`1px solid ${C.border}`}}>
-              <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked[item.id]?C.green:C.border2}`,background:checked[item.id]?C.green:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff",fontWeight:700}}>{checked[item.id]?"✓":""}</div>
-              <div style={{flex:1}}>
+              <div className="row-hover" onClick={()=>toggle(item.id)} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked[item.id]?C.green:C.border2}`,background:checked[item.id]?C.green:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff",fontWeight:700,cursor:"pointer"}}>{checked[item.id]?"✓":""}</div>
+              <div className="row-hover" onClick={()=>toggle(item.id)} style={{flex:1,cursor:"pointer"}}>
                 <div style={{fontSize:12,color:checked[item.id]?C.txt3:C.txt,textDecoration:checked[item.id]?"line-through":"none",fontWeight:checked[item.id]?400:500}}>{item.label}</div>
               </div>
-              <div style={{fontSize:10,color:C.indigo,flexShrink:0}}>{item.hint}</div>
+              <button type="button" className="btn" onClick={()=>{
+                setOpen(false);
+                onNavigate(item.fieldId);
+              }} style={{background:`${C.indigo}18`,color:C.indigo,padding:"3px 8px",fontSize:10,borderRadius:5,border:`1px solid ${C.indigo}33`,flexShrink:0}}>→</button>
             </div>
           ))}
           {allDone&&<div style={{padding:"10px 6px",fontSize:12,color:C.green,textAlign:"center",fontWeight:600}}>✅ Research complete — ready to call!</div>}
@@ -987,9 +1000,9 @@ function HqDetailsSection({hq}) {
 }
 
 // ─── STAGE HINT ──────────────────────────────────────
-function StageHint({stage,spin,nextStep}) {
+function StageHint({stage,spin,nextStep,checklistDone}) {
   const hints = {
-    "New": {color:"indigo", msg:"Complete Pre-Call Research Checklist before first contact. Fill in HQ: Employees, Turnover, Intelligence."},
+    "New": {color:checklistDone?"green":"indigo", msg:checklistDone?"✅ Pre-Call Research complete — ready to contact!":"Complete Pre-Call Research Checklist before first contact. Fill in HQ: Employees, Turnover, Intelligence."},
     "Contacted": {color:"blue", msg:"Write SPIN hypotheses before the meeting. Fill S and P fields with what you expect to find."},
     "Interested": {color:"amber", msg:"Update SPIN with REAL answers from client. Fill Economic Buyer and Decision Criteria."},
     "Proposal Sent": {color:"teal", msg:"Check: Is Pain Summary filled? Is Next Step set with a date? Follow up in 3 days."},
@@ -1016,10 +1029,10 @@ function MeddicSection({form,setForm}) {
       {open&&(
         <div style={{display:"flex",flexDirection:"column",gap:10,background:C.bg3,border:`1px solid ${C.indigo}33`,borderRadius:10,padding:12}}>
           <div style={{fontSize:10,color:C.indigo,fontWeight:600,letterSpacing:"0.08em"}}>MEDDIC — DEAL INTELLIGENCE</div>
-          <div><div className="lbl">DECISION PROCESS</div><input type="text" value={form.decisionProcess||""} onChange={e=>setForm({...form,decisionProcess:e.target.value})} className="fi" placeholder='e.g. "HR recommends → Owner signs"'/></div>
-          <div><div className="lbl">ECONOMIC BUYER (who holds the budget)</div><input type="text" value={form.economicBuyer||""} onChange={e=>setForm({...form,economicBuyer:e.target.value})} className="fi" placeholder='e.g. "Vasile Ionescu, GM — signs contracts above 50k RON"'/></div>
-          <div><div className="lbl">DECISION CRITERIA</div><input type="text" value={form.decisionCriteria||""} onChange={e=>setForm({...form,decisionCriteria:e.target.value})} className="fi" placeholder='e.g. "Price/hour, delivery speed, Romanian-speaking coordinator"'/></div>
-          <div><div className="lbl">CHAMPION (internal ally)</div><input type="text" value={form.champion||""} onChange={e=>setForm({...form,champion:e.target.value})} className="fi" placeholder='e.g. "Ana Pop, HR Manager — tired of manual recruiting"'/></div>
+          <div><div className="lbl">DECISION PROCESS</div><textarea value={form.decisionProcess||""} onChange={e=>setForm({...form,decisionProcess:e.target.value})} rows={2} className="fi" style={{fontSize:12}} placeholder='e.g. "HR recommends → Owner signs"'/></div>
+          <div><div className="lbl">ECONOMIC BUYER (who holds the budget)</div><textarea value={form.economicBuyer||""} onChange={e=>setForm({...form,economicBuyer:e.target.value})} rows={2} className="fi" style={{fontSize:12}} placeholder='e.g. "Vasile Ionescu, GM — signs contracts above 50k RON"'/></div>
+          <div><div className="lbl">DECISION CRITERIA</div><textarea value={form.decisionCriteria||""} onChange={e=>setForm({...form,decisionCriteria:e.target.value})} rows={2} className="fi" style={{fontSize:12}} placeholder='e.g. "Price/hour, delivery speed, Romanian-speaking coordinator"'/></div>
+          <div><div className="lbl">CHAMPION (internal ally)</div><textarea value={form.champion||""} onChange={e=>setForm({...form,champion:e.target.value})} rows={2} className="fi" style={{fontSize:12}} placeholder='e.g. "Ana Pop, HR Manager — tired of manual recruiting"'/></div>
         </div>
       )}
     </div>
@@ -1173,19 +1186,29 @@ function HQFormModal({form,setForm,onSave,onClose}) {
       <div className="ms">
         <div><div className="lbl">COMPANY NAME</div><input type="text" value={form.company} onChange={e=>setForm({...form,company:e.target.value})} className="fi"/></div>
         <div><div className="lbl">INDUSTRY</div><select value={form.industry} onChange={e=>setForm({...form,industry:e.target.value})} className="fi"><option value="">— select —</option>{INDUSTRIES.map(i=><option key={i}>{i}</option>)}</select></div>
-        <div><div className="lbl">CENTRAL CONTACT</div><input type="text" value={form.centralContact} onChange={e=>setForm({...form,centralContact:e.target.value})} className="fi"/></div>
-        <div><div className="lbl">CENTRAL ROLE</div><select value={form.centralRole} onChange={e=>setForm({...form,centralRole:e.target.value})} className="fi"><option value="">— select —</option>{["HR Director","HR Manager","Plant Manager","Production Manager","Operations Director","Operations Manager","General Manager","Owner","CEO","COO","Logistics Manager","Procurement Manager","Other"].map(r=><option key={r}>{r}</option>)}</select></div>
+        <div><div className="lbl">CENTRAL CONTACT</div><input id="hq-central-contact" type="text" value={form.centralContact} onChange={e=>setForm({...form,centralContact:e.target.value})} className="fi"/></div>
+        <div>
+          <div className="lbl">CENTRAL ROLE</div>
+          <div style={{display:"flex",gap:6}}>
+            <select value={["HR Director","HR Manager","Plant Manager","Production Manager","Operations Director","Operations Manager","General Manager","Owner","CEO","COO","Logistics Manager","Procurement Manager"].includes(form.centralRole)?form.centralRole:"__custom"} onChange={e=>{if(e.target.value!=="__custom")setForm({...form,centralRole:e.target.value});else setForm({...form,centralRole:""}); }} className="fi" style={{flex:"0 0 auto",width:"50%"}}>
+              <option value="">— select —</option>
+              {["HR Director","HR Manager","Plant Manager","Production Manager","Operations Director","Operations Manager","General Manager","Owner","CEO","COO","Logistics Manager","Procurement Manager"].map(r=><option key={r}>{r}</option>)}
+              <option value="__custom">✏ Type custom...</option>
+            </select>
+            <input type="text" value={form.centralRole} onChange={e=>setForm({...form,centralRole:e.target.value})} className="fi" style={{flex:1}} placeholder="or type any role"/>
+          </div>
+        </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <div><div className="lbl">HQ PHONE</div><input type="tel" value={form.centralPhone} onChange={e=>setForm({...form,centralPhone:e.target.value})} className="fi"/></div>
+          <div><div className="lbl">HQ PHONE</div><input id="hq-central-phone" type="tel" value={form.centralPhone} onChange={e=>setForm({...form,centralPhone:e.target.value})} className="fi"/></div>
           <div><div className="lbl">HQ EMAIL</div><input type="email" value={form.centralEmail} onChange={e=>setForm({...form,centralEmail:e.target.value})} className="fi"/></div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <div><div className="lbl">EMPLOYEES (TOTAL)</div><input type="text" value={form.employees||""} onChange={e=>setForm({...form,employees:e.target.value})} className="fi" placeholder="e.g. 350"/></div>
-          <div><div className="lbl">ANNUAL TURNOVER (RON)</div><input type="text" value={form.annualTurnover||""} onChange={e=>setForm({...form,annualTurnover:e.target.value})} className="fi" placeholder="e.g. 12,000,000"/></div>
+          <div><div className="lbl">EMPLOYEES (TOTAL)</div><input id="hq-employees" type="text" value={form.employees||""} onChange={e=>setForm({...form,employees:e.target.value})} className="fi" placeholder="e.g. 350"/></div>
+          <div><div className="lbl">ANNUAL TURNOVER (RON)</div><input id="hq-annual-turnover" type="text" value={form.annualTurnover||""} onChange={e=>setForm({...form,annualTurnover:e.target.value})} className="fi" placeholder="e.g. 12,000,000"/></div>
         </div>
         <div><div className="lbl">SEASONALITY</div><input type="text" value={form.seasonality||""} onChange={e=>setForm({...form,seasonality:e.target.value})} className="fi" placeholder="e.g. April–September (production peak)"/></div>
         <div><div className="lbl">LEAD SOURCE</div><select value={form.leadSource||""} onChange={e=>setForm({...form,leadSource:e.target.value})} className="fi"><option value="">— select —</option>{LEAD_SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
-        <div><div className="lbl">INTELLIGENCE</div><textarea value={form.intelligence||""} onChange={e=>setForm({...form,intelligence:e.target.value})} rows={4} className="fi" style={{resize:"vertical",lineHeight:1.7}} placeholder="Financials: revenue, growth dynamics...\nProducts & Markets: what they make, for whom, export...\nVacancies: open positions, how long posted, via agency...\nCompetitor: current suppliers, who else they work with...\nDecision Maker LinkedIn: what they post, concerns, activity..."/></div>
+        <div><div className="lbl">INTELLIGENCE</div><textarea id="hq-intelligence" value={form.intelligence||""} onChange={e=>setForm({...form,intelligence:e.target.value})} rows={4} className="fi" style={{resize:"vertical",lineHeight:1.7}} placeholder="Financials: revenue, growth dynamics...\nProducts & Markets: what they make, for whom, export...\nVacancies: open positions, how long posted, via agency...\nCompetitor: current suppliers, who else they work with...\nDecision Maker LinkedIn: what they post, concerns, activity..."/></div>
         <div><div className="lbl">NOTES</div><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} className="fi" style={{resize:"vertical",lineHeight:1.7}}/></div>
       </div>
       <div className="mf"><button className="btn" onClick={onSave} style={{width:"100%",background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"14px",fontSize:15,borderRadius:10}}>Save</button></div>
@@ -1239,7 +1262,13 @@ const TPL_DATA = {
     {id:"valueProposition",title:"Value Proposition by Decision Maker",color:"teal",text:"PITCH DIFFERENTLY TO EACH PERSON:\n\nCFO / FINANCIAL DIRECTOR\n→ Fixed monthly cost vs unpredictable turnover expenses\n→ All-inclusive model = 15–22% savings vs direct employment at scale\n→ Show: cost per worker all-inclusive vs their current total cost\n\nOPERATIONS DIRECTOR\n→ 3–4 week delivery. 7-day replacement. Zero production gaps.\n→ We handle everything. You manage operations, not people admin.\n→ Show: delivery timeline, replacement SLA, client references\n\nHR DIRECTOR / HR MANAGER\n→ We handle: contracts, payroll, work permits, ITM documentation\n→ Zero compliance risk on your side\n→ You stop spending 40% of time on staffing admin\n→ Show: compliance record, documentation process\n\nOWNER / GENERAL MANAGER\n→ Strategic partnership, not a transaction\n→ We take full legal + operational responsibility\n→ Our clients stay 3–5 years. We become part of their HR infrastructure.\n→ Show: client retention stats, references\n\nRULE: Lead with THEIR priority. Never open with company history."},
     {id:"followUpCadence",title:"Follow-up Cadence by Pain Score",color:"amber",text:"HOW OFTEN TO CONTACT:\n\nPAIN 5 — Critical (Interested/Proposal): every 2–3 days\nMethod: alternate Call → Email → LinkedIn\n\nPAIN 4 — High (Interested): every 5 days\nMethod: Call first, email recap\n\nPAIN 3 — Moderate (Contacted): every 7 days\nMethod: Email with new value (reference, market data)\n\nPAIN 2 — Low (New/Contacted): every 2 weeks\nMethod: LinkedIn + short email\n\nPAIN 1 — Cold: once per month\nMethod: LinkedIn engagement + quarterly email\n\nGENERAL RULES:\n— Always follow up with the SAME person\n— Every follow-up must add value (reference, insight, availability update)\n— 3 attempts no response → No Answer, set 30-day follow-up\n— 90 days silence → Cold, once per month\n— No Next Step date = deal that will be forgotten"},
     {id:"objectionHandler",title:"Objection Handler",color:"red",text:"TOP 5 OBJECTIONS:\n\n1. WE ALREADY HAVE AN AGENCY\n→ 'Great — it means you see the value. My question: are they fully meeting your needs? Most clients came to us while still working with another agency — more volume, faster delivery, or different worker profile. Would comparing make sense?'\n\n2. FOREIGN WORKERS ARE TOO COMPLICATED LEGALLY\n→ 'That is exactly why clients choose us instead of handling it themselves. We manage 100% of the legal process — permits, ITM, contracts. You don't touch any of it.'\n\n3. NOT THE RIGHT SEASON NOW\n→ 'That is why I am calling now. Our best clients start 6–8 weeks before peak. If April is your peak, we start in February. Can we do a discovery call so you are ready?'\n\n4. TOO EXPENSIVE\n→ 'Let us look at the full picture. What is your current cost per worker — including recruitment, turnover, onboarding, admin, compliance? Our all-inclusive model is typically cheaper once you add everything.'\n\n5. SEND IT BY EMAIL\n→ 'Of course. Before I do — so I send something relevant, not a generic brochure — can I ask: how many people do you need, and what is the timeline?'"},
-    {id:"firstMeetingAgenda",title:"First Meeting Agenda",color:"green",text:"FIRST MEETING STRUCTURE:\n\n[0–3 min] ENTRY + SMALL TALK\nCompliment something specific. Do NOT start with 'Let me tell you about our company.'\n\n[3–5 min] COMPANY INTRO — max 2 minutes\n→ One sentence: 'We place Ukrainian and Asian workers in Romanian manufacturing.'\n→ Scale: 'We work with 50+ companies, 500+ workers under management.'\n→ One relevant case for their industry. Then STOP pitching.\n\n[5–10 min] TRANSITION TO DISCOVERY\n'That is enough about us — tell me about your staffing challenges.'\nListen. Take notes. Do not interrupt.\n\n[10–30 min] SPIN DISCOVERY\nFollow the Discovery Call Structure: S → P → I → N.\n\n[30–33 min] PAIN SUMMARY — verify you understood\n'Let me check I understood correctly. You have [X] open positions, it takes [Y] weeks to fill them, and the cost of that gap is roughly [Z]. Is that right?'\nIf they confirm — you have your SPIN-P for the proposal.\n\n[33–36 min] NEXT STEP — be specific\nNever say 'I will send you something.'\nSay: 'Based on what I heard, I want to prepare a specific proposal for [X] workers by [DATE]. Can we do 20 minutes on [SPECIFIC DATE] to walk through it?'\nGet a YES or a specific alternative. No 'maybe'.\n\n[36 min] EXIT\nLeave immediately after the commitment. Do not linger.\n\nAFTER THE MEETING (same day):\n— Update SPIN with real answers\n— Set Next Step date in CRM\n— Update Last Contact\n— Send thank-you email with summary of what you heard"}
+    {id:"firstMeetingAgenda",title:"First Meeting Agenda",color:"green",text:"FIRST MEETING STRUCTURE:\n\n[0–3 min] ENTRY + SMALL TALK\nCompliment something specific. Do NOT start with 'Let me tell you about our company.'\n\n[3–5 min] COMPANY INTRO — max 2 minutes\n→ One sentence: 'We place Ukrainian and Asian workers in Romanian manufacturing.'\n→ Scale: 'We work with 50+ companies, 500+ workers under management.'\n→ One relevant case for their industry. Then STOP pitching.\n\n[5–10 min] TRANSITION TO DISCOVERY\n'That is enough about us — tell me about your staffing challenges.'\nListen. Take notes. Do not interrupt.\n\n[10–30 min] SPIN DISCOVERY\nFollow the Discovery Call Structure: S → P → I → N.\n\n[30–33 min] PAIN SUMMARY — verify you understood\n'Let me check I understood correctly. You have [X] open positions, it takes [Y] weeks to fill them, and the cost of that gap is roughly [Z]. Is that right?'\nIf they confirm — you have your SPIN-P for the proposal.\n\n[33–36 min] NEXT STEP — be specific\nNever say 'I will send you something.'\nSay: 'Based on what I heard, I want to prepare a specific proposal for [X] workers by [DATE]. Can we do 20 minutes on [SPECIFIC DATE] to walk through it?'\nGet a YES or a specific alternative. No 'maybe'.\n\n[36 min] EXIT\nLeave immediately after the commitment. Do not linger.\n\nAFTER THE MEETING (same day):\n— Update SPIN with real answers\n— Set Next Step date in CRM\n— Update Last Contact\n— Send thank-you email with summary of what you heard"},
+    {id:"preDiscoveryPrep",title:"Pre-Discovery Preparation",color:"blue",text:"WHAT TO DO IN 15 MINUTES BEFORE THE CALL:\n\n1. REVIEW INTELLIGENCE\nRe-read HQ Intelligence. Revenue, dynamics, vacancies, DM LinkedIn. If you did not write it — go back and find it first.\n\n2. CHECK PRE-CALL CHECKLIST\nResearch < 80% → collect missing info before calling. Do not call blind.\n\n3. WRITE YOUR PAIN HYPOTHESIS\nOne sentence: what is most likely hurting this client right now.\nWrite it in SPIN-P BEFORE the call. This is your starting assumption.\nExample: 'They posted 8 vacancies 10 weeks ago and still cannot fill them — peak season is coming.'\n\n4. PREPARE 3 IMPLICATION QUESTIONS\nWrite them specifically for this client, this industry, this size.\nWrite them in SPIN-I before the call.\nExample: 'If the line is not full in April — what happens to your Q2 delivery plan?'\n\n5. SET YOUR CALL GOAL\nOne specific next step you want to get from this call.\nMeeting? Intro to economic buyer? Agreement to receive a proposal?\nKnow it before you dial.\n\n6. KNOW YOUR OFFER\nWhich service? Ukrainian or Asian workers? What timeline can you commit to?\nDo not make promises you cannot keep.\n\nRULE: If you cannot write the pain hypothesis — you are not ready to call."},
+    {id:"coldCallOpener",title:"Cold Call Opener",color:"blue",text:"THE FIRST 20 SECONDS DETERMINE EVERYTHING\n\nBAD OPENER (do not do this):\n'Buna ziua, suntem o agentie de personal si oferim muncitori pentru productie...'\nWhy it fails: starts with 'we', pitches before asking, no reason to listen.\n\nGOOD OPENER (use this structure):\n'Buna ziua, ma numesc Walery, sunt de la Gremi Personal. Am vazut ca compania dvs. s-a extins semnificativ in ultimii doi ani. Voiam sa va intreb — cum gestionati nevoia de personal in sezonul de varf?'\nWhy it works: shows you studied them, asks a question, does not pitch.\n\nSTRUCTURE (3 sentences):\n1. Who you are + company (1 sentence)\n2. Why you are calling THEM specifically — one concrete fact about their business (1 sentence)\n3. Question or insight that opens the conversation (1 sentence)\n\nRULES:\n— First 20 seconds: do NOT pitch, ask a question\n— Show you studied the company — one specific fact\n— Goal of the call: not to sell, to get the next step\n— If gatekeeper: 'Am trimis un email dl-ului [NAME] referitor la personal operational. Puteti sa ma transferati?'\n— If voicemail: do NOT leave one. Call again at a different time."},
+    {id:"proposalStructure",title:"Proposal Structure",color:"teal",text:"WHAT YOUR PROPOSAL MUST CONTAIN (in this order):\n\n1. PAIN SUMMARY (1 paragraph)\nRepeat back what you heard. Show you understood their situation.\nUse their words, not yours.\nSource: your SPIN-P + Pain Summary field in CRM.\nExample: 'Based on our conversation: your Cluj location needs 15 operators for April peak. You have posted these roles for 10 weeks without success. Each week of delay costs approximately X RON in reduced output.'\n\n2. SOLUTION — SPECIFIC\nNot 'we provide workers'. Specific: how many, what profiles, what timeline.\n→ 15 operators, production profile, available April 1\n→ UA workers on temporary protection, 2-week onboarding\n→ Gremi Personal as official employer\n\n3. FINANCIAL MODEL\n→ RON/hour rate, all-inclusive breakdown\n→ Comparison with direct hire total cost (show the math)\n→ Break-even point\n\n4. PROCESS — HOW IT WORKS\n→ Signing → IGI submission → worker selection → onboarding\n→ Replacement guarantee terms\n→ Your dedicated coordinator\n\n5. PROOF — ONE CASE STUDY\nSame industry + similar size. Real numbers if possible.\n'Cris-Tim Ilfov: 42 workers placed in 3 weeks, contract extended 6 months later.'\n\n6. NEXT STEP\nDo not end the proposal without a specific ask.\n'I propose a 20-minute call on [DATE] to walk through this together. Are you available?'\n\nCRITICAL: Never send a proposal without a scheduled follow-up call. A proposal without a next step is a dead proposal."},
+    {id:"closingTechniques",title:"Closing Techniques",color:"green",text:"WHEN TO CLOSE\nClose only when:\n— Client confirmed the pain (Pain Score 4–5)\n— Economic Buyer is involved\n— Proposal has been sent AND discussed\n— No open objections remaining\n\nDo NOT close after the first call. Do NOT close by email.\n\nCLOSING TECHNIQUES:\n\n1. ASSUMPTIVE CLOSE\n'Cand va este mai convenabil sa incepem — la inceputul lui aprilie sau la mijlocul lunii?'\nAssumes yes, asks only about timing. Works when pain is confirmed.\n\n2. SUMMARY CLOSE\n'Am convenit: 50 de persoane, start 1 aprilie, pret X RON/ora. Semnam?'\nSummarizes all agreements. Removes ambiguity. Asks for signature.\n\n3. URGENCY CLOSE\n'Cota de lucratori pentru mai se inchide. Companiile care au depus cererea mai devreme primesc deja oameni.'\nUse only when true. Never invent urgency.\n\n4. TRIAL CLOSE\n'Daca rezolvam problema cu partea juridica — sunteti pregatiti sa mergeti mai departe?'\nTests readiness without full commitment. Good for handling last objection.\n\nAFTER EVERY CLOSING ATTEMPT:\n— They say YES → immediately confirm in writing\n— They say NOT YET → ask 'What is missing for you to decide?'\n— They say NO → ask 'What changed since our last conversation?' then update Lost Reason in CRM"},
+    {id:"competitorComparison",title:"Competitor Comparison",color:"purple",text:"HOW GREMI / ANTFORCE DIFFERS FROM ADECCO, MANPOWER, LUGERA, TRENKWALDER\n\nSPECIALIZATION:\nLarge agencies: wide profile, all segments, white collar + blue collar\nGremi/Antforce: focus on foreign workers for manufacturing. We go deep, not wide.\n→ Your pitch: 'They handle everything. We handle foreign workers for production better than anyone.'\n\nSPEED:\nLarge agencies: standard process, internal bureaucracy, 4–8 week timelines\nGremi/Antforce: direct recruitment channels, faster onboarding, 2–4 weeks UA\n→ Your pitch: 'We delivered 35 workers to Dacia Parts in 18 days.'\n\nLEGAL SUPPORT:\nLarge agencies: standard HR compliance\nGremi/Antforce: full IGI support, work permits, ITM documentation, we are the official employer\n→ Your pitch: 'ITM comes to us. Not to you.'\n\nFLEXIBILITY:\nLarge agencies: fixed packages, minimum volumes, long-term contracts\nGremi/Antforce: customized to client, pilot batches possible, no minimum commitment\n→ Your pitch: 'Start with 5 workers. No risk. Scale when it works.'\n\nCONTACT:\nLarge agencies: account manager changes every 6 months\nGremi/Antforce: dedicated coordinator for the lifetime of the contract\n→ Your pitch: 'You will have one phone number for everything.'\n\nWHEN CLIENT SAYS 'WE ALREADY WORK WITH ADECCO':\n'I understand. Many of our best clients also work with large agencies — for their local needs. We complement, not replace. Our niche is foreign workers. They cannot match our speed and legal expertise in this area.'"},
+    {id:"postDealOnboarding",title:"Post-Deal Onboarding",color:"green",text:"WHAT HAPPENS AFTER SIGNING — first 30 days\nHandlowiec must know this process to make correct promises to clients.\n\nDAY 1–3: CONTRACT SIGNING + HANDOVER\nWho: Handlowiec + Operations\n— Sign contract, collect all client specs (location, shift, tasks, start date)\n— Introduce client to their dedicated coordinator\n— Handover briefing to Ops team\n\nDAY 3–7: IGI SUBMISSION + RECRUITMENT START\nWho: Operations\n— Submit worker documentation to IGI (for non-UA workers)\n— Start worker selection from database or launch recruitment\n— Confirm start date with client\n\nDAY 7–21: WORKER PROCESSING\nWho: Operations + Coordinator\n— Medical checks, contracts signing, safety briefing\n— Housing and transport arrangement\n— Client briefed on worker profiles\n\nDAY 21–30: FIRST WORKERS ON SITE\nWho: Coordinator\n— First day on-site: coordinator present\n— Onboarding checklist completed\n— Any issues resolved within 24h\n\nDAY 30+: REGULAR CHECK-IN\nWho: Handlowiec\n— Monthly call with client: satisfaction, any issues, expansion opportunity\n— Update CRM: Last Contact, Next Action\n— Ask for referral: 'Do you know other companies with similar needs?'\n\nCRITICAL DATES TO PROMISE CORRECTLY:\n— Ukrainian workers: 2–4 weeks from signing to on-site\n— Asian workers: 4–6 MONTHS from signing to on-site\n— Never promise Asian workers in 4 weeks. It is not possible."}
   ],
   pl: [
     {cat:"Inicjacja Kontaktu",title:"Email — Wprowadzenie Ogolne",text:`Szanowny [IMIE],\n\nNazywam sie Walery, jestem dyrektorem operacji Gremi Personal w Rumunii. Koordynuje nasze projekty personalne na rynku rumunskim.\n\nPowod kontaktu: wspolpracujemy z kilkoma producentami z branzy [BRANZA] w [REGION], a profil [FIRMA] jest bardzo bliski typowi partnerstw, ktore rozwijamy.\n\nChcialbym poznac Panstwa obecne priorytety w zakresie zasobow ludzkich. Moze znajdziemy wspolny punkt.\n\nJestem dostepny na rozmowe w dogodnym dla Panstwa terminie.\n\nZ powazaniem,\n[PODPIS]`},
@@ -1694,6 +1723,10 @@ export default function GremiCRM() {
     const lostReasons=Object.fromEntries(["Price","Competitor Won","No Budget","No Decision","Legal Concerns","Romanian Only Policy","Other"].map(r=>[r,lostDeals.filter(l=>l.lostReason===r).length]));
     const spinFull=locs.filter(l=>l.spin?.s&&l.spin?.p&&l.spin?.i&&l.spin?.n).length;
     const sourceConv=Object.fromEntries(LEAD_SOURCES.map(s=>{const sl=locs.filter(l=>l.source===s);const sw=sl.filter(l=>l.stage==="Closed Won");return[s,{total:sl.length,won:sw.length,conv:sl.length?Math.round(sw.length/sl.length*100):0}];}));
+    const activePipeHqs=hqs.filter(h=>locs.some(l=>l.parentId===h.id&&!["Closed Won","Closed Lost"].includes(l.stage)));
+    const researchPcts=activePipeHqs.map(h=>Math.round(Object.values(h.preCallChecklist||{}).filter(Boolean).length/12*100));
+    const avgResearch=researchPcts.length?Math.round(researchPcts.reduce((a,b)=>a+b,0)/researchPcts.length):0;
+    const researchReady=researchPcts.filter(p=>p>=80).length;
     return{
       total:hqs.length,locs:locs.length,
       hot:locs.filter(l=>l.temp==="🔥 Hot").length,
@@ -1970,6 +2003,17 @@ export default function GremiCRM() {
             </div>
           </div>
 
+          {/* Research readiness */}
+          {isAdmin&&activePipeHqs.length>0&&(
+          <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:600,fontSize:11,color:C.txt3,letterSpacing:"0.08em",marginBottom:10}}>RESEARCH READINESS (active pipeline)</div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+              <div style={{flex:1,background:C.bg4,height:8,borderRadius:4,overflow:"hidden"}}><div style={{background:avgResearch>=80?C.green:avgResearch>=50?C.amber:C.red,height:8,width:avgResearch+"%",transition:"width 0.5s"}}/></div>
+              <span style={{fontSize:13,fontWeight:700,color:avgResearch>=80?C.green:avgResearch>=50?C.amber:C.red,fontFamily:"'Space Grotesk',sans-serif"}}>{avgResearch}%</span>
+            </div>
+            <div style={{fontSize:11,color:C.txt3}}>{researchReady} of {activePipeHqs.length} companies ≥80% researched</div>
+          </div>
+          )}
           {/* SPIN completion */}
           <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
             <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:600,fontSize:11,color:C.txt3,letterSpacing:"0.08em",marginBottom:10}}>SPIN COMPLETION</div>
