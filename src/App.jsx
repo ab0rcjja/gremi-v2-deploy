@@ -218,6 +218,8 @@ const INIT_PLAYBOOK = {
     {id:"proposal",stage:"Proposal Sent",icon:"6",title:"Follow-up Sequence",target:"Decision within 14 days",tasks:"Always follow up with the SAME person you met.\n\nDAY 3: CALL the decision maker directly.\n— 'Revin referitor la oferta trimisa. Ati avut posibilitatea sa o analizati?'\n\nDAY 7: EMAIL with additional value.\n— A reference, updated availability, or answer to a concern from the meeting\n\nDAY 14: FINAL ATTEMPT — breakup message.\n\nIF THEY SAY 'I need to discuss with [BOSS]':\n— Offer: 'Would it help if I joined a short call with [BOSS]?'\n— Note the BOSS name in CRM — this is the real decision maker\n\nIF NO RESPONSE AFTER 14 DAYS:\n— Move to 'Closed Lost' or 'No Answer'\n— Set follow-up reminder for 3 months"},
     {id:"negotiation",stage:"Negotiation",icon:"7",title:"Terms Discussion & Closing",target:"Close or escalate within 10 days",tasks:"HANDLE OBJECTIONS:\n— Use Objection Response templates\n— Always acknowledge the concern before responding\n— Focus on total cost, not just hourly rate\n\nESCALATE TO WALERY IF:\n— Discount > 5%\n— Non-standard terms (payment > 30 days, liability)\n— Order > 50 workers\n— Client demands exclusivity or penalties\n— Any request you are not sure how to handle\n\nCLOSING:\n— Confirm all terms in writing before signing\n— Move to 'Closed Won' only after contract signature"},
     {id:"won",stage:"Closed Won",icon:"✓",title:"Handover & Account Development",target:"Operational handover within 48h",tasks:"IMMEDIATE:\n— Update all CRM fields: final worker count, rate, service, entity, start date\n— Notify operations team\n— Send 'thank you and next steps' email\n\nFIRST 30 DAYS:\n— Check in after 1 week\n— Address any issues immediately\n\nACCOUNT DEVELOPMENT:\n— Ask for referral: 'Do you know other companies with similar needs?'\n— Explore expansion: other locations, additional headcount\n— Schedule quarterly review\n\nA won deal is the beginning, not the end."},
+    {id:"lost",stage:"Closed Lost",icon:"✕",title:"Post-Mortem & Re-entry Plan",target:"Analyse, learn, plan return",tasks:"IMMEDIATELY AFTER LOSING:\n— Fill in Lost Reason in CRM — this is required\n— Update all SPIN fields with real info from the process\n\nQUESTIONS TO ANSWER:\n— Why did we lose? (price / competitor / no decision / timing / wrong person)\n— What did we miss in qualification?\n— Was there a champion? Did we have the right DM?\n— What would we do differently?\n\nRE-ENTRY PLAN:\n— Lost to competitor → Check back in 6 months (contracts expire)\n— Lost due to timing → Set follow-up for next season\n— Lost due to price → Note their budget ceiling, come back with adjusted offer\n— No decision → Nurture — add to monthly touch cadence\n\nRULE: A lost deal is not dead. It is a future deal in progress.\n\nSEE: Objection Handler card for analysing what went wrong."},
+    {id:"noanswer",stage:"No Answer",icon:"—",title:"Re-engagement Protocol",target:"Re-engage without being annoying",tasks:"NO ANSWER MEANS: you reached out, they did not reply. It is not a rejection — it is silence.\n\nPROTOCOL:\nAttempt 1 — Day 1: Call, no voicemail\nAttempt 2 — Day 3: Call + LinkedIn message\nAttempt 3 — Day 7: Call + email\nAttempt 4 — Day 14: Final call + final email\n\nFINAL EMAIL (Attempt 4):\n'Buna ziua [Nume], am incercat sa va contactez de cateva ori in ultimele doua saptamani. Inteleg ca sunteti ocupat. Daca subiectul personalului de productie nu este o prioritate momentan, va rog sa imi spuneti si nu va mai deranjez. Daca doriti sa discutam, raman la dispozitie.'\n\nAFTER 4 ATTEMPTS:\n— Pain Score → 1\n— Stage → Cold (leave as No Answer in CRM)\n— Next Step: return in 60 days\n\nRULE: 4 attempts is the limit. After that, silence is the answer. Respect it."},
   ],
   extras: [
     {id:"dm",title:"Decision Maker Approach",color:"indigo",text:"HR DIRECTOR / HR MANAGER\nCares about: compliance, ITM risk, contract terms, worker documentation\nSpeak their language: conformitate, contracte conforme, zero risc legal\nKey question: 'Ce se intampla daca ITM vine cu o inspectie?'\n\nPLANT MANAGER / PRODUCTION MANAGER\nCares about: capacity, speed of delivery, worker quality, shift coverage\nSpeak their language: capacitate, termen de livrare, calitate, schimburi complete\nKey question: 'Cat va costa o zi in care linia nu functioneaza la capacitate?'\n\nOPERATIONS DIRECTOR\nCares about: total cost, scalability, supplier reliability, process efficiency\nSpeak their language: cost total, flexibilitate, fiabilitate, eficienta\nKey question: 'Cum arata costul real al rotatiei de personal per an?'\n\nOWNER / CEO / GENERAL MANAGER\nCares about: bottom line, risk, strategic partnership, long-term value\nSpeak their language: ROI, parteneriat strategic, zero risc, crestere\nKey question: 'Ce ar insemna pentru business daca ati avea echipa stabila pe 2 ani?'\n\nRULE: Never pitch the same way to all four."},
@@ -1280,7 +1282,11 @@ const TPL_DATA = {
     {id:"competitorComparison",title:"Competitor Comparison",color:"purple",text:"HOW GREMI / ANTFORCE DIFFERS FROM ADECCO, MANPOWER, LUGERA, TRENKWALDER\n\nSPECIALIZATION:\nLarge agencies: wide profile, all segments, white collar + blue collar\nGremi/Antforce: focus on foreign workers for manufacturing. We go deep, not wide.\n→ Your pitch: 'They handle everything. We handle foreign workers for production better than anyone.'\n\nSPEED:\nLarge agencies: standard process, internal bureaucracy, 4–8 week timelines\nGremi/Antforce: direct recruitment channels, faster onboarding, 2–4 weeks UA\n→ Your pitch: 'We delivered 35 workers to Dacia Parts in 18 days.'\n\nLEGAL SUPPORT:\nLarge agencies: standard HR compliance\nGremi/Antforce: full IGI support, work permits, ITM documentation, we are the official employer\n→ Your pitch: 'ITM comes to us. Not to you.'\n\nFLEXIBILITY:\nLarge agencies: fixed packages, minimum volumes, long-term contracts\nGremi/Antforce: customized to client, pilot batches possible, no minimum commitment\n→ Your pitch: 'Start with 5 workers. No risk. Scale when it works.'\n\nCONTACT:\nLarge agencies: account manager changes every 6 months\nGremi/Antforce: dedicated coordinator for the lifetime of the contract\n→ Your pitch: 'You will have one phone number for everything.'\n\nWHEN CLIENT SAYS 'WE ALREADY WORK WITH ADECCO':\n'I understand. Many of our best clients also work with large agencies — for their local needs. We complement, not replace. Our niche is foreign workers. They cannot match our speed and legal expertise in this area.'"},
     {id:"postDealOnboarding",title:"Post-Deal Onboarding",color:"green",text:"WHAT HAPPENS AFTER SIGNING — first 30 days\nHandlowiec must know this process to make correct promises to clients.\n\nDAY 1–3: CONTRACT SIGNING + HANDOVER\nWho: Handlowiec + Operations\n— Sign contract, collect all client specs (location, shift, tasks, start date)\n— Introduce client to their dedicated coordinator\n— Handover briefing to Ops team\n\nDAY 3–7: IGI SUBMISSION + RECRUITMENT START\nWho: Operations\n— Submit worker documentation to IGI (for non-UA workers)\n— Start worker selection from database or launch recruitment\n— Confirm start date with client\n\nDAY 7–21: WORKER PROCESSING\nWho: Operations + Coordinator\n— Medical checks, contracts signing, safety briefing\n— Housing and transport arrangement\n— Client briefed on worker profiles\n\nDAY 21–30: FIRST WORKERS ON SITE\nWho: Coordinator\n— First day on-site: coordinator present\n— Onboarding checklist completed\n— Any issues resolved within 24h\n\nDAY 30+: REGULAR CHECK-IN\nWho: Handlowiec\n— Monthly call with client: satisfaction, any issues, expansion opportunity\n— Update CRM: Last Contact, Next Action\n— Ask for referral: 'Do you know other companies with similar needs?'\n\nCRITICAL DATES TO PROMISE CORRECTLY:\n— Ukrainian workers: 2–4 weeks from signing to on-site\n— Asian workers: 4–6 MONTHS from signing to on-site\n— Never promise Asian workers in 4 weeks. It is not possible."},
     {id:"accountManagementUpsell",title:"Account Management & Upsell",color:"green",text:"AFTER THE DEAL IS SIGNED — the relationship starts, not ends\n\nCHECK-IN SCHEDULE:\n— Week 1: coordinator on-site first day, any issues resolved within 24h\n— Week 2: call with client contact — how are the workers settling in?\n— Month 1: formal check-in — satisfaction, any performance issues, upcoming needs\n— Month 3: strategic review — what is working, what can improve, expansion?\n— Ongoing: every 2 weeks, at minimum monthly contact\n\nWHAT TO TRACK:\n— Worker turnover rate on the client's site\n— Client complaints (speed of resolution = trust)\n— Client satisfaction score (ask directly: 1–10, what would make it 10?)\n\nUPSELL TRIGGERS — listen for these:\n→ 'We are opening a new production line' = new location deal\n→ 'We are adding a night shift' = more workers same location\n→ 'Peak season is coming earlier this year' = volume increase\n→ 'Our Prahova plant has the same problem' = new HQ + location\n→ 'My colleague at [Company X] has the same issue' = referral lead\n\nHOW TO ASK FOR REFERRAL:\n'We really enjoyed working together on this. Do you know other companies — suppliers, partners, industry contacts — who might have similar staffing needs?'\nAsk after month 1, when you have delivered results.\n\nRULE: Keeping a client costs 5x less than finding a new one. Every deal is the start of a long relationship, not a transaction."},
-    {id:"spinDoubleFill",title:"SPIN — Double Fill (Pre & Post Meeting)",color:"indigo",text:"IN STAGE 'INTERESTED' — SPIN IS FILLED TWICE\n\nFIRST FILL — BEFORE THE MEETING (Pre-meeting hypotheses)\nWhen: after you schedule the meeting, before it happens\nWhat: your ASSUMPTIONS based on research\nSource: HQ Intelligence, vacancy analysis, LinkedIn DM activity\n\nS (pre): 'I think they have ~200 production workers, 2 shifts, probably work with a local agency'\nP (pre): 'I think they cannot find skilled operators fast enough for April peak'\nI (pre): 'Line stoppage probably costs them 5,000–10,000 RON/hour'\nN (pre): 'If we deliver 20 workers in 3 weeks, they hit their Q2 target'\n\nWhy fill before?\n— Forces you to think before the meeting\n— Gives you targeted questions\n— You can compare hypothesis vs reality afterwards\n\n---\n\nSECOND FILL — AFTER THE MEETING (Post-meeting reality)\nWhen: same day, max within 2 hours of the meeting\nWhat: what the client ACTUALLY said\nSource: your notes from the meeting\n\nS (post): 'They have 180 operators, 3 shifts, no current agency'\nP (post): 'Line stops 2x per week due to absenteeism. Peak is May–July.'\nI (post): 'GM said: every stopped hour = 8,000 RON loss. Board is watching.'\nN (post): 'Client said: if you can deliver 15 stable people by May 1 — we sign'\n\nThis is your Pain Summary. Use it verbatim in the Proposal.\n\n---\n\nIN CRM: The SPIN form shows a label: Pre-meeting (hypothesis) or Post-meeting (real data)\nChange the label manually in Notes or update all four S/P/I/N fields after the meeting.\n\nRULE: Never send a proposal based on pre-meeting SPIN. Always update after the meeting."}
+    {id:"spinDoubleFill",title:"SPIN — Double Fill (Pre & Post Meeting)",color:"indigo",text:"IN STAGE 'INTERESTED' — SPIN IS FILLED TWICE\n\nFIRST FILL — BEFORE THE MEETING (Pre-meeting hypotheses)\nWhen: after you schedule the meeting, before it happens\nWhat: your ASSUMPTIONS based on research\nSource: HQ Intelligence, vacancy analysis, LinkedIn DM activity\n\nS (pre): 'I think they have ~200 production workers, 2 shifts, probably work with a local agency'\nP (pre): 'I think they cannot find skilled operators fast enough for April peak'\nI (pre): 'Line stoppage probably costs them 5,000–10,000 RON/hour'\nN (pre): 'If we deliver 20 workers in 3 weeks, they hit their Q2 target'\n\nWhy fill before?\n— Forces you to think before the meeting\n— Gives you targeted questions\n— You can compare hypothesis vs reality afterwards\n\n---\n\nSECOND FILL — AFTER THE MEETING (Post-meeting reality)\nWhen: same day, max within 2 hours of the meeting\nWhat: what the client ACTUALLY said\nSource: your notes from the meeting\n\nS (post): 'They have 180 operators, 3 shifts, no current agency'\nP (post): 'Line stops 2x per week due to absenteeism. Peak is May–July.'\nI (post): 'GM said: every stopped hour = 8,000 RON loss. Board is watching.'\nN (post): 'Client said: if you can deliver 15 stable people by May 1 — we sign'\n\nThis is your Pain Summary. Use it verbatim in the Proposal.\n\n---\n\nIN CRM: The SPIN form shows a label: Pre-meeting (hypothesis) or Post-meeting (real data)\nChange the label manually in Notes or update all four S/P/I/N fields after the meeting.\n\nRULE: Never send a proposal based on pre-meeting SPIN. Always update after the meeting."},
+    {id:"noAnswer",title:"No Answer — Re-engagement Protocol",color:"txt",text:"NO ANSWER = silence. Not rejection. Keep it in perspective.\n\nPROTOCOL — 4 ATTEMPTS:\n\nAttempt 1 — Day 1:\nCall. No voicemail. If secretary: 'Ii puteti transmite ca a sunat Walery de la Gremi Personal? Va suna inapoi cand poate.'\n\nAttempt 2 — Day 3:\nCall at a different time + LinkedIn message.\nLinkedIn: 'Buna ziua [Nume], am incercat sa va sun de cateva ori referitor la personalul de productie. Va contactez si pe LinkedIn — cand aveti un moment disponibil?'\n\nAttempt 3 — Day 7:\nCall + email.\nEmail subject: 'Revenire — [Companie]'\nEmail body: short, no pitch, one question.\n\nAttempt 4 — Day 14 — FINAL:\nCall + final email.\nEmail: 'Buna ziua [Nume], am incercat sa va contactez de cateva ori. Inteleg ca sunteti ocupat. Daca subiectul personalului de productie nu este o prioritate momentan, va rog sa imi spuneti si nu va mai deranjez. Daca doriti sa discutam, raman la dispozitie. Cu stima, Walery'\n\nAFTER 4 ATTEMPTS:\n— Pain Score → 1\n— Next Step: return in 60 days\n— Note: No Answer — could not reach\n\nWHY PEOPLE DO NOT ANSWER:\n— Genuinely busy (most common)\n— Not the right person\n— No active pain right now\n— Already working with someone\n\nNone of these are permanent. Come back in 60 days with new angle."},
+    {id:"negotiationTechniques",title:"Negotiation — Protect Price, Close Deal",color:"red",text:"PRINCIPLES:\nNever drop price first — find out what exactly is the objection\nEvery concession must cost the client something\nA discount without a reason teaches the client to always negotiate\n\nCOMMON SCENARIOS:\n\n'E prea scump'\n→ 'Fata de ce anume? Sa calculam costul total al angajarii directe — recrutare, fluctuatie, HR overhead — si comparam'\n\n'Concurenta e mai ieftina'\n→ 'Ce include exact oferta lor? Sa comparam corect. Pretul per ora fara incluziunile noastre este de obicei mai mare in total.'\n\n'Dati-ne o reducere'\n→ 'Putem ajusta daca modificam volumul sau structura serviciului. Ce sunteti dispusi sa eliminati?'\n\n'Avem nevoie de mai mult timp'\n→ 'Ce anume trebuie clarificat? Sa rezolvam acum — nu vreau sa pierdeti timp.'\n\n'Trebuie sa discutam intern'\n→ 'Inteleg. Cine altcineva este implicat in decizie? Putem organiza o intalnire comuna?'\n\nWHEN YOU CAN CONCEDE:\n— Higher volume (more workers = lower price per hour)\n— Longer contract (6–12 months instead of 3)\n— Fast signature or prepayment\n\nWHEN NOT TO CONCEDE:\n— Client has no specific number — just 'too expensive'\n— Pressure without a real alternative\n— First round of negotiation — there is always a second\n\nRULE: Silence after closing question — whoever speaks first concedes. Wait."},
+    {id:"postMeetingNextSteps",title:"Post-Meeting Next Steps",color:"orange",text:"WITHIN 2 HOURS OF THE MEETING:\n\n1. UPDATE CRM\n— SPIN: replace hypotheses with real client answers\n— Economic Buyer: who holds the budget?\n— Champion: who is your internal ally?\n— Decision Criteria: what matters most to them?\n— Decision Process: who decides, how, when?\n— Pain Score: update based on what you heard\n— Next Step: set with specific date\n\n2. SEND FOLLOW-UP EMAIL\nSubject: Urmarire intalnire [Companie] — [Data]\n\nStructure:\n'Multumesc pentru timpul acordat astazi.' — 1 sentence\nPain summary — what you heard (use Pain Summary from SPIN): 2–3 sentences\nNext step — what you agreed, specific date\nOne question if something was unclear\n\nExample:\n'Multumesc pentru intalnirea de astazi. Daca am inteles corect, principala provocare este asigurarea a 50 de operatori pentru linia noua pana in aprilie, in contextul in care piata locala din Timis nu acopera cererea. Va pregatesc un calcul detaliat pana joi si va trimit propunerea pe email. Aveti la indemana un contact direct la departamentul financiar pentru etapa urmatoare?'\n\nWHY THIS MATTERS:\nClient who gets follow-up within 2 hours remembers the meeting better and moves faster.\nIt shows professionalism and that you were listening.\nIt creates a written record of what was agreed.\n\nRULE: No CRM update = the meeting did not happen."},
+    {id:"postProposalFollowUp",title:"Post-Proposal Follow-up",color:"teal",text:"NEVER SEND A PROPOSAL AND WAIT. Follow up with a plan.\n\nPROTOCOL AFTER SENDING:\n\nDay of sending:\nCall or message: 'Am trimis propunerea — ati primit-o bine?'\nFormat: call or WhatsApp\n\nDay 2–3:\n'Aveti intrebari despre propunere?'\nNOT: 'Ce parere aveti?' — that is open-ended with no action\nFormat: email or call\n\nDay 5–7:\n'Ce parte din propunere doriti sa discutam mai in detaliu?'\nFormat: call\n\nDay 10:\nFinal follow-up with urgency if applicable\nFormat: call + email\n\nIF CLIENT SAYS 'WE ARE STILL THINKING':\n'Inteleg. Ce anume nu este clar sau ce ingrijorari aveti? Vreau sa ma asigur ca propunerea raspunde exact nevoilor dvs.'\n\nIF SILENCE > 10 DAYS:\n— Check: is your Champion still there?\n— Check: has the DM changed?\n— Check: internal reorganization or budget freeze?\n\nRULE: Never ask 'what do you think of the proposal' — it is an open question without an action. Always offer a specific next step: 'Sa stabilim un call de 20 minute sa trecem prin propunere impreuna?'\n\nRULE: A proposal without a follow-up plan is a document. A proposal with a follow-up plan is a deal."}
   ],
   pl: [
     {cat:"Inicjacja Kontaktu",title:"Email — Wprowadzenie Ogolne",text:`Szanowny [IMIE],\n\nNazywam sie Walery, jestem dyrektorem operacji Gremi Personal w Rumunii. Koordynuje nasze projekty personalne na rynku rumunskim.\n\nPowod kontaktu: wspolpracujemy z kilkoma producentami z branzy [BRANZA] w [REGION], a profil [FIRMA] jest bardzo bliski typowi partnerstw, ktore rozwijamy.\n\nChcialbym poznac Panstwa obecne priorytety w zakresie zasobow ludzkich. Moze znajdziemy wspolny punkt.\n\nJestem dostepny na rozmowe w dogodnym dla Panstwa terminie.\n\nZ powazaniem,\n[PODPIS]`},
@@ -1428,22 +1434,40 @@ function TemplatesTab({isAdmin}) {
 
 // ─── PLAYBOOK PHASE + STAGE CONSTANTS ────────────────────
 const STAGE_RELEVANT_CARDS_MAP = {
-  // stage card ID (from playbook.stages) + extras IDs
   "New":              ["new","preCallChecklist","preDiscoveryPrep","coldCallOpener","linkedinOutreach"],
   "Contacted":        ["contacted","discoveryCallStructure","qualificationGoNoGo","followUpCadence"],
-  "Interested":       ["interested","firstMeetingAgenda","spinDoubleFill","objectionHandler","competitorComparison","valueProposition"],
-  "Meeting Scheduled":["meeting","firstMeetingAgenda","spinDoubleFill"],
-  "Meeting Done":     ["done","proposalStructure","closingTechniques"],
-  "Proposal Sent":    ["proposal","proposalStructure","closingTechniques","followUpCadence"],
-  "Negotiation":      ["negotiation","closingTechniques","objectionHandler"],
+  "No Answer":        ["noanswer","noAnswer"],
+  "Interested":       ["interested","objectionHandler","competitorComparison","valueProposition"],
+  "Meeting Scheduled":["meeting","preDiscoveryPrep","firstMeetingAgenda"],
+  "Meeting Done":     ["done","discoveryCallStructure","postMeetingNextSteps"],
+  "Proposal Sent":    ["proposal","proposalStructure","postProposalFollowUp"],
+  "Negotiation":      ["negotiation","closingTechniques","negotiationTechniques"],
   "Closed Won":       ["won","postDealOnboarding","accountManagementUpsell"],
-  "Closed Lost":      ["objectionHandler"],
-  "No Answer":        ["followUpCadence"],
+  "Closed Lost":      ["lost","objectionHandler"],
 };
+
+// Card counts per stage for filter buttons
+const STAGE_CARD_COUNTS = {
+  "New":4,"Contacted":3,"No Answer":1,"Interested":3,
+  "Meeting Scheduled":2,"Meeting Done":2,"Proposal Sent":2,
+  "Negotiation":2,"Closed Won":2,"Closed Lost":1,
+};
+
+// Phase structure for dividers in All cards mode
+const PLAYBOOK_PHASE_DIVIDERS = [
+  {phase:"🔵 Phase 1 — Preparation",   cards:["preCallChecklist","preDiscoveryPrep"]},
+  {phase:"🟡 Phase 2 — Contact",        cards:["coldCallOpener","linkedinOutreach"]},
+  {phase:"🟠 Phase 3 — Discovery",      cards:["discoveryCallStructure","qualificationGoNoGo"]},
+  {phase:"🟢 Phase 4 — Meeting",        cards:["firstMeetingAgenda","spinDoubleFill"]},
+  {phase:"🔵 Phase 5 — Nurturing",      cards:["followUpCadence","objectionHandler","competitorComparison","noAnswer"]},
+  {phase:"🔴 Phase 6 — Closing",        cards:["valueProposition","proposalStructure","closingTechniques","negotiationTechniques","postMeetingNextSteps","postProposalFollowUp"]},
+  {phase:"⚫ Phase 7 — After the Deal", cards:["postDealOnboarding","accountManagementUpsell"]},
+];
 
 // ─── PLAYBOOK TAB ────────────────────────────────────────────
 function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
   const [editId,setEditId]=useState(null);
+  const [confirmReset,setConfirmReset]=useState(false);
   const [filterStage,setFilterStage]=useState(curStage||null);
   const relevantIds=filterStage?STAGE_RELEVANT_CARDS_MAP[filterStage]||[]:null;
   const [editForm,setEditForm]=useState({});
@@ -1467,7 +1491,8 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
     setEditForm({id,title:"New Section",color:"txt",text:"Enter content here..."});
   };
   const removeExtra=(id)=>{if(confirm("Remove this section?"))setPlaybook({...playbook,extras:playbook.extras.filter(e=>e.id!==id)});};
-  const resetAll=()=>{if(confirm("Reset playbook to defaults? All edits will be lost."))setPlaybook(JSON.parse(JSON.stringify(INIT_PLAYBOOK)));};
+  const resetAll=()=>setConfirmReset(true);
+  const doReset=()=>{setPlaybook(JSON.parse(JSON.stringify(INIT_PLAYBOOK)));setConfirmReset(false);};
 
   return(
     <div style={{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:10}}>
@@ -1481,9 +1506,9 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
       {/* Stage filter */}
       <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
         <button className="btn" onClick={()=>setFilterStage(null)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,background:!filterStage?`${C.blue}22`:C.bg3,color:!filterStage?C.blue2:C.txt3,border:`1px solid ${!filterStage?C.blue:C.border}`}}>All cards</button>
-        {STAGES.map(s=>(<button key={s} className="btn" onClick={()=>setFilterStage(s===filterStage?null:s)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,background:filterStage===s?`${C.blue}22`:C.bg3,color:filterStage===s?C.blue2:C.txt3,border:`1px solid ${filterStage===s?C.blue:C.border}`}}>{s}</button>))}
+        {STAGES.map(s=>{const cnt=STAGE_CARD_COUNTS[s];return(<button key={s} className="btn" onClick={()=>setFilterStage(s===filterStage?null:s)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,background:filterStage===s?`${C.blue}22`:C.bg3,color:filterStage===s?C.blue2:C.txt3,border:`1px solid ${filterStage===s?C.blue:C.border}`}}>{s}{cnt?<span style={{marginLeft:3,background:filterStage===s?`${C.blue}44`:C.bg4,borderRadius:4,padding:"0 4px",fontSize:9}}>{cnt}</span>:null}</button>);})}
       </div>
-      {filterStage&&<div style={{background:`${C.blue}12`,border:`1px solid ${C.blue}33`,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.blue2}}>Showing cards relevant for: <strong>{filterStage}</strong>. Other cards are dimmed.</div>}
+      {filterStage&&<div style={{background:`${C.blue}12`,border:`1px solid ${C.blue}33`,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.blue2}}>Showing {STAGE_CARD_COUNTS[filterStage]||0} cards relevant for: <strong>{filterStage}</strong>. Other cards are dimmed.</div>}
 
       {playbook.stages.map(s=>{
         const sc=stageColors[s.stage]||C.txt3;
@@ -1523,7 +1548,39 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
         );
       })}
 
-      {playbook.extras.map(e=>{
+      {!filterStage&&PLAYBOOK_PHASE_DIVIDERS.map(ph=>(
+        <div key={ph.phase} style={{borderTop:`2px solid ${C.border2}`,paddingTop:8,marginTop:4}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.txt3,letterSpacing:"0.1em",marginBottom:8,paddingLeft:2}}>{ph.phase}</div>
+          {playbook.extras.filter(e=>ph.cards.includes(e.id)).map(e=>{
+            const ec=extraColors[e.color]||C.txt;
+            const isEditing2=editId==="extra-"+e.id;
+            return(
+              <div key={e.id} style={{background:C.bg2,border:`1px solid ${isEditing2?C.blue:ec+"44"}`,borderRadius:10,padding:14,marginBottom:10,opacity:1}}>
+                {isEditing2?(
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    <div><div className="lbl">TITLE</div><input className="fi" value={editForm.title} onChange={e=>setEditForm({...editForm,title:e.target.value})}/></div>
+                    <div><div className="lbl">CONTENT</div><textarea className="fi" value={editForm.text} onChange={e=>setEditForm({...editForm,text:e.target.value})} rows={10} style={{resize:"vertical",lineHeight:1.7,fontSize:12}}/></div>
+                    <div style={{display:"flex",gap:6}}>
+                      <button className="btn" onClick={saveExtra} style={{background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"8px 16px",fontSize:12,borderRadius:8}}>Save</button>
+                      <button className="btn" onClick={cancelEdit} style={{background:C.bg4,color:C.txt3,padding:"8px 16px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>Cancel</button>
+                      <button className="btn" onClick={()=>{removeExtra(editForm.id);cancelEdit();}} style={{background:`${C.red}18`,color:C.red,padding:"8px 16px",fontSize:12,borderRadius:8,border:`1px solid ${C.red}44`,marginLeft:"auto"}}>Delete</button>
+                    </div>
+                  </div>
+                ):(
+                  <>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:13,color:ec}}>{e.title}</div>
+                      {isAdmin&&<button className="btn" onClick={()=>startEdit(e,"extra")} style={{background:`${C.blue}18`,color:C.blue2,padding:"4px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.blue}44`}}>Edit</button>}
+                    </div>
+                    <div style={{fontSize:12,color:C.txt2,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{e.text}</div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      {filterStage&&playbook.extras.map(e=>{
         const ec=extraColors[e.color]||C.txt;
         const isEditing=editId==="extra-"+e.id;
         const extRelevant=!relevantIds||relevantIds.includes(e.id);
@@ -1553,6 +1610,19 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
       })}
 
       {isAdmin&&<button className="btn" onClick={addExtra} style={{width:"100%",background:"transparent",color:C.blue,padding:"12px",fontSize:12,border:`2px dashed ${C.border2}`,borderRadius:10}}>+ Add Section</button>}
+      {/* Reset confirmation modal */}
+      {confirmReset&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+          <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:16,padding:28,maxWidth:360,width:"100%"}}>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:16,color:C.txt,marginBottom:10}}>Reset Playbook?</div>
+            <div style={{fontSize:13,color:C.txt2,lineHeight:1.6,marginBottom:20}}>Are you sure? All custom edits will be lost. This cannot be undone.</div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn" autoFocus onClick={()=>setConfirmReset(false)} style={{flex:1,background:C.bg3,color:C.txt,padding:"11px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>Cancel</button>
+              <button className="btn" onClick={doReset} style={{flex:1,background:`${C.red}22`,color:C.red,padding:"11px",fontSize:13,borderRadius:9,border:`1px solid ${C.red}44`,fontWeight:700}}>Reset</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
