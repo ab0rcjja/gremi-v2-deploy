@@ -1282,6 +1282,10 @@ const TPL_DATA = {
     {id:"competitorComparison",title:"Competitor Comparison",color:"purple",text:"HOW GREMI / ANTFORCE DIFFERS FROM ADECCO, MANPOWER, LUGERA, TRENKWALDER\n\nSPECIALIZATION:\nLarge agencies: wide profile, all segments, white collar + blue collar\nGremi/Antforce: focus on foreign workers for manufacturing. We go deep, not wide.\n→ Your pitch: 'They handle everything. We handle foreign workers for production better than anyone.'\n\nSPEED:\nLarge agencies: standard process, internal bureaucracy, 4–8 week timelines\nGremi/Antforce: direct recruitment channels, faster onboarding, 2–4 weeks UA\n→ Your pitch: 'We delivered 35 workers to Dacia Parts in 18 days.'\n\nLEGAL SUPPORT:\nLarge agencies: standard HR compliance\nGremi/Antforce: full IGI support, work permits, ITM documentation, we are the official employer\n→ Your pitch: 'ITM comes to us. Not to you.'\n\nFLEXIBILITY:\nLarge agencies: fixed packages, minimum volumes, long-term contracts\nGremi/Antforce: customized to client, pilot batches possible, no minimum commitment\n→ Your pitch: 'Start with 5 workers. No risk. Scale when it works.'\n\nCONTACT:\nLarge agencies: account manager changes every 6 months\nGremi/Antforce: dedicated coordinator for the lifetime of the contract\n→ Your pitch: 'You will have one phone number for everything.'\n\nWHEN CLIENT SAYS 'WE ALREADY WORK WITH ADECCO':\n'I understand. Many of our best clients also work with large agencies — for their local needs. We complement, not replace. Our niche is foreign workers. They cannot match our speed and legal expertise in this area.'"},
     {id:"postDealOnboarding",title:"Post-Deal Onboarding",color:"green",text:"WHAT HAPPENS AFTER SIGNING — first 30 days\nHandlowiec must know this process to make correct promises to clients.\n\nDAY 1–3: CONTRACT SIGNING + HANDOVER\nWho: Handlowiec + Operations\n— Sign contract, collect all client specs (location, shift, tasks, start date)\n— Introduce client to their dedicated coordinator\n— Handover briefing to Ops team\n\nDAY 3–7: IGI SUBMISSION + RECRUITMENT START\nWho: Operations\n— Submit worker documentation to IGI (for non-UA workers)\n— Start worker selection from database or launch recruitment\n— Confirm start date with client\n\nDAY 7–21: WORKER PROCESSING\nWho: Operations + Coordinator\n— Medical checks, contracts signing, safety briefing\n— Housing and transport arrangement\n— Client briefed on worker profiles\n\nDAY 21–30: FIRST WORKERS ON SITE\nWho: Coordinator\n— First day on-site: coordinator present\n— Onboarding checklist completed\n— Any issues resolved within 24h\n\nDAY 30+: REGULAR CHECK-IN\nWho: Handlowiec\n— Monthly call with client: satisfaction, any issues, expansion opportunity\n— Update CRM: Last Contact, Next Action\n— Ask for referral: 'Do you know other companies with similar needs?'\n\nCRITICAL DATES TO PROMISE CORRECTLY:\n— Ukrainian workers: 2–4 weeks from signing to on-site\n— Asian workers: 4–6 MONTHS from signing to on-site\n— Never promise Asian workers in 4 weeks. It is not possible."},
     {id:"accountManagementUpsell",title:"Account Management & Upsell",color:"green",text:"AFTER THE DEAL IS SIGNED — the relationship starts, not ends\n\nCHECK-IN SCHEDULE:\n— Week 1: coordinator on-site first day, any issues resolved within 24h\n— Week 2: call with client contact — how are the workers settling in?\n— Month 1: formal check-in — satisfaction, any performance issues, upcoming needs\n— Month 3: strategic review — what is working, what can improve, expansion?\n— Ongoing: every 2 weeks, at minimum monthly contact\n\nWHAT TO TRACK:\n— Worker turnover rate on the client's site\n— Client complaints (speed of resolution = trust)\n— Client satisfaction score (ask directly: 1–10, what would make it 10?)\n\nUPSELL TRIGGERS — listen for these:\n→ 'We are opening a new production line' = new location deal\n→ 'We are adding a night shift' = more workers same location\n→ 'Peak season is coming earlier this year' = volume increase\n→ 'Our Prahova plant has the same problem' = new HQ + location\n→ 'My colleague at [Company X] has the same issue' = referral lead\n\nHOW TO ASK FOR REFERRAL:\n'We really enjoyed working together on this. Do you know other companies — suppliers, partners, industry contacts — who might have similar staffing needs?'\nAsk after month 1, when you have delivered results.\n\nRULE: Keeping a client costs 5x less than finding a new one. Every deal is the start of a long relationship, not a transaction."},
+    {id:"meetingConfirmation",title:"Meeting Confirmation",color:"green",text:"SEND 24 HOURS BEFORE THE MEETING:\n\nSubject: Confirmare intalnire maine — [Ora] — Walery / Gremi Personal\n\n'Buna ziua [Nume], confirm intalnirea noastra de maine, [Data] la ora [Ora] la sediul dvs. din [Adresa]. Agenda: ~30 minute pentru a intelege situatia dvs. cu personalul de productie si a vedea daca va putem fi de folos. Daca apare ceva neprevazut, va rog sa ma anuntati la [telefon]. Ne vedem maine. Cu stima, Walery'\n\nRULES:\n— Send 24 hours before — not 5 minutes before\n— No pitch in the confirmation\n— State the duration — client plans their time\n— If online meeting — include Zoom / Meet link immediately\n— If no confirmation received → call to verify\n\nWHY THIS MATTERS:\nA confirmed meeting is 3x less likely to be cancelled than an unconfirmed one.\nIt also shows professionalism from first contact."},
+    {id:"postColdCallEmail",title:"Post-Cold-Call Email",color:"amber",text:"SEND AFTER A CALL WHEN CLIENT SAYS 'SEND ME INFORMATION'\n\n⚠️ 'Send me information' is NOT interest. It is a polite way to end the call. Do not send a brochure — send a hook.\n\nSubject: Informatii Gremi Personal — muncitori pentru productie [Companie]\n\nSTRUCTURE:\n\n1. ONE LINE — what you agreed:\n'Cum am discutat, va trimit cateva informatii'\n\n2. THREE CONCRETE FACTS — not company description, but results:\n'Livram primii muncitori in 3–4 saptamani de la semnare / Gestionam integral procesul IGI / Inlocuim muncitorii in 48h'\n\n3. ONE QUESTION that opens the next conversation:\n'Va intreb — care este termenul dvs. pentru a suplimenta echipa de productie?'\n\n4. NEXT STEP:\n'Va propun un call de 20 minute saptamana viitoare pentru a vedea daca situatia dvs. se potriveste cu ce oferim'\n\nDO NOT SEND:\n— PDF company description 10 pages\n— Price list without context\n— 'Astept raspunsul dvs.' without a specific proposal\n\nRULE: Every email ends with a specific next step. Not 'waiting for your answer'."},
+    {id:"closedLostGuide",title:"Closed Lost — How to Close Correctly",color:"red",text:"80% OF LOST DEALS ARE POTENTIALLY RENEWABLE.\nSituation changes: season, expansion, problems with current agency.\nA rep who disappears after rejection loses the client forever.\nA rep who closes gracefully is remembered.\n\nIMMEDIATELY AFTER REJECTION:\n1. Fill in Lost Reason in CRM (required)\n2. Send final email within 24 hours:\n\nSubject: Multumesc pentru timpul acordat — [Companie]\n'Buna ziua [Nume], inteleg ca momentan ati decis sa mergeti pe alta directie si respect decizia dvs. Va multumesc pentru timpul acordat discutiilor noastre. Daca in viitor situatia se schimba — fie ca apar dificultati cu furnizorul actual, fie ca aveti nevoie de volume mai mari — va rog sa ma contactati. Raman la dispozitie. Cu stima, Walery'\n\n3. Write in Activity Log: reason + what you learned + when to return\n4. Set Next Step: in 90 days — 'Recheck: has situation changed?'\n\nAFTER 90 DAYS — REACTIVATION:\n'Buna ziua [Nume], ne-am intalnit in [luna] pentru a discuta despre personalul de productie. Vad ca mai recrutati pe eJobs — situatia s-a schimbat fata de atunci? Am un caz similar cu o companie din [industrie] care ar putea fi relevant pentru dvs.'\n\nPOST-MORTEM QUESTIONS:\n— What went wrong?\n— At what stage did we lose?\n— Was the pain real or assumed?\n— Was I talking to the right person?\n— What will I do differently next time?"},
+    {id:"crmUsageGuide",title:"CRM Usage Guide",color:"txt",text:"HOW TO USE CRM CORRECTLY FROM DAY ONE\n\nREQUIRED FIELDS BY STAGE:\n\nNew: HQ company name, industry, city. Lead Source. Central Contact + Role\nContacted: Pre-Call Checklist >80%. SPIN-P (pain hypothesis). Activity Log: first contact\nInterested: Pain Score. SPIN S+P filled. Next Step + date\nMeeting Scheduled: Pre-Call Checklist 100%. SPIN hypotheses all 4 fields\nMeeting Done: SPIN updated with real answers. Pain Summary. Economic Buyer. Champion\nProposal Sent: Decision Criteria. Next Step + date. Activity Log: proposal sent\nNegotiation: Decision Process. Economic Buyer confirmed. Next Step + date\nClosed Won: All MEDDIC fields. Activity Log: signature date\nClosed Lost: Lost Reason. Activity Log: what you learned. Next Step: recheck in 90 days\n\nACTIVITY LOG RULES:\n— Every client contact → log entry same day\n— Format: tag (📞/📧/🤝/📋/⏳) + what client said + what was agreed\n— Never write 'called, no answer' without a Next Step\n— Log must be understandable by any team member without explanation\n\nSTAGE RULES:\n— Stage changes based on fact — not feeling\n— Contacted = real conversation happened, not just an attempt\n— Interested = client themselves expressed interest in continuing\n— Proposal Sent = proposal sent AND receipt confirmed\n— Never skip a stage back without a note in log\n\nNEXT STEP RULES:\n— Every active deal must have a Next Step with date\n— No Next Step → deal turns red\n— Next Step = specific action: not 'follow-up' but 'send calculation for 50 people'\n— Next Step overdue >7 days → alert\n\nSPIN — HOW TO FILL:\n— S and P: filled before first call as hypotheses\n— I and N: hypotheses added before the meeting\n— After meeting: all 4 fields updated with real client answers\n— Pain Summary: one sentence that goes into the Proposal\n— Indicator S✅ P✅ I⬜ N⬜ visible in location card without opening details"},
     {id:"spinDoubleFill",title:"SPIN — Double Fill (Pre & Post Meeting)",color:"indigo",text:"IN STAGE 'INTERESTED' — SPIN IS FILLED TWICE\n\nFIRST FILL — BEFORE THE MEETING (Pre-meeting hypotheses)\nWhen: after you schedule the meeting, before it happens\nWhat: your ASSUMPTIONS based on research\nSource: HQ Intelligence, vacancy analysis, LinkedIn DM activity\n\nS (pre): 'I think they have ~200 production workers, 2 shifts, probably work with a local agency'\nP (pre): 'I think they cannot find skilled operators fast enough for April peak'\nI (pre): 'Line stoppage probably costs them 5,000–10,000 RON/hour'\nN (pre): 'If we deliver 20 workers in 3 weeks, they hit their Q2 target'\n\nWhy fill before?\n— Forces you to think before the meeting\n— Gives you targeted questions\n— You can compare hypothesis vs reality afterwards\n\n---\n\nSECOND FILL — AFTER THE MEETING (Post-meeting reality)\nWhen: same day, max within 2 hours of the meeting\nWhat: what the client ACTUALLY said\nSource: your notes from the meeting\n\nS (post): 'They have 180 operators, 3 shifts, no current agency'\nP (post): 'Line stops 2x per week due to absenteeism. Peak is May–July.'\nI (post): 'GM said: every stopped hour = 8,000 RON loss. Board is watching.'\nN (post): 'Client said: if you can deliver 15 stable people by May 1 — we sign'\n\nThis is your Pain Summary. Use it verbatim in the Proposal.\n\n---\n\nIN CRM: The SPIN form shows a label: Pre-meeting (hypothesis) or Post-meeting (real data)\nChange the label manually in Notes or update all four S/P/I/N fields after the meeting.\n\nRULE: Never send a proposal based on pre-meeting SPIN. Always update after the meeting."},
     {id:"noAnswer",title:"No Answer — Re-engagement Protocol",color:"txt",text:"NO ANSWER = silence. Not rejection. Keep it in perspective.\n\nPROTOCOL — 4 ATTEMPTS:\n\nAttempt 1 — Day 1:\nCall. No voicemail. If secretary: 'Ii puteti transmite ca a sunat Walery de la Gremi Personal? Va suna inapoi cand poate.'\n\nAttempt 2 — Day 3:\nCall at a different time + LinkedIn message.\nLinkedIn: 'Buna ziua [Nume], am incercat sa va sun de cateva ori referitor la personalul de productie. Va contactez si pe LinkedIn — cand aveti un moment disponibil?'\n\nAttempt 3 — Day 7:\nCall + email.\nEmail subject: 'Revenire — [Companie]'\nEmail body: short, no pitch, one question.\n\nAttempt 4 — Day 14 — FINAL:\nCall + final email.\nEmail: 'Buna ziua [Nume], am incercat sa va contactez de cateva ori. Inteleg ca sunteti ocupat. Daca subiectul personalului de productie nu este o prioritate momentan, va rog sa imi spuneti si nu va mai deranjez. Daca doriti sa discutam, raman la dispozitie. Cu stima, Walery'\n\nAFTER 4 ATTEMPTS:\n— Pain Score → 1\n— Next Step: return in 60 days\n— Note: No Answer — could not reach\n\nWHY PEOPLE DO NOT ANSWER:\n— Genuinely busy (most common)\n— Not the right person\n— No active pain right now\n— Already working with someone\n\nNone of these are permanent. Come back in 60 days with new angle."},
     {id:"negotiationTechniques",title:"Negotiation — Protect Price, Close Deal",color:"red",text:"PRINCIPLES:\nNever drop price first — find out what exactly is the objection\nEvery concession must cost the client something\nA discount without a reason teaches the client to always negotiate\n\nCOMMON SCENARIOS:\n\n'E prea scump'\n→ 'Fata de ce anume? Sa calculam costul total al angajarii directe — recrutare, fluctuatie, HR overhead — si comparam'\n\n'Concurenta e mai ieftina'\n→ 'Ce include exact oferta lor? Sa comparam corect. Pretul per ora fara incluziunile noastre este de obicei mai mare in total.'\n\n'Dati-ne o reducere'\n→ 'Putem ajusta daca modificam volumul sau structura serviciului. Ce sunteti dispusi sa eliminati?'\n\n'Avem nevoie de mai mult timp'\n→ 'Ce anume trebuie clarificat? Sa rezolvam acum — nu vreau sa pierdeti timp.'\n\n'Trebuie sa discutam intern'\n→ 'Inteleg. Cine altcineva este implicat in decizie? Putem organiza o intalnire comuna?'\n\nWHEN YOU CAN CONCEDE:\n— Higher volume (more workers = lower price per hour)\n— Longer contract (6–12 months instead of 3)\n— Fast signature or prepayment\n\nWHEN NOT TO CONCEDE:\n— Client has no specific number — just 'too expensive'\n— Pressure without a real alternative\n— First round of negotiation — there is always a second\n\nRULE: Silence after closing question — whoever speaks first concedes. Wait."},
@@ -1435,33 +1439,34 @@ function TemplatesTab({isAdmin}) {
 // ─── PLAYBOOK PHASE + STAGE CONSTANTS ────────────────────
 const STAGE_RELEVANT_CARDS_MAP = {
   "New":              ["new","preCallChecklist","preDiscoveryPrep","coldCallOpener","linkedinOutreach"],
-  "Contacted":        ["contacted","discoveryCallStructure","qualificationGoNoGo","followUpCadence"],
+  "Contacted":        ["contacted","discoveryCallStructure","qualificationGoNoGo","followUpCadence","postColdCallEmail"],
   "No Answer":        ["noanswer","noAnswer"],
   "Interested":       ["interested","objectionHandler","competitorComparison","valueProposition"],
-  "Meeting Scheduled":["meeting","preDiscoveryPrep","firstMeetingAgenda"],
+  "Meeting Scheduled":["meeting","preDiscoveryPrep","firstMeetingAgenda","meetingConfirmation"],
   "Meeting Done":     ["done","discoveryCallStructure","postMeetingNextSteps"],
   "Proposal Sent":    ["proposal","proposalStructure","postProposalFollowUp"],
   "Negotiation":      ["negotiation","closingTechniques","negotiationTechniques"],
   "Closed Won":       ["won","postDealOnboarding","accountManagementUpsell"],
-  "Closed Lost":      ["lost","objectionHandler"],
+  "Closed Lost":      ["lost","objectionHandler","closedLostGuide","crmUsageGuide"],
 };
 
 // Card counts per stage for filter buttons
 const STAGE_CARD_COUNTS = {
-  "New":4,"Contacted":3,"No Answer":1,"Interested":3,
-  "Meeting Scheduled":2,"Meeting Done":2,"Proposal Sent":2,
-  "Negotiation":2,"Closed Won":2,"Closed Lost":1,
+  "New":4,"Contacted":4,"No Answer":1,"Interested":3,
+  "Meeting Scheduled":3,"Meeting Done":2,"Proposal Sent":2,
+  "Negotiation":2,"Closed Won":2,"Closed Lost":3,
 };
 
 // Phase structure for dividers in All cards mode
 const PLAYBOOK_PHASE_DIVIDERS = [
   {phase:"🔵 Phase 1 — Preparation",   cards:["preCallChecklist","preDiscoveryPrep"]},
-  {phase:"🟡 Phase 2 — Contact",        cards:["coldCallOpener","linkedinOutreach"]},
+  {phase:"🟡 Phase 2 — Contact",        cards:["coldCallOpener","linkedinOutreach","postColdCallEmail"]},
   {phase:"🟠 Phase 3 — Discovery",      cards:["discoveryCallStructure","qualificationGoNoGo"]},
-  {phase:"🟢 Phase 4 — Meeting",        cards:["firstMeetingAgenda","spinDoubleFill"]},
+  {phase:"🟢 Phase 4 — Meeting",        cards:["meetingConfirmation","firstMeetingAgenda","spinDoubleFill"]},
   {phase:"🔵 Phase 5 — Nurturing",      cards:["followUpCadence","objectionHandler","competitorComparison","noAnswer"]},
   {phase:"🔴 Phase 6 — Closing",        cards:["valueProposition","proposalStructure","closingTechniques","negotiationTechniques","postMeetingNextSteps","postProposalFollowUp"]},
-  {phase:"⚫ Phase 7 — After the Deal", cards:["postDealOnboarding","accountManagementUpsell"]},
+  {phase:"⚫ Phase 7 — After the Deal", cards:["postDealOnboarding","accountManagementUpsell","closedLostGuide","noAnswer"]},
+  {phase:"📋 Special Guides",             cards:["crmUsageGuide"]},
 ];
 
 // ─── PLAYBOOK TAB ────────────────────────────────────────────
@@ -1510,53 +1515,44 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
       </div>
       {filterStage&&<div style={{background:`${C.blue}12`,border:`1px solid ${C.blue}33`,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.blue2}}>Showing {STAGE_CARD_COUNTS[filterStage]||0} cards relevant for: <strong>{filterStage}</strong>. Other cards are dimmed.</div>}
 
-      {playbook.stages.map(s=>{
-        const sc=stageColors[s.stage]||C.txt3;
-        const isEditing=editId==="stage-"+s.id;
-        const isRelevant=!relevantIds||relevantIds.includes(s.id);
-        return(
-          <div key={s.id} style={{background:C.bg2,border:`1px solid ${isEditing?C.blue:C.border}`,borderLeft:`4px solid ${sc}`,borderRadius:10,padding:14,opacity:isRelevant?1:0.35,transition:"opacity 0.2s"}}>
-            {isEditing?(
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                <div style={{display:"flex",gap:8}}>
-                  <div style={{flex:1}}><div className="lbl">TITLE</div><input className="fi" value={editForm.title} onChange={e=>setEditForm({...editForm,title:e.target.value})}/></div>
-                  <div style={{flex:1}}><div className="lbl">TARGET</div><input className="fi" value={editForm.target} onChange={e=>setEditForm({...editForm,target:e.target.value})}/></div>
-                </div>
-                <div><div className="lbl">TASKS & PROCEDURES</div><textarea className="fi" value={editForm.tasks} onChange={e=>setEditForm({...editForm,tasks:e.target.value})} rows={12} style={{resize:"vertical",lineHeight:1.7,fontSize:12}}/></div>
-                <div style={{display:"flex",gap:6}}>
-                  <button className="btn" onClick={saveStage} style={{background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"8px 16px",fontSize:12,borderRadius:8}}>Save</button>
-                  <button className="btn" onClick={cancelEdit} style={{background:C.bg4,color:C.txt3,padding:"8px 16px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>Cancel</button>
-                </div>
-              </div>
-            ):(
-              <>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                  <div style={{width:28,height:28,borderRadius:8,background:`${sc}22`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:13,color:sc,flexShrink:0}}>{s.icon}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:sc}}>{s.stage}</div>
-                    <div style={{fontSize:11,color:C.txt,fontWeight:600}}>{s.title}</div>
-                  </div>
-                  {isAdmin&&<button className="btn" onClick={()=>startEdit(s,"stage")} style={{background:`${C.blue}18`,color:C.blue2,padding:"4px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.blue}44`}}>Edit</button>}
-                </div>
-                <div style={{background:`${sc}08`,borderRadius:8,padding:"8px 10px",marginBottom:10}}>
-                  <div style={{fontSize:10,color:sc,fontWeight:600,letterSpacing:"0.05em"}}>TARGET: {s.target}</div>
-                </div>
-                <div style={{fontSize:12,color:C.txt2,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.tasks}</div>
-              </>
-            )}
-          </div>
-        );
-      })}
+      {/* ── UNIFIED CARD RENDERER ── */}
+      {(()=>{
+        // Build a unified list of all cards with type + color info
+        const stageCards = playbook.stages.map(s=>({
+          id:s.id, type:"stage", data:s,
+          color:stageColors[s.stage]||C.txt3,
+          title:s.stage+" — "+s.title,
+          content:s.tasks,
+          target:s.target,
+          icon:s.icon,
+        }));
+        const extraCards = playbook.extras.map(e=>({
+          id:e.id, type:"extra", data:e,
+          color:extraColors[e.color]||C.txt,
+          title:e.title,
+          content:e.text,
+        }));
+        const allCards = [...stageCards, ...extraCards];
 
-      {!filterStage&&PLAYBOOK_PHASE_DIVIDERS.map(ph=>(
-        <div key={ph.phase} style={{borderTop:`2px solid ${C.border2}`,paddingTop:8,marginTop:4}}>
-          <div style={{fontSize:10,fontWeight:700,color:C.txt3,letterSpacing:"0.1em",marginBottom:8,paddingLeft:2}}>{ph.phase}</div>
-          {playbook.extras.filter(e=>ph.cards.includes(e.id)).map(e=>{
-            const ec=extraColors[e.color]||C.txt;
-            const isEditing2=editId==="extra-"+e.id;
-            return(
-              <div key={e.id} style={{background:C.bg2,border:`1px solid ${isEditing2?C.blue:ec+"44"}`,borderRadius:10,padding:14,marginBottom:10,opacity:1}}>
-                {isEditing2?(
+        const renderCard=(card,dimmed)=>{
+          const isEditing = editId===(card.type==="stage"?"stage-":"extra-")+card.id;
+          const c = card.color;
+          return(
+            <div key={card.id} style={{background:C.bg2,border:`1px solid ${isEditing?C.blue:c+"44"}`,borderLeft:`4px solid ${c}`,borderRadius:10,padding:14,opacity:dimmed?0.3:1,transition:"opacity 0.2s",marginBottom:2}}>
+              {isEditing?(
+                card.type==="stage"?(
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    <div style={{display:"flex",gap:8}}>
+                      <div style={{flex:1}}><div className="lbl">TITLE</div><input className="fi" value={editForm.title} onChange={e=>setEditForm({...editForm,title:e.target.value})}/></div>
+                      <div style={{flex:1}}><div className="lbl">TARGET</div><input className="fi" value={editForm.target} onChange={e=>setEditForm({...editForm,target:e.target.value})}/></div>
+                    </div>
+                    <div><div className="lbl">TASKS & PROCEDURES</div><textarea className="fi" value={editForm.tasks} onChange={e=>setEditForm({...editForm,tasks:e.target.value})} rows={12} style={{resize:"vertical",lineHeight:1.7,fontSize:12}}/></div>
+                    <div style={{display:"flex",gap:6}}>
+                      <button className="btn" onClick={saveStage} style={{background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"8px 16px",fontSize:12,borderRadius:8}}>Save</button>
+                      <button className="btn" onClick={cancelEdit} style={{background:C.bg4,color:C.txt3,padding:"8px 16px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>Cancel</button>
+                    </div>
+                  </div>
+                ):(
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
                     <div><div className="lbl">TITLE</div><input className="fi" value={editForm.title} onChange={e=>setEditForm({...editForm,title:e.target.value})}/></div>
                     <div><div className="lbl">CONTENT</div><textarea className="fi" value={editForm.text} onChange={e=>setEditForm({...editForm,text:e.target.value})} rows={10} style={{resize:"vertical",lineHeight:1.7,fontSize:12}}/></div>
@@ -1566,50 +1562,79 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
                       <button className="btn" onClick={()=>{removeExtra(editForm.id);cancelEdit();}} style={{background:`${C.red}18`,color:C.red,padding:"8px 16px",fontSize:12,borderRadius:8,border:`1px solid ${C.red}44`,marginLeft:"auto"}}>Delete</button>
                     </div>
                   </div>
-                ):(
-                  <>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:13,color:ec}}>{e.title}</div>
-                      {isAdmin&&<button className="btn" onClick={()=>startEdit(e,"extra")} style={{background:`${C.blue}18`,color:C.blue2,padding:"4px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.blue}44`}}>Edit</button>}
+                )
+              ):(
+                <>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    {card.type==="stage"&&<div style={{width:24,height:24,borderRadius:6,background:`${c}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:c,flexShrink:0}}>{card.icon}</div>}
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:13,color:c}}>{card.title}</div>
+                      {card.target&&<div style={{fontSize:10,color:c,opacity:0.7,marginTop:1}}>⏱ {card.target}</div>}
                     </div>
-                    <div style={{fontSize:12,color:C.txt2,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{e.text}</div>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ))}
-      {filterStage&&playbook.extras.map(e=>{
-        const ec=extraColors[e.color]||C.txt;
-        const isEditing=editId==="extra-"+e.id;
-        const extRelevant=!relevantIds||relevantIds.includes(e.id);
-        return(
-          <div key={e.id} style={{background:C.bg2,border:`1px solid ${isEditing?C.blue:ec+"44"}`,borderRadius:10,padding:14,opacity:extRelevant?1:0.35,transition:"opacity 0.2s"}}>
-            {isEditing?(
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                <div><div className="lbl">TITLE</div><input className="fi" value={editForm.title} onChange={e=>setEditForm({...editForm,title:e.target.value})}/></div>
-                <div><div className="lbl">CONTENT</div><textarea className="fi" value={editForm.text} onChange={e=>setEditForm({...editForm,text:e.target.value})} rows={10} style={{resize:"vertical",lineHeight:1.7,fontSize:12}}/></div>
-                <div style={{display:"flex",gap:6}}>
-                  <button className="btn" onClick={saveExtra} style={{background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"8px 16px",fontSize:12,borderRadius:8}}>Save</button>
-                  <button className="btn" onClick={cancelEdit} style={{background:C.bg4,color:C.txt3,padding:"8px 16px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>Cancel</button>
-                  <button className="btn" onClick={()=>{removeExtra(editForm.id);cancelEdit();}} style={{background:`${C.red}18`,color:C.red,padding:"8px 16px",fontSize:12,borderRadius:8,border:`1px solid ${C.red}44`,marginLeft:"auto"}}>Delete</button>
-                </div>
-              </div>
-            ):(
-              <>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                  <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:13,color:ec}}>{e.title}</div>
-                  {isAdmin&&<button className="btn" onClick={()=>startEdit(e,"extra")} style={{background:`${C.blue}18`,color:C.blue2,padding:"4px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.blue}44`}}>Edit</button>}
-                </div>
-                <div style={{fontSize:12,color:C.txt2,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{e.text}</div>
-              </>
-            )}
-          </div>
-        );
-      })}
+                    {isAdmin&&<button className="btn" onClick={()=>startEdit(card.data,card.type)} style={{background:`${C.blue}18`,color:C.blue2,padding:"4px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.blue}44`,flexShrink:0}}>Edit</button>}
+                  </div>
+                  <div style={{fontSize:12,color:C.txt2,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{card.content}</div>
+                </>
+              )}
+            </div>
+          );
+        };
 
-      {isAdmin&&<button className="btn" onClick={addExtra} style={{width:"100%",background:"transparent",color:C.blue,padding:"12px",fontSize:12,border:`2px dashed ${C.border2}`,borderRadius:10}}>+ Add Section</button>}
+        if(filterStage) {
+          // FILTERED MODE: relevant cards on top, rest dimmed below
+          const relevIds = STAGE_RELEVANT_CARDS_MAP[filterStage]||[];
+          const relevant = allCards.filter(c=>relevIds.includes(c.id));
+          const rest = allCards.filter(c=>!relevIds.includes(c.id));
+          return(
+            <>
+              {relevant.length===0&&<div style={{padding:32,textAlign:"center",color:C.txt3,fontSize:13}}>No cards configured for this stage yet.</div>}
+              {relevant.map(c=>renderCard(c,false))}
+              {rest.length>0&&(
+                <div style={{borderTop:`1px dashed ${C.border2}`,marginTop:8,paddingTop:8}}>
+                  <div style={{fontSize:9,color:C.txt3,letterSpacing:"0.1em",fontWeight:600,marginBottom:8,paddingLeft:2}}>OTHER CARDS</div>
+                  {rest.map(c=>renderCard(c,true))}
+                </div>
+              )}
+            </>
+          );
+        } else {
+          // ALL CARDS MODE: grouped by phase with dividers
+          return(
+            <>
+              {/* Stage process cards first */}
+              <div style={{borderTop:`2px solid ${C.border2}`,paddingTop:8}}>
+                <div style={{fontSize:10,fontWeight:700,color:C.txt3,letterSpacing:"0.1em",marginBottom:8}}>📋 SALES PROCESS STAGES</div>
+                {stageCards.map(c=>renderCard(c,false))}
+              </div>
+              {/* Extra cards by phase */}
+              {PLAYBOOK_PHASE_DIVIDERS.map(ph=>{
+                const phCards = extraCards.filter(c=>ph.cards.includes(c.id));
+                if(phCards.length===0) return null;
+                return(
+                  <div key={ph.phase} style={{borderTop:`2px solid ${C.border2}`,paddingTop:8,marginTop:4}}>
+                    <div style={{fontSize:10,fontWeight:700,color:C.txt3,letterSpacing:"0.1em",marginBottom:8,paddingLeft:2}}>{ph.phase}</div>
+                    {phCards.map(c=>renderCard(c,false))}
+                  </div>
+                );
+              })}
+              {/* Any extras not in any phase */}
+              {(()=>{
+                const allPhaseIds = PLAYBOOK_PHASE_DIVIDERS.flatMap(p=>p.cards);
+                const orphans = extraCards.filter(c=>!allPhaseIds.includes(c.id));
+                if(orphans.length===0) return null;
+                return(
+                  <div style={{borderTop:`2px solid ${C.border2}`,paddingTop:8,marginTop:4}}>
+                    <div style={{fontSize:10,fontWeight:700,color:C.txt3,letterSpacing:"0.1em",marginBottom:8}}>📌 OTHER</div>
+                    {orphans.map(c=>renderCard(c,false))}
+                  </div>
+                );
+              })()}
+            </>
+          );
+        }
+      })()}
+
+            {isAdmin&&<button className="btn" onClick={addExtra} style={{width:"100%",background:"transparent",color:C.blue,padding:"12px",fontSize:12,border:`2px dashed ${C.border2}`,borderRadius:10}}>+ Add Section</button>}
       {/* Reset confirmation modal */}
       {confirmReset&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
