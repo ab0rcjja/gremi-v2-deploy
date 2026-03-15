@@ -716,7 +716,7 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
             <div key={l} className="kv"><div className="lbl">{l}</div><div style={{fontSize:12,color:C.txt,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div></div>
           ))}
         </div>
-        {loc.address&&<a href={mapsUrl(loc.address)} target="_blank" rel="noopener" style={{display:"block",background:`${C.green}18`,border:`1px solid ${C.green}44`,color:C.green,padding:"10px",fontSize:12,fontWeight:600,textAlign:"center",textDecoration:"none",borderRadius:8}}>📍 {loc.address}</a>}
+        
         {loc.notes&&<div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}><div className="lbl">NOTES</div><div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{loc.notes}</div></div>}
         {/* Pain Score + Next Step */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
@@ -1428,14 +1428,15 @@ function TemplatesTab({isAdmin}) {
 
 // ─── PLAYBOOK PHASE + STAGE CONSTANTS ────────────────────
 const STAGE_RELEVANT_CARDS_MAP = {
-  "New":              ["preCallChecklist","preDiscoveryPrep","coldCallOpener","linkedinOutreach"],
-  "Contacted":        ["discoveryCallStructure","qualificationGoNoGo","followUpCadence"],
-  "Interested":       ["firstMeetingAgenda","objectionHandler","competitorComparison","valueProposition"],
-  "Meeting Scheduled":["firstMeetingAgenda","spinDoubleFill"],
-  "Meeting Done":     ["proposalStructure","closingTechniques"],
-  "Proposal Sent":    ["proposalStructure","closingTechniques","followUpCadence"],
-  "Negotiation":      ["closingTechniques","objectionHandler"],
-  "Closed Won":       ["postDealOnboarding","accountManagementUpsell"],
+  // stage card ID (from playbook.stages) + extras IDs
+  "New":              ["new","preCallChecklist","preDiscoveryPrep","coldCallOpener","linkedinOutreach"],
+  "Contacted":        ["contacted","discoveryCallStructure","qualificationGoNoGo","followUpCadence"],
+  "Interested":       ["interested","firstMeetingAgenda","spinDoubleFill","objectionHandler","competitorComparison","valueProposition"],
+  "Meeting Scheduled":["meeting","firstMeetingAgenda","spinDoubleFill"],
+  "Meeting Done":     ["done","proposalStructure","closingTechniques"],
+  "Proposal Sent":    ["proposal","proposalStructure","closingTechniques","followUpCadence"],
+  "Negotiation":      ["negotiation","closingTechniques","objectionHandler"],
+  "Closed Won":       ["won","postDealOnboarding","accountManagementUpsell"],
   "Closed Lost":      ["objectionHandler"],
   "No Answer":        ["followUpCadence"],
 };
