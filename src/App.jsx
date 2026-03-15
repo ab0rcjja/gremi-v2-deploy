@@ -1450,12 +1450,6 @@ const STAGE_RELEVANT_CARDS_MAP = {
   "Closed Lost":      ["lost","objectionHandler","closedLostGuide","crmUsageGuide"],
 };
 
-// Card counts per stage for filter buttons
-const STAGE_CARD_COUNTS = {
-  "New":4,"Contacted":4,"No Answer":1,"Interested":3,
-  "Meeting Scheduled":3,"Meeting Done":2,"Proposal Sent":2,
-  "Negotiation":2,"Closed Won":2,"Closed Lost":3,
-};
 
 // Phase structure for dividers in All cards mode
 const PLAYBOOK_PHASE_DIVIDERS = [
@@ -1511,9 +1505,9 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
       {/* Stage filter */}
       <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
         <button className="btn" onClick={()=>setFilterStage(null)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,background:!filterStage?`${C.blue}22`:C.bg3,color:!filterStage?C.blue2:C.txt3,border:`1px solid ${!filterStage?C.blue:C.border}`}}>All cards</button>
-        {STAGES.map(s=>{const cnt=STAGE_CARD_COUNTS[s];return(<button key={s} className="btn" onClick={()=>setFilterStage(s===filterStage?null:s)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,background:filterStage===s?`${C.blue}22`:C.bg3,color:filterStage===s?C.blue2:C.txt3,border:`1px solid ${filterStage===s?C.blue:C.border}`}}>{s}{cnt?<span style={{marginLeft:3,background:filterStage===s?`${C.blue}44`:C.bg4,borderRadius:4,padding:"0 4px",fontSize:9}}>{cnt}</span>:null}</button>);})}
+        {STAGES.map(s=>{const cnt=(STAGE_RELEVANT_CARDS_MAP[s]||[]).length;return(<button key={s} className="btn" onClick={()=>setFilterStage(s===filterStage?null:s)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,background:filterStage===s?`${C.blue}22`:C.bg3,color:filterStage===s?C.blue2:C.txt3,border:`1px solid ${filterStage===s?C.blue:C.border}`}}>{s}{cnt?<span style={{marginLeft:3,background:filterStage===s?`${C.blue}44`:C.bg4,borderRadius:4,padding:"0 4px",fontSize:9}}>{cnt}</span>:null}</button>);})}
       </div>
-      {filterStage&&<div style={{background:`${C.blue}12`,border:`1px solid ${C.blue}33`,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.blue2}}>Showing {STAGE_CARD_COUNTS[filterStage]||0} cards relevant for: <strong>{filterStage}</strong>. Other cards are dimmed.</div>}
+      {filterStage&&<div style={{background:`${C.blue}12`,border:`1px solid ${C.blue}33`,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.blue2}}>Showing {(STAGE_RELEVANT_CARDS_MAP[filterStage]||[]).length} cards relevant for: <strong>{filterStage}</strong>. Other cards are dimmed.</div>}
 
       {/* ── UNIFIED CARD RENDERER ── */}
       {(()=>{
