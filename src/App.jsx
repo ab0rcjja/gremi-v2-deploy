@@ -1775,6 +1775,7 @@ export default function GremiCRM() {
       late:locs.filter(l=>isOD(l.nextAction,l.stage)).length,
       byStage:Object.fromEntries(STAGES.map(s=>[s,locs.filter(l=>l.stage===s).length])),
       avgPain,noNextStep,lostReasons,spinFull,sourceConv,
+      activePipeHqs,avgResearch,researchReady,
     };
   })();
 
@@ -2043,14 +2044,14 @@ export default function GremiCRM() {
           </div>
 
           {/* Research readiness */}
-          {isAdmin&&activePipeHqs.length>0&&(
+          {isAdmin&&kpi.activePipeHqs.length>0&&(
           <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
             <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:600,fontSize:11,color:C.txt3,letterSpacing:"0.08em",marginBottom:10}}>RESEARCH READINESS (active pipeline)</div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-              <div style={{flex:1,background:C.bg4,height:8,borderRadius:4,overflow:"hidden"}}><div style={{background:avgResearch>=80?C.green:avgResearch>=50?C.amber:C.red,height:8,width:avgResearch+"%",transition:"width 0.5s"}}/></div>
-              <span style={{fontSize:13,fontWeight:700,color:avgResearch>=80?C.green:avgResearch>=50?C.amber:C.red,fontFamily:"'Space Grotesk',sans-serif"}}>{avgResearch}%</span>
+              <div style={{flex:1,background:C.bg4,height:8,borderRadius:4,overflow:"hidden"}}><div style={{background:kpi.avgResearch>=80?C.green:kpi.avgResearch>=50?C.amber:C.red,height:8,width:kpi.avgResearch+"%",transition:"width 0.5s"}}/></div>
+              <span style={{fontSize:13,fontWeight:700,color:kpi.avgResearch>=80?C.green:kpi.avgResearch>=50?C.amber:C.red,fontFamily:"'Space Grotesk',sans-serif"}}>{kpi.avgResearch}%</span>
             </div>
-            <div style={{fontSize:11,color:C.txt3}}>{researchReady} of {activePipeHqs.length} companies ≥80% researched</div>
+            <div style={{fontSize:11,color:C.txt3}}>{kpi.researchReady} of {kpi.activePipeHqs.length} companies ≥80% researched</div>
           </div>
           )}
           {/* SPIN completion */}
