@@ -40,6 +40,7 @@ const hqFromDb = (r) => ({
   address:r.address||"", website:r.website||"", notes:r.notes||"",
   annualTurnover:r.annual_turnover||"", employees:r.employees||"",
   seasonality:r.seasonality||"", leadSource:r.lead_source||"", intelligence:r.intelligence||"",
+  preCallChecklist:typeof r.pre_call_checklist==="string"?JSON.parse(r.pre_call_checklist||"{}"):r.pre_call_checklist||{},
 });
 const locToDb = ({id,isHQ,_type,...l}) => ({
   parent_id:l.parentId||null, company:l.company||"", location:l.location||"",
@@ -47,13 +48,15 @@ const locToDb = ({id,isHQ,_type,...l}) => ({
   phone:l.phone||"", email:l.email||"", county:l.county||"",
   industry:l.industry||"", employees:l.employees||"", stage:l.stage||"New",
   temp:l.temp||"❄️ Cold", workers:l.workers||"", worker_type:l.workerType||"",
-  next_action:l.nextAction||"", last_contact:l.lastContact||"",
+  last_contact:l.lastContact||"",
   source:l.source||"", service:l.service||"", company_name:l.companyName||"",
   sales_id:l.salesId||null, notes:l.notes||"",
   activities:JSON.stringify(l.activities||[]),
   spin:JSON.stringify({...l.spin,phase:l.spin?.phase||"pre"}||{s:"",p:"",i:"",n:"",painSummary:"",phase:"pre"}),
   decision_process:l.decisionProcess||"", champion:l.champion||"",
   pain_score:l.painScore||null, next_step:l.nextStep||"", next_step_date:l.nextStepDate||"",
+  won_date:l.wonDate||null, start_date:l.startDate||null, lost_date:l.lostDate||null, lost_lesson:l.lostLesson||"",
+  spin_real:JSON.stringify(l.spinReal||{}),
 });
 const locFromDb = (r) => ({
   id:r.id, isHQ:false, parentId:r.parent_id||null, company:r.company||"",
@@ -61,13 +64,15 @@ const locFromDb = (r) => ({
   role:r.role||"", phone:r.phone||"", email:r.email||"", county:r.county||"",
   industry:r.industry||"", employees:r.employees||"", stage:r.stage||"New",
   temp:r.temp||"❄️ Cold", workers:r.workers||"", workerType:r.worker_type||"",
-  nextAction:r.next_action||"", lastContact:r.last_contact||"",
+  lastContact:r.last_contact||"",
   source:r.source||"", service:r.service||"", companyName:r.company_name||"",
   salesId:r.sales_id||null, notes:r.notes||"",
   activities:typeof r.activities==="string"?JSON.parse(r.activities||"[]"):r.activities||[],
   spin:typeof r.spin==="string"?JSON.parse(r.spin||"{}"):r.spin||{s:"",p:"",i:"",n:"",painSummary:""},
   decisionProcess:r.decision_process||"", champion:r.champion||"",
   painScore:r.pain_score||null, nextStep:r.next_step||"", nextStepDate:r.next_step_date||"",
+  wonDate:r.won_date||"", startDate:r.start_date||"", lostDate:r.lost_date||"", lostLesson:r.lost_lesson||"",
+  spinReal:typeof r.spin_real==="string"?JSON.parse(r.spin_real||"{}"):r.spin_real||{},
 });
 
 
@@ -291,7 +296,7 @@ const getCSS = () => `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:${C.bg1};color:${C.txt};direction:ltr;}
-  ::-webkit-scrollbar{width:4px;height:4px;}
+  ::-webkit-scrollbar{width:8px;height:8px;}::-webkit-scrollbar-thumb{background:#555;border-radius:4px;}::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-track{background:${C.bg0};}
   ::-webkit-scrollbar-thumb{background:${C.border2};border-radius:4px;}
   input,select,textarea,button{font-family:'Inter',sans-serif;}
@@ -541,7 +546,7 @@ function TeamTab({users,locs,onSelect}) {
         const ul=locs.filter(l=>l.salesId===u.id);
         const won=ul.filter(l=>l.stage==="Closed Won");
         const pipe=ul.filter(l=>l.stage!=="Closed Won"&&l.stage!=="Closed Lost");
-        const late=ul.filter(l=>isOD(l.nextAction,l.stage));
+        const late=ul.filter(l=>isOD(l.nextStepDate,l.stage));
         const placed=won.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
         const isE=exp===u.id;
         return(
@@ -572,14 +577,14 @@ function TeamTab({users,locs,onSelect}) {
                 </div>
                 {ul.length===0&&<div style={{padding:"18px",textAlign:"center",color:C.txt3,fontSize:12}}>No locations assigned</div>}
                 {ul.map(l=>{
-                  const sc=getSC()[l.stage]||C.txt3; const od=isOD(l.nextAction,l.stage);
-                  const dl=daysLeft(l.nextAction);
+                  const sc=getSC()[l.stage]||C.txt3; const od=isOD(l.nextStepDate,l.stage);
+                  const dl=daysLeft(l.nextStepDate);
                   return(
                     <div key={l.id} className="row-hover" onClick={()=>onSelect(l)} style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontWeight:500,fontSize:13,color:C.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.company}</div>
                         <div style={{fontSize:11,color:C.txt3}}>📍 {l.location} · {l.county}</div>
-                        <div style={{fontSize:10,color:C.txt3,marginTop:2}}>{l.service||""}{l.workers?" · 👷"+l.workers:""}{l.nextAction?" · "+fmtDate(l.nextAction):""}</div>
+                        <div style={{fontSize:10,color:C.txt3,marginTop:2}}>{l.service||""}{l.workers?" · 👷"+l.workers:""}{l.nextAction?" · "+fmtDate(l.nextStepDate):""}</div>
                       </div>
                       <div style={{display:"flex",gap:5,alignItems:"center",flexShrink:0,marginLeft:8,flexDirection:"column"}}>
                         <span className="pill" style={{background:sc+"22",color:sc,border:`1px solid ${sc}44`}}>{l.stage}</span>
@@ -661,8 +666,8 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
           </div>
           {hqLocs.length===0&&<div style={{fontSize:12,color:C.txt3,padding:"14px",background:C.bg3,borderRadius:8,border:`1px dashed ${C.border2}`,textAlign:"center"}}>No locations yet — add the first deal</div>}
           {hqLocs.map(l=>{
-            const sc=getSC()[l.stage]||C.txt3; const od=isOD(l.nextAction,l.stage);
-            const dl=daysLeft(l.nextAction);
+            const sc=getSC()[l.stage]||C.txt3; const od=isOD(l.nextStepDate,l.stage);
+            const dl=daysLeft(l.nextStepDate);
             const uName=users.find(u=>u.id===l.salesId)?.name||"—";
             return(
               <div key={l.id} className="row-hover" onClick={()=>onSelectLoc(l)} style={{background:C.bg3,border:`1px solid ${C.border}`,borderLeft:`3px solid ${sc}`,borderRadius:10,padding:"12px 14px",marginBottom:8}}>
@@ -679,7 +684,7 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.txt3}}>
                   {l.nextStep?<span style={{color:C.amber,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"55%"}}>{l.nextStep}</span>:<span/>}
-                  <span style={{color:od?C.red:(dl!==null&&dl<=3)?C.amber:C.txt3,fontWeight:(od||(dl!==null&&dl<=3))?600:400}}>{od?"⚠ ":""}{fmtDate(l.nextAction)}{(!od&&dl!==null&&dl<=3)?" ("+dl+"d)":""}</span>
+                  <span style={{color:od?C.red:(dl!==null&&dl<=3)?C.amber:C.txt3,fontWeight:(od||(dl!==null&&dl<=3))?600:400}}>{od?"⚠ ":""}{fmtDate(l.nextStepDate)}{(!od&&dl!==null&&dl<=3)?" ("+dl+"d)":""}</span>
                 </div>
               </div>
             );
@@ -729,6 +734,49 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
           <select value={loc.temp} onChange={e=>onUpdate(loc.id,{temp:e.target.value})} className="fi" style={{width:105,fontSize:13}}>{TEMPS.map(t=><option key={t}>{t}</option>)}</select>
         </div>
         <StageHint stage={loc.stage} spin={loc.spin} nextStep={loc.nextStep} checklistDone={(()=>{const h=hqs.find(x=>x.id===loc.parentId);const d=Object.values(h?.preCallChecklist||{}).filter(Boolean).length;return d===12;})()}/>
+
+        {/* ── NEXT STEP — prominent at top ── */}
+        {(()=>{
+          const od=isOD(loc.nextStepDate,loc.stage);
+          const dl=daysLeft(loc.nextStepDate);
+          const active=loc.stage!=="Closed Won"&&loc.stage!=="Closed Lost";
+          if(!active) return null;
+          return(
+            <div style={{background:od?`${C.red}18`:loc.nextStepDate?`${C.amber}12`:C.bg3,border:`1.5px solid ${od?C.red:loc.nextStepDate?C.amber:C.border}`,borderRadius:10,padding:"10px 14px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:loc.nextStep?4:0}}>
+                <div className="lbl" style={{color:od?C.red:loc.nextStepDate?C.amber:C.txt3,marginBottom:0}}>{od?"⚠ OVERDUE":loc.nextStepDate?"📅 NEXT STEP":"NEXT STEP"}</div>
+                {loc.nextStepDate&&<div style={{fontSize:11,fontWeight:600,color:od?C.red:C.amber}}>{fmtDate(loc.nextStepDate)}{(!od&&dl!==null&&dl<=3)?" ("+dl+"d)":""}</div>}
+              </div>
+              {loc.nextStep
+                ?<div style={{fontSize:13,color:od?C.red:C.txt,fontWeight:500,lineHeight:1.5}}>{loc.nextStep}</div>
+                :<div style={{fontSize:12,color:C.txt3,fontStyle:"italic"}}>No next step — add one in Edit</div>
+              }
+            </div>
+          );
+        })()}
+        {/* ── OUTCOME BLOCK — Won / Lost ── */}
+        {(loc.stage==="Closed Won"||loc.stage==="Closed Lost")&&(
+          <div style={{background:loc.stage==="Closed Won"?`${C.green}12`:`${C.red}10`,border:`1.5px solid ${loc.stage==="Closed Won"?C.green:C.red}44`,borderRadius:10,padding:"12px 14px"}}>
+            <div className="lbl" style={{color:loc.stage==="Closed Won"?C.green:C.red,marginBottom:8}}>{loc.stage==="Closed Won"?"🏆 CLOSED WON":"❌ CLOSED LOST"}</div>
+            {loc.stage==="Closed Won"?(
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <div><div className="lbl" style={{fontSize:9}}>SIGNED DATE</div><div style={{fontSize:13,color:C.green,fontWeight:600}}>{fmtDate(loc.wonDate)||"—"}</div></div>
+                <div><div className="lbl" style={{fontSize:9}}>WORKERS</div><div style={{fontSize:13,color:C.green,fontWeight:600}}>{loc.workers||"—"}</div></div>
+                {loc.startDate&&<div style={{gridColumn:"1/-1"}}><div className="lbl" style={{fontSize:9}}>WORKER START DATE</div><div style={{fontSize:13,color:C.txt,fontWeight:500}}>{fmtDate(loc.startDate)}</div></div>}
+              </div>
+            ):(
+              <>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:loc.lostLesson?8:0}}>
+                  <div><div className="lbl" style={{fontSize:9}}>LOST DATE</div><div style={{fontSize:13,color:C.red,fontWeight:600}}>{fmtDate(loc.lostDate)||"—"}</div></div>
+                  <div><div className="lbl" style={{fontSize:9}}>REASON</div><div style={{fontSize:13,color:C.txt3,fontWeight:500}}>{loc.lostReason||"—"}</div></div>
+                </div>
+                {loc.lostLesson&&<div><div className="lbl" style={{fontSize:9,marginBottom:4}}>WHAT TO DO DIFFERENTLY</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.lostLesson}</div></div>}
+                {loc.nextStepDate&&<div style={{marginTop:8,fontSize:11,color:C.txt3}}>📅 Recheck: {fmtDate(loc.nextStepDate)}</div>}
+              </>
+            )}
+          </div>
+        )}
+
         <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderLeft:`3px solid ${sc}`,borderRadius:10,padding:13}}>
           <div className="lbl">LOCAL CONTACT</div>
           <div style={{fontWeight:700,fontSize:15,color:C.txt}}>{loc.contact||"—"}</div>
@@ -738,26 +786,24 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
           {loc.address&&<a href={mapsUrl(loc.address)} target="_blank" rel="noopener" style={{display:"block",background:`${C.green}18`,border:`1px solid ${C.green}44`,color:C.green,padding:"11px",fontSize:13,fontWeight:600,textAlign:"center",textDecoration:"none",borderRadius:8}}>📍 {loc.address}</a>}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          {[["SERVICE",loc.service||"—"],["ENTITY",loc.companyName||"—"],["WORKERS",loc.workers||"—"],["TYPE",loc.workerType||"—"],["EMPLOYEES",loc.employees||"—"],["SOURCE",loc.source||"—"],["NEXT ACTION",fmtDate(loc.nextAction)],["LAST CONTACT",fmtDate(loc.lastContact)],["SALESPERSON",uN(loc.salesId)],["INDUSTRY",loc.industry||"—"]].map(([l,v])=>(
+          {[["SERVICE",loc.service||"—"],["ENTITY",loc.companyName||"—"],["WORKERS",loc.workers||"—"],["TYPE",loc.workerType||"—"],["EMPLOYEES",loc.employees||"—"],["SOURCE",loc.source||"—"],["LAST CONTACT",fmtDate(loc.lastContact)],["SALESPERSON",uN(loc.salesId)],["INDUSTRY",loc.industry||"—"]].map(([l,v])=>(
             <div key={l} className="kv"><div className="lbl">{l}</div><div style={{fontSize:12,color:C.txt,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div></div>
           ))}
         </div>
         
         {loc.notes&&<div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}><div className="lbl">NOTES</div><div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{loc.notes}</div></div>}
-        {/* Pain Score + Next Step */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          <div className="kv">
+                {/* Pain Score */}
+        {loc.stage!=="New"&&(
+          <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px"}}>
             <div className="lbl">PAIN SCORE</div>
-            <div style={{display:"flex",gap:4,marginTop:4}}>
+            <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}>
               {[1,2,3,4,5].map(n=>(
-                <button key={n} className="btn" onClick={()=>onUpdate(loc.id,{painScore:n})} style={{width:28,height:28,borderRadius:6,fontSize:12,fontWeight:700,background:loc.painScore>=n?`${n>=4?C.red:n>=3?C.amber:C.green}33`:C.bg4,color:loc.painScore>=n?(n>=4?C.red:n>=3?C.amber:C.green):C.txt3,border:`1px solid ${loc.painScore>=n?(n>=4?C.red:n>=3?C.amber:C.green)+"44":C.border}`}}>{n}</button>
+                <div key={n} style={{width:28,height:28,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,background:loc.painScore>=n?`${C.red}${Math.round(40+n*15).toString(16)}`:`${C.red}18`,color:loc.painScore>=n?"#fff":C.txt3}}>{n}</div>
               ))}
+              {loc.painScore&&<span style={{fontSize:11,color:C.txt3,marginLeft:4}}>{["","Cold","Low","Moderate","High","Critical"][loc.painScore]||""}</span>}
             </div>
           </div>
-          <div className="kv"><div className="lbl">NEXT STEP DATE</div><div style={{fontSize:13,color:loc.nextStepDate?C.amber:C.txt3,fontWeight:500}}>{fmtDate(loc.nextStepDate)||"—"}</div></div>
-        </div>
-        {loc.nextStep&&<div style={{background:loc.nextStep?`${C.amber}18`:C.bg3,border:`1px solid ${loc.nextStep?C.amber+"44":C.border}`,borderRadius:8,padding:"10px 12px"}}><div className="lbl">NEXT STEP</div><div style={{fontSize:13,color:C.txt,lineHeight:1.5}}>{loc.nextStep}</div></div>}
-        {!loc.nextStep&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}44`,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.red}}>⚠ No next step defined — add one in Edit</div>}
+        )}
         {/* Decision Process + Champion */}
         {(loc.decisionProcess||loc.economicBuyer||loc.decisionCriteria||loc.champion)&&(
           <div style={{background:C.bg3,border:`1px solid ${C.indigo}33`,borderRadius:10,padding:12}}>
@@ -771,19 +817,31 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
           </div>
         )}
         {loc.lostReason&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}44`,borderRadius:8,padding:"10px 12px"}}><div className="lbl" style={{color:C.red}}>LOST REASON</div><div style={{fontSize:13,color:C.red,fontWeight:600}}>{loc.lostReason}</div></div>}
-        {/* SPIN Notes */}
-        {(loc.spin?.s||loc.spin?.p||loc.spin?.i||loc.spin?.n)&&(
+                {/* SPIN Notes */}
+        {(loc.spin?.s||loc.spin?.p||loc.spin?.i||loc.spin?.n||loc.spinReal?.s||loc.spinReal?.p)&&(
           <div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12}}>
-            <div className="lbl" style={{color:C.indigo}}>SPIN DISCOVERY</div>
-            <div style={{display:"flex",gap:6,marginBottom:8}}>
-              {["S","P","I","N"].map(k=>(<span key={k} className="pill" style={{background:loc.spin?.[k.toLowerCase()]?`${C.indigo}22`:`${C.bg4}`,color:loc.spin?.[k.toLowerCase()]?C.indigo:C.txt3,border:`1px solid ${loc.spin?.[k.toLowerCase()]?C.indigo+"44":C.border}`}}>{k}{loc.spin?.[k.toLowerCase()]?"✅":"⬜"}</span>))}
+            <div className="lbl" style={{color:C.indigo,marginBottom:8}}>SPIN DISCOVERY</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              {/* PRE column */}
+              {(loc.spin?.s||loc.spin?.p||loc.spin?.i||loc.spin?.n)&&(
+                <div style={{background:`${C.indigo}08`,borderRadius:8,padding:"8px 10px"}}>
+                  <div style={{fontSize:10,fontWeight:700,color:C.indigo,marginBottom:6}}>📋 PRE-MEETING</div>
+                  {[["s","Situation"],["p","Problem"],["i","Implication"],["n","Need-Payoff"]].map(([k,label])=>loc.spin?.[k]?(
+                    <div key={k} style={{marginBottom:6}}><div style={{fontSize:9,fontWeight:700,color:C.indigo,marginBottom:2}}>{k.toUpperCase()} — {label}</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.spin[k]}</div></div>
+                  ):null)}
+                </div>
+              )}
+              {/* POST column */}
+              {(loc.spinReal?.s||loc.spinReal?.p||loc.spinReal?.i||loc.spinReal?.n)&&(
+                <div style={{background:`${C.green}08`,borderRadius:8,padding:"8px 10px"}}>
+                  <div style={{fontSize:10,fontWeight:700,color:C.green,marginBottom:6}}>✅ POST-MEETING</div>
+                  {[["s","Situation"],["p","Problem"],["i","Implication"],["n","Need-Payoff"]].map(([k,label])=>loc.spinReal?.[k]?(
+                    <div key={k} style={{marginBottom:6}}><div style={{fontSize:9,fontWeight:700,color:C.green,marginBottom:2}}>{k.toUpperCase()} — {label}</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.spinReal[k]}</div></div>
+                  ):null)}
+                </div>
+              )}
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:6}}>
-              {[["s","S","Situation"],["p","P","Problem"],["i","I","Implication"],["n","N","Need-Payoff"]].map(([key,l,desc])=>loc.spin?.[key]?(
-                <div key={l} style={{background:C.bg4,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:10,fontWeight:700,color:C.indigo,marginBottom:3}}>{l} — {desc}</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.spin[key]}</div></div>
-              ):null)}
-            </div>
-            {loc.spin?.painSummary&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}33`,borderRadius:8,padding:"9px 11px",marginTop:8}}><div className="lbl" style={{color:C.red}}>PAIN SUMMARY</div><div style={{fontSize:13,color:C.txt,fontStyle:"italic",lineHeight:1.5}}>"{loc.spin.painSummary}"</div></div>}
+            {loc.spin?.painSummary&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}33`,borderRadius:8,padding:"9px 11px",marginTop:8}}><div className="lbl" style={{color:C.red}}>💥 PAIN SUMMARY</div><div style={{fontSize:13,color:C.txt,fontStyle:"italic",lineHeight:1.5}}>"{loc.spin.painSummary}"</div></div>}
           </div>
         )}
         {/* Activity Log */}
@@ -1162,24 +1220,39 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
         ))}
         {isAdmin&&<div><div className="lbl">SALESPERSON</div><select value={form.salesId||""} onChange={e=>setForm({...form,salesId:Number(e.target.value)})} className="fi"><option value="">— select —</option>{users.filter(u=>u.active).map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></div>}
         <div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,fontWeight:600,color:C.indigo,letterSpacing:"0.08em"}}>SPIN DISCOVERY NOTES</div>
-            <div style={{display:"flex",gap:4}}>
-              <button type="button" className="btn" onClick={()=>setForm({...form,spinPhase:"pre"})} style={{padding:"2px 8px",fontSize:9,borderRadius:5,background:(!form.spinPhase||form.spinPhase==="pre")?`${C.amber}33`:C.bg2,color:(!form.spinPhase||form.spinPhase==="pre")?C.amber:C.txt3,border:`1px solid ${(!form.spinPhase||form.spinPhase==="pre")?C.amber+"44":C.border}`,fontWeight:600}}>Pre-meeting</button>
-              <button type="button" className="btn" onClick={()=>setForm({...form,spinPhase:"post"})} style={{padding:"2px 8px",fontSize:9,borderRadius:5,background:form.spinPhase==="post"?`${C.green}33`:C.bg2,color:form.spinPhase==="post"?C.green:C.txt3,border:`1px solid ${form.spinPhase==="post"?C.green+"44":C.border}`,fontWeight:600}}>Post-meeting ✓</button>
+          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,fontWeight:600,color:C.indigo,letterSpacing:"0.08em",marginBottom:10}}>SPIN DISCOVERY NOTES</div>
+            {/* SPIN indicator */}
+            <div style={{display:"flex",gap:5,marginBottom:6,flexWrap:"wrap"}}>
+              <span style={{fontSize:10,color:C.txt3,alignSelf:"center",marginRight:4}}>PRE:</span>
+              {["s","p","i","n"].map(k=>(<span key={k} className="pill" style={{background:form.spin?.[k]?`${C.indigo}22`:C.bg2,color:form.spin?.[k]?C.indigo:C.txt3,border:`1px solid ${form.spin?.[k]?C.indigo+"44":C.border}`}}>{k.toUpperCase()}{form.spin?.[k]?" ✅":" ⬜"}</span>))}
+              <span style={{fontSize:10,color:C.txt3,alignSelf:"center",marginLeft:8,marginRight:4}}>POST:</span>
+              {["s","p","i","n"].map(k=>(<span key={"r"+k} className="pill" style={{background:form.spinReal?.[k]?`${C.green}22`:C.bg2,color:form.spinReal?.[k]?C.green:C.txt3,border:`1px solid ${form.spinReal?.[k]?C.green+"44":C.border}`}}>{k.toUpperCase()}{form.spinReal?.[k]?" ✅":" ⬜"}</span>))}
             </div>
-          </div>
-          {(!form.spinPhase||form.spinPhase==="pre")&&<div style={{background:`${C.amber}12`,border:`1px solid ${C.amber}33`,borderRadius:6,padding:"5px 10px",fontSize:10,color:C.amber,marginBottom:6}}>📝 Hypothesis mode — fill with your assumptions BEFORE the meeting</div>}
-          {form.spinPhase==="post"&&<div style={{background:`${C.green}12`,border:`1px solid ${C.green}33`,borderRadius:6,padding:"5px 10px",fontSize:10,color:C.green,marginBottom:6}}>✅ Reality mode — update with what the client ACTUALLY said after the meeting</div>}
-          <div style={{display:"flex",gap:5,marginBottom:10}}>
-            {["s","p","i","n"].map(k=>(<span key={k} className="pill" style={{background:form.spin?.[k]?`${C.indigo}22`:C.bg2,color:form.spin?.[k]?C.indigo:C.txt3,border:`1px solid ${form.spin?.[k]?C.indigo+"44":C.border}`}}>{k.toUpperCase()}{form.spin?.[k]?" ✅":" ⬜"}</span>))}
-          </div>
-          <SpinField label="S — SITUATION" hint={["How many employees? How many shifts?","Do they work with a staffing supplier?","How many open positions right now?"]} value={form.spin?.s||""} onChange={v=>setForm({...form,spin:{...form.spin,s:v}})}/>
-          <SpinField label="P — PROBLEM" hint={["How long to fill a vacancy?","What happens when the team is not full?","Have they had ITM or compliance issues?"]} value={form.spin?.p||""} onChange={v=>setForm({...form,spin:{...form.spin,p:v}})}/>
-          <SpinField label="I — IMPLICATION" hint={["What happens to orders when understaffed?","What does one day of production loss cost?","If this continues next quarter — what does that mean?"]} value={form.spin?.i||""} onChange={v=>setForm({...form,spin:{...form.spin,i:v}})}/>
-          <SpinField label="N — NEED-PAYOFF" hint={["If we get you workers in 3 weeks — how does that change things?","What would it mean to not manage staffing admin?","Would a partner handling contracts and housing help?"]} value={form.spin?.n||""} onChange={v=>setForm({...form,spin:{...form.spin,n:v}})}/>
-          <div><div className="lbl" style={{color:C.red}}>PAIN SUMMARY (one sentence for proposal)</div><textarea value={form.spin?.painSummary||""} onChange={e=>setForm({...form,spin:{...form.spin,painSummary:e.target.value}})} rows={2} className="fi" style={{fontSize:12}} placeholder='e.g. "Factory loses 8,000 RON/hour due to 15 missing workers in peak season"'/></div>
+            {/* Two-column SPIN */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              {/* PRE-MEETING column */}
+              <div style={{background:`${C.indigo}08`,border:`1px solid ${C.indigo}22`,borderRadius:8,padding:"10px 12px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:C.indigo,letterSpacing:"0.08em",marginBottom:8}}>📋 PRE-MEETING — Hipotezy</div>
+                <div style={{fontSize:10,color:C.txt3,marginBottom:8,lineHeight:1.4}}>Wypełnij PRZED spotkaniem na podstawie researchu. Co zakładasz o kliencie?</div>
+                <SpinField label="S — SITUATION" hint={["How many employees? How many shifts?","Do they work with a staffing supplier?","How many open positions right now?"]} value={form.spin?.s||""} onChange={v=>setForm({...form,spin:{...form.spin,s:v}})}/>
+                <SpinField label="P — PROBLEM" hint={["How long to fill a vacancy?","What happens when they are understaffed?","Compliance issues?"]} value={form.spin?.p||""} onChange={v=>setForm({...form,spin:{...form.spin,p:v}})}/>
+                <SpinField label="I — IMPLICATION" hint={["What happens to orders when understaffed?","What does that mean financially?","How does that affect clients?"]} value={form.spin?.i||""} onChange={v=>setForm({...form,spin:{...form.spin,i:v}})}/>
+                <SpinField label="N — NEED-PAYOFF" hint={["If we get you workers in 3 weeks — how does that help?","What would solving this be worth?","Would flexible housing help?"]} value={form.spin?.n||""} onChange={v=>setForm({...form,spin:{...form.spin,n:v}})}/>
+              </div>
+              {/* POST-MEETING column */}
+              <div style={{background:`${C.green}08`,border:`1px solid ${C.green}22`,borderRadius:8,padding:"10px 12px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:C.green,letterSpacing:"0.08em",marginBottom:8}}>✅ POST-MEETING — Realne odpowiedzi</div>
+                <div style={{fontSize:10,color:C.txt3,marginBottom:8,lineHeight:1.4}}>Wypełnij PO spotkaniu. Zastąp hipotezy tym co klient powiedział naprawdę.</div>
+                <SpinField label="S — SITUATION" hint={["Exact number of workers, shifts, locations","Current supplier, contract terms","Actual open positions and since when"]} value={form.spinReal?.s||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,s:v}})}/>
+                <SpinField label="P — PROBLEM" hint={["Exact words the client used about the pain","How long has this been a problem?","What have they tried already?"]} value={form.spinReal?.p||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,p:v}})}/>
+                <SpinField label="I — IMPLICATION" hint={["Financial impact they confirmed","Operational consequences they described","Urgency signals they gave"]} value={form.spinReal?.i||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,i:v}})}/>
+                <SpinField label="N — NEED-PAYOFF" hint={["What outcome did they say would solve it?","What would they pay for that outcome?","Their words — not yours"]} value={form.spinReal?.n||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,n:v}})}/>
+              </div>
+            </div>
+            {/* Pain Summary - shared */}
+            <div style={{marginTop:8}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><div className="lbl" style={{marginBottom:0,color:C.red}}>💥 PAIN SUMMARY</div><span style={{fontSize:10,color:C.txt3}}>(goes into proposal)</span></div><textarea value={form.spin?.painSummary||""} onChange={e=>setForm({...form,spin:{...form.spin,painSummary:e.target.value}})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}} placeholder='e.g. "Factory loses 8,000 RON/hour due to 15 missing workers in peak season"'/></div>
         </div>
+
         {/* Decision process + Champion */}
         <div style={{height:1,background:C.border}}/>
         <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:600,color:C.txt3,letterSpacing:"0.08em"}}>DEAL INTELLIGENCE</div>
@@ -1194,11 +1267,27 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
         </div>
         <MeddicSection form={form} setForm={setForm}/>
         {(form.stage==="Closed Lost")&&(
-          <div><div className="lbl">LOST REASON</div>
-            <select value={form.lostReason||""} onChange={e=>setForm({...form,lostReason:e.target.value})} className="fi">
-              <option value="">— select reason —</option>
-              {["Price","Competitor Won","No Budget","No Decision","Legal Concerns","Romanian Only Policy","Other"].map(r=><option key={r}>{r}</option>)}
-            </select>
+          <div style={{display:"flex",flexDirection:"column",gap:8,background:`${C.red}08`,border:`1px solid ${C.red}33`,borderRadius:10,padding:12}}>
+            <div className="lbl" style={{color:C.red}}>❌ CLOSED LOST — OUTCOME</div>
+            <div><div className="lbl">LOST REASON</div>
+              <select value={form.lostReason||""} onChange={e=>setForm({...form,lostReason:e.target.value})} className="fi">
+                <option value="">— select reason —</option>
+                {["Price","Competitor Won","No Budget","No Decision","Legal Concerns","Romanian Only Policy","Other"].map(r=><option key={r}>{r}</option>)}
+              </select>
+            </div>
+            <div><div className="lbl">LOST DATE</div><input type="date" value={form.lostDate||""} onChange={e=>setForm({...form,lostDate:e.target.value})} className="fi"/></div>
+            <div><div className="lbl">WHAT TO DO DIFFERENTLY NEXT TIME</div><textarea value={form.lostLesson||""} onChange={e=>setForm({...form,lostLesson:e.target.value})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}} placeholder="What would you do differently? What did you learn?"/></div>
+            <div><div className="lbl">RECHECK DATE (Next Step)</div><input type="date" value={form.nextStepDate||""} onChange={e=>setForm({...form,nextStepDate:e.target.value})} className="fi"/></div>
+          </div>
+        )}
+        {(form.stage==="Closed Won")&&(
+          <div style={{display:"flex",flexDirection:"column",gap:8,background:`${C.green}08`,border:`1px solid ${C.green}33`,borderRadius:10,padding:12}}>
+            <div className="lbl" style={{color:C.green}}>🏆 CLOSED WON — OUTCOME</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              <div><div className="lbl">SIGNED DATE</div><input type="date" value={form.wonDate||""} onChange={e=>setForm({...form,wonDate:e.target.value})} className="fi"/></div>
+              <div><div className="lbl">WORKER START DATE</div><input type="date" value={form.startDate||""} onChange={e=>setForm({...form,startDate:e.target.value})} className="fi"/></div>
+            </div>
+            <div><div className="lbl">NUMBER OF WORKERS</div><input type="number" value={form.workers||""} onChange={e=>setForm({...form,workers:e.target.value})} className="fi" placeholder="e.g. 25"/></div>
           </div>
         )}
         <div><div className="lbl">NOTES</div><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} className="fi" style={{resize:"vertical",lineHeight:1.7}}/></div>
@@ -1823,7 +1912,7 @@ export default function GremiCRM() {
       if(filters.entity!=="All"&&!hqLocs.some(l=>l.companyName===filters.entity))return false;
       if(filters.county!=="All"&&!hqLocs.some(l=>l.county===filters.county))return false;
       if(filters.salesId!=="All"&&!hqLocs.some(l=>String(l.salesId)===filters.salesId))return false;
-      if(filters.overdueOnly&&!hqLocs.some(l=>isOD(l.nextAction,l.stage)))return false;
+      if(filters.overdueOnly&&!hqLocs.some(l=>isOD(l.nextStepDate,l.stage)))return false;
       if(filters.myOnly&&!hqLocs.some(l=>l.salesId===cur.id))return false;
       return true;
     } else {
@@ -1835,7 +1924,7 @@ export default function GremiCRM() {
       if(filters.county!=="All"&&item.county!==filters.county)return false;
       if(filters.industry!=="All"&&item.industry!==filters.industry)return false;
       if(filters.salesId!=="All"&&String(item.salesId)!==filters.salesId)return false;
-      if(filters.overdueOnly&&!isOD(item.nextAction,item.stage))return false;
+      if(filters.overdueOnly&&!isOD(item.nextStepDate,item.stage))return false;
       if(filters.myOnly&&item.salesId!==cur.id)return false;
       return true;
     }
@@ -1862,7 +1951,7 @@ export default function GremiCRM() {
       placed:won.reduce((s,l)=>s+(parseInt(l.workers)||0),0),
       pipe:act.reduce((s,l)=>s+(parseInt(l.workers)||0),0),
       conv:locs.length?Math.round(won.length/locs.length*100):0,
-      late:locs.filter(l=>isOD(l.nextAction,l.stage)).length,
+      late:locs.filter(l=>isOD(l.nextStepDate,l.stage)).length,
       byStage:Object.fromEntries(STAGES.map(s=>[s,locs.filter(l=>l.stage===s).length])),
       avgPain,noNextStep,lostReasons,spinFull,sourceConv,
       activePipeHqs,avgResearch,researchReady,
@@ -1934,7 +2023,7 @@ export default function GremiCRM() {
   };
 
   const exportXLSX=()=>{
-    const ld=locs.map(l=>({"Company":l.company,"Location":l.location,"Contact":l.contact,"Role":l.role,"Phone":l.phone,"Email":l.email,"County":l.county,"Industry":l.industry,"Employees":l.employees,"Stage":l.stage,"Temp":l.temp,"Workers":l.workers,"Worker Type":l.workerType,"Service":l.service,"Entity":l.companyName,"Salesperson":uN(l.salesId),"Next Action":l.nextAction,"Last Contact":l.lastContact,"Source":l.source,"Notes":l.notes}));
+    const ld=locs.map(l=>({"Company":l.company,"Location":l.location,"Contact":l.contact,"Role":l.role,"Phone":l.phone,"Email":l.email,"County":l.county,"Industry":l.industry,"Employees":l.employees,"Stage":l.stage,"Temp":l.temp,"Workers":l.workers,"Worker Type":l.workerType,"Service":l.service,"Entity":l.companyName,"Salesperson":uN(l.salesId),"Next Step Date":l.nextStepDate,"Last Contact":l.lastContact,"Source":l.source,"Notes":l.notes}));
     const hd=hqs.map(h=>({"Company":h.company,"Industry":h.industry,"Central Contact":h.centralContact,"Role":h.centralRole,"Phone":h.centralPhone,"Email":h.centralEmail,"Locations":locs.filter(l=>l.parentId===h.id).length,"Notes":h.notes}));
     const kd=users.filter(u=>u.active).map(u=>{const ul=locs.filter(l=>l.salesId===u.id);const uw=ul.filter(l=>l.stage==="Closed Won");return{"Name":u.name,"Locations":ul.length,"Won":uw.length,"Pipeline":ul.filter(l=>l.stage!=="Closed Won"&&l.stage!=="Closed Lost").length,"Placed":uw.reduce((s,l)=>s+(parseInt(l.workers)||0),0),"Conv%":ul.length?Math.round(uw.length/ul.length*100):0};});
     const wb=XLSX.utils.book_new();
@@ -2010,7 +2099,7 @@ export default function GremiCRM() {
                 const totalW=hqLocs.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
                 const won=hqLocs.filter(l=>l.stage==="Closed Won").length;
                 const stages=[...new Set(hqLocs.map(l=>l.stage))].slice(0,3);
-                const hasLate=hqLocs.some(l=>isOD(l.nextAction,l.stage));
+                const hasLate=hqLocs.some(l=>isOD(l.nextStepDate,l.stage));
                 return(
                   <div key={item.id} className="card" onClick={()=>setSelHQ(item)} style={{padding:"13px 14px",borderLeft:`3px solid ${C.indigo}`,cursor:"pointer"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
@@ -2040,8 +2129,8 @@ export default function GremiCRM() {
               } else {
                 // Location row
                 const sc=getSC()[item.stage]||C.txt3;
-                const od=isOD(item.nextAction,item.stage);
-                const dl=daysLeft(item.nextAction);
+                const od=isOD(item.nextStepDate,item.stage);
+                const dl=daysLeft(item.nextStepDate);
                 const parentHQ=hqs.find(h=>h.id===item.parentId);
                 return(
                   <div key={item.id} className="card" onClick={()=>setSelLoc(item)} style={{padding:"12px 14px",borderLeft:`3px solid ${sc}`,cursor:"pointer"}}>
@@ -2066,7 +2155,7 @@ export default function GremiCRM() {
                     </div>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.txt3}}>
                       <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.nextStep?<span style={{color:C.amber}}>→ {item.nextStep}</span>:<span>{item.county} · {item.industry}</span>}</span>
-                      <span style={{color:od?C.red:(dl!==null&&dl<=3)?C.amber:C.txt3,fontWeight:(od||(dl!==null&&dl<=3))?600:400,flexShrink:0,marginLeft:8}}>{od?"⚠ ":""}{fmtDate(item.nextAction)}{(!od&&dl!==null&&dl<=3)?" ("+dl+"d)":""}</span>
+                      <span style={{color:od?C.red:(dl!==null&&dl<=3)?C.amber:C.txt3,fontWeight:(od||(dl!==null&&dl<=3))?600:400,flexShrink:0,marginLeft:8}}>{od?"⚠ ":""}{fmtDate(item.nextStepDate)}{(!od&&dl!==null&&dl<=3)?" ("+dl+"d)":""}</span>
                     </div>
                   </div>
                 );
@@ -2106,7 +2195,7 @@ export default function GremiCRM() {
               const placed=uw.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
               const pipe=ul.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
               const conv=ul.length?Math.round(uw.length/ul.length*100):0;
-              const late=ul.filter(l=>isOD(l.nextAction,l.stage)).length;
+              const late=ul.filter(l=>isOD(l.nextStepDate,l.stage)).length;
               return(
                 <div key={u.id} style={{padding:"9px 0",borderBottom:`1px solid ${C.border}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
