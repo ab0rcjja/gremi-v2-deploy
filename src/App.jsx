@@ -55,7 +55,7 @@ const locToDb = ({id,isHQ,_type,...l}) => ({
   spin:JSON.stringify({...l.spin,phase:l.spin?.phase||"pre"}||{s:"",p:"",i:"",n:"",painSummary:"",phase:"pre"}),
   decision_process:l.decisionProcess||"", champion:l.champion||"",
   pain_score:l.painScore||null, next_step:l.nextStep||"", next_step_date:l.nextStepDate||"",
-  won_date:l.wonDate||null, start_date:l.startDate||null, lost_date:l.lostDate||null, lost_lesson:l.lostLesson||"",
+  won_date:l.wonDate||null, start_date:l.startDate||null, lost_date:l.lostDate||null, lost_lesson:l.lostLesson||"", lost_description:l.lostDescription||"", won_notes:l.wonNotes||"",
   spin_real:JSON.stringify(l.spinReal||{}),
 });
 const locFromDb = (r) => ({
@@ -71,7 +71,7 @@ const locFromDb = (r) => ({
   spin:typeof r.spin==="string"?JSON.parse(r.spin||"{}"):r.spin||{s:"",p:"",i:"",n:"",painSummary:""},
   decisionProcess:r.decision_process||"", champion:r.champion||"",
   painScore:r.pain_score||null, nextStep:r.next_step||"", nextStepDate:r.next_step_date||"",
-  wonDate:r.won_date||"", startDate:r.start_date||"", lostDate:r.lost_date||"", lostLesson:r.lost_lesson||"",
+  wonDate:r.won_date||"", startDate:r.start_date||"", lostDate:r.lost_date||"", lostLesson:r.lost_lesson||"", lostDescription:r.lost_description||"", wonNotes:r.won_notes||"",
   spinReal:typeof r.spin_real==="string"?JSON.parse(r.spin_real||"{}"):r.spin_real||{},
 });
 
@@ -763,6 +763,7 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
                 <div><div className="lbl" style={{fontSize:9}}>SIGNED DATE</div><div style={{fontSize:13,color:C.green,fontWeight:600}}>{fmtDate(loc.wonDate)||"—"}</div></div>
                 <div><div className="lbl" style={{fontSize:9}}>WORKERS</div><div style={{fontSize:13,color:C.green,fontWeight:600}}>{loc.workers||"—"}</div></div>
                 {loc.startDate&&<div style={{gridColumn:"1/-1"}}><div className="lbl" style={{fontSize:9}}>WORKER START DATE</div><div style={{fontSize:13,color:C.txt,fontWeight:500}}>{fmtDate(loc.startDate)}</div></div>}
+              {loc.wonNotes&&<div style={{gridColumn:"1/-1",marginTop:4}}><div className="lbl" style={{fontSize:9,marginBottom:4}}>WHAT CLOSED THE DEAL</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.wonNotes}</div></div>}
               </div>
             ):(
               <>
@@ -770,7 +771,8 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
                   <div><div className="lbl" style={{fontSize:9}}>LOST DATE</div><div style={{fontSize:13,color:C.red,fontWeight:600}}>{fmtDate(loc.lostDate)||"—"}</div></div>
                   <div><div className="lbl" style={{fontSize:9}}>REASON</div><div style={{fontSize:13,color:C.txt3,fontWeight:500}}>{loc.lostReason||"—"}</div></div>
                 </div>
-                {loc.lostLesson&&<div><div className="lbl" style={{fontSize:9,marginBottom:4}}>WHAT TO DO DIFFERENTLY</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.lostLesson}</div></div>}
+                {loc.lostDescription&&<div><div className="lbl" style={{fontSize:9,marginBottom:4}}>WHAT HAPPENED</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.lostDescription}</div></div>}
+                {loc.lostLesson&&<div style={{marginTop:6}}><div className="lbl" style={{fontSize:9,marginBottom:4}}>WHAT TO DO DIFFERENTLY</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{loc.lostLesson}</div></div>}
                 {loc.nextStepDate&&<div style={{marginTop:8,fontSize:11,color:C.txt3}}>📅 Recheck: {fmtDate(loc.nextStepDate)}</div>}
               </>
             )}
@@ -841,7 +843,10 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
                 </div>
               )}
             </div>
-            {loc.spin?.painSummary&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}33`,borderRadius:8,padding:"9px 11px",marginTop:8}}><div className="lbl" style={{color:C.red}}>💥 PAIN SUMMARY</div><div style={{fontSize:13,color:C.txt,fontStyle:"italic",lineHeight:1.5}}>"{loc.spin.painSummary}"</div></div>}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:8}}>
+              {loc.spin?.painHypothesis&&<div style={{background:`${C.indigo}12`,border:`1px solid ${C.indigo}33`,borderRadius:8,padding:"9px 11px"}}><div className="lbl" style={{color:C.indigo,fontSize:9}}>🔍 PAIN HYPOTHESIS (PRE)</div><div style={{fontSize:12,color:C.txt2,fontStyle:"italic",lineHeight:1.5,marginTop:4}}>{loc.spin.painHypothesis}</div></div>}
+              {loc.spin?.painSummary&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}33`,borderRadius:8,padding:"9px 11px"}}><div className="lbl" style={{color:C.red,fontSize:9}}>💥 PAIN SUMMARY (POST)</div><div style={{fontSize:12,color:C.txt,fontStyle:"italic",lineHeight:1.5,marginTop:4}}>"{loc.spin.painSummary}"</div></div>}
+            </div>
           </div>
         )}
         {/* Activity Log */}
@@ -1234,23 +1239,26 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
               <div style={{background:`${C.indigo}08`,border:`1px solid ${C.indigo}22`,borderRadius:8,padding:"10px 12px"}}>
                 <div style={{fontSize:10,fontWeight:700,color:C.indigo,letterSpacing:"0.08em",marginBottom:8}}>📋 PRE-MEETING — Hipotezy</div>
                 <div style={{fontSize:10,color:C.txt3,marginBottom:8,lineHeight:1.4}}>Wypełnij PRZED spotkaniem na podstawie researchu. Co zakładasz o kliencie?</div>
-                <SpinField label="S — SITUATION" hint={["How many employees? How many shifts?","Do they work with a staffing supplier?","How many open positions right now?"]} value={form.spin?.s||""} onChange={v=>setForm({...form,spin:{...form.spin,s:v}})}/>
+                <SpinField label="S — SITUATION" hint={["What do you think their workforce setup looks like?","Who do you think handles their staffing — and is it working?","How many open roles have they been posting for?"]} value={form.spin?.s||""} onChange={v=>setForm({...form,spin:{...form.spin,s:v}})}/>
                 <SpinField label="P — PROBLEM" hint={["How long to fill a vacancy?","What happens when they are understaffed?","Compliance issues?"]} value={form.spin?.p||""} onChange={v=>setForm({...form,spin:{...form.spin,p:v}})}/>
-                <SpinField label="I — IMPLICATION" hint={["What happens to orders when understaffed?","What does that mean financially?","How does that affect clients?"]} value={form.spin?.i||""} onChange={v=>setForm({...form,spin:{...form.spin,i:v}})}/>
-                <SpinField label="N — NEED-PAYOFF" hint={["If we get you workers in 3 weeks — how does that help?","What would solving this be worth?","Would flexible housing help?"]} value={form.spin?.n||""} onChange={v=>setForm({...form,spin:{...form.spin,n:v}})}/>
+                <SpinField label="I — IMPLICATION" hint={["If that problem exists — what is the likely business impact?","What does one week of this problem probably cost them?","How does this likely affect their production commitments or clients?"]} value={form.spin?.i||""} onChange={v=>setForm({...form,spin:{...form.spin,i:v}})}/>
+                <SpinField label="N — NEED-PAYOFF" hint={["What outcome would logically solve their problem — in their terms?","What would consistent staffing allow them to deliver?","What would one partner handling everything end-to-end be worth to them?"]} value={form.spin?.n||""} onChange={v=>setForm({...form,spin:{...form.spin,n:v}})}/>
               </div>
               {/* POST-MEETING column */}
               <div style={{background:`${C.green}08`,border:`1px solid ${C.green}22`,borderRadius:8,padding:"10px 12px"}}>
                 <div style={{fontSize:10,fontWeight:700,color:C.green,letterSpacing:"0.08em",marginBottom:8}}>✅ POST-MEETING — Realne odpowiedzi</div>
                 <div style={{fontSize:10,color:C.txt3,marginBottom:8,lineHeight:1.4}}>Wypełnij PO spotkaniu. Zastąp hipotezy tym co klient powiedział naprawdę.</div>
-                <SpinField label="S — SITUATION" hint={["Exact number of workers, shifts, locations","Current supplier, contract terms","Actual open positions and since when"]} value={form.spinReal?.s||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,s:v}})}/>
-                <SpinField label="P — PROBLEM" hint={["Exact words the client used about the pain","How long has this been a problem?","What have they tried already?"]} value={form.spinReal?.p||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,p:v}})}/>
-                <SpinField label="I — IMPLICATION" hint={["Financial impact they confirmed","Operational consequences they described","Urgency signals they gave"]} value={form.spinReal?.i||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,i:v}})}/>
-                <SpinField label="N — NEED-PAYOFF" hint={["What outcome did they say would solve it?","What would they pay for that outcome?","Their words — not yours"]} value={form.spinReal?.n||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,n:v}})}/>
+                <SpinField label="S — SITUATION" hint={["Write exact numbers: workers, shifts, locations, since when","Name the current supplier — contract type, how long, what works / does not work","How many open roles, which profile, since when — their exact answer"]} value={form.spinReal?.s||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,s:v}})}/>
+                <SpinField label="P — PROBLEM" hint={["Use their exact words — do not paraphrase or interpret","How long has this been a problem? What have they tried?","What specifically is not working — their words, not your analysis"]} value={form.spinReal?.p||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,p:v}})}/>
+                <SpinField label="I — IMPLICATION" hint={["What financial or operational impact did they confirm — with numbers if possible","What internal pressure did they mention: management, deadlines, clients?","Urgency signals: what happens if this is not solved by [date]?"]} value={form.spinReal?.i||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,i:v}})}/>
+                <SpinField label="N — NEED-PAYOFF" hint={["What outcome did the client say they want — their exact words","What would solving this create for the business — their answer, not yours","What does good look like for them — their definition of success"]} value={form.spinReal?.n||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,n:v}})}/>
               </div>
             </div>
-            {/* Pain Summary - shared */}
-            <div style={{marginTop:8}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><div className="lbl" style={{marginBottom:0,color:C.red}}>💥 PAIN SUMMARY</div><span style={{fontSize:10,color:C.txt3}}>(goes into proposal)</span></div><textarea value={form.spin?.painSummary||""} onChange={e=>setForm({...form,spin:{...form.spin,painSummary:e.target.value}})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}} placeholder='e.g. "Factory loses 8,000 RON/hour due to 15 missing workers in peak season"'/></div>
+            {/* Pain Summary */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:8}}>
+              <div><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><div className="lbl" style={{marginBottom:0,color:C.indigo}}>🔍 PAIN HYPOTHESIS</div><span style={{fontSize:10,color:C.txt3}}>(PRE — your assumption)</span></div><textarea value={form.spin?.painHypothesis||""} onChange={e=>setForm({...form,spin:{...form.spin,painHypothesis:e.target.value}})} rows={3} className="fi" style={{resize:"vertical",fontSize:12}} placeholder='e.g. "I think they struggle to fill night shift — posting on eJobs for 3 months suggests urgency. Probable cost: delayed production."'/></div>
+              <div><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><div className="lbl" style={{marginBottom:0,color:C.red}}>💥 PAIN SUMMARY</div><span style={{fontSize:10,color:C.txt3}}>(POST — client's words → proposal)</span></div><textarea value={form.spin?.painSummary||""} onChange={e=>setForm({...form,spin:{...form.spin,painSummary:e.target.value}})} rows={3} className="fi" style={{resize:"vertical",fontSize:12}} placeholder='e.g. "Night shift in Cluj unstaffed for 8 weeks, 15 operators missing, Bosch contract at risk from April 1. Ana said: each week is 40k EUR risk."'/></div>
+            </div>
         </div>
 
         {/* Decision process + Champion */}
@@ -1276,7 +1284,8 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
               </select>
             </div>
             <div><div className="lbl">LOST DATE</div><input type="date" value={form.lostDate||""} onChange={e=>setForm({...form,lostDate:e.target.value})} className="fi"/></div>
-            <div><div className="lbl">WHAT TO DO DIFFERENTLY NEXT TIME</div><textarea value={form.lostLesson||""} onChange={e=>setForm({...form,lostLesson:e.target.value})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}} placeholder="What would you do differently? What did you learn?"/></div>
+            <div><div className="lbl">DESCRIBE WHAT HAPPENED</div><textarea value={form.lostDescription||""} onChange={e=>setForm({...form,lostDescription:e.target.value})} rows={3} className="fi" style={{resize:"vertical",fontSize:12}} placeholder='e.g. "They signed with Adecco — price was 8% lower, we could not match. DM was replaced mid-process. Decision moved to HQ."'/></div>
+            <div><div className="lbl">WHAT TO DO DIFFERENTLY NEXT TIME</div><textarea value={form.lostLesson||""} onChange={e=>setForm({...form,lostLesson:e.target.value})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}} placeholder='e.g. "Qualify budget earlier. Involve Economic Buyer by meeting 2."'/></div>
             <div><div className="lbl">RECHECK DATE (Next Step)</div><input type="date" value={form.nextStepDate||""} onChange={e=>setForm({...form,nextStepDate:e.target.value})} className="fi"/></div>
           </div>
         )}
@@ -1288,6 +1297,7 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
               <div><div className="lbl">WORKER START DATE</div><input type="date" value={form.startDate||""} onChange={e=>setForm({...form,startDate:e.target.value})} className="fi"/></div>
             </div>
             <div><div className="lbl">NUMBER OF WORKERS</div><input type="number" value={form.workers||""} onChange={e=>setForm({...form,workers:e.target.value})} className="fi" placeholder="e.g. 25"/></div>
+            <div style={{gridColumn:"1/-1"}}><div className="lbl">NOTES — what closed the deal</div><textarea value={form.wonNotes||""} onChange={e=>setForm({...form,wonNotes:e.target.value})} rows={3} className="fi" style={{resize:"vertical",fontSize:12}} placeholder='e.g. "Pain was critical — Bosch deadline. Champion was Ana (HR). Price not the main concern. Relationship built over 3 meetings."'/></div>
           </div>
         )}
         <div><div className="lbl">NOTES</div><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} className="fi" style={{resize:"vertical",lineHeight:1.7}}/></div>
