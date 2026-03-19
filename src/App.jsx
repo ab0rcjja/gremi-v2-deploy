@@ -1798,7 +1798,7 @@ function AIChat({selLoc,selHQ,hqs,locs,users}) {
       const apiMsgs=newMsgs.slice(1).map(m=>({role:m.role,content:m.content}));
       const res=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{"Content-Type":"application/json","x-api-key":"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","anthropic-version":"2023-06-01","anthropic-dangerous-request-allowed":"true"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:sysMsg,messages:apiMsgs}),
       });
       const data=await res.json();
