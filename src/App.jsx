@@ -1796,9 +1796,9 @@ function AIChat({selLoc,selHQ,hqs,locs,users}) {
       const ctx=buildContext();
       const sysMsg=AI_SYSTEM+(ctx?"\n\n--- CURRENT CRM CONTEXT ---"+ctx:"");
       const apiMsgs=newMsgs.slice(1).map(m=>({role:m.role,content:m.content}));
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
+      const res=await fetch("https://ojzqehgvmsftdztdtxrj.supabase.co/functions/v1/ai-proxy",{
         method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-request-allowed":"true"},
+        headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:sysMsg,messages:apiMsgs}),
       });
       const data=await res.json();
