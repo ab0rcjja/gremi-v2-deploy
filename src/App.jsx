@@ -713,11 +713,12 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
 }
 
 // ─── LOCATION DETAIL MODAL ───────────────────────────────────────
-function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate,onAskAI}) {
+function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate}) {
   const hq=hqs.find(h=>h.id===loc.parentId);
   const sc=getSC()[loc.stage]||C.txt3;
   const uN=(id)=>users.find(u=>u.id===id)?.name||"—";
   const [showDanger,setShowDanger]=useState(false);
+  const [showAI,setShowAI]=useState(false);
   return(
     <div className="modal" style={{zIndex:110}}>
       <div className="mh">
@@ -870,7 +871,215 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
       <div className="mf" style={{display:"flex",gap:8}}>
         {canEdit?<button className="btn" onClick={onEdit} style={{flex:1,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"13px",fontSize:14,borderRadius:10}}>✎ Edit</button>
         :<div style={{flex:1,padding:"13px",fontSize:12,color:C.txt3,textAlign:"center"}}>View only</div>}
-        {onAskAI&&<button className="btn" onClick={onAskAI} style={{background:`${C.teal}18`,color:C.teal,padding:"13px 16px",fontSize:14,borderRadius:10,border:`1px solid ${C.teal}44`}}>🤖</button>}
+        <button className="btn" onClick={()=>setShowAI(!showAI)} style={{background:showAI?`${C.teal}28`:`${C.teal}18`,color:C.teal,padding:"13px 16px",fontSize:14,borderRadius:10,border:`1px solid ${showAI?C.teal:C.teal+"44"}`}}>🤖</button>
+      </div>
+      {showAI&&<InlineAI loc={loc} hq={hq} onUpdate={onUpdate}/>}
+    </div>
+  );
+}
+
+// ─── INLINE AI (inside deal modal) ───────────────────────────
+const AI_SYS_INLINE = `You are the internal sales AI for Gremi Personal Romania. You help the BD Director analyze leads and fill CRM fields.
+
+CRITICAL INSTRUCTION — FIELD SUGGESTIONS:
+When you analyze a lead or answer a question, ALWAYS include a section at the END of your response with suggested CRM field values in this EXACT format:
+
+---FIELDS---
+SPIN_S: [your suggestion for Situation field]
+SPIN_P: [your suggestion for Problem field]  
+SPIN_I: [your suggestion for Implication field]
+SPIN_N: [your suggestion for Need-Payoff field]
+PAIN_SUMMARY: [one sentence pain summary]
+PAIN_SCORE: [1-5, where 5 is highest urgency]
+NEXT_STEP: [specific next action]
+NOTES: [additional notes to append]
+---END---
+
+Rules for fields:
+- Only include fields where you have a meaningful suggestion. Omit fields where you have no data.
+- Write field values in Romanian (the CRM language).
+- SPIN fields: write as hypotheses if pre-meeting, as facts if post-meeting data is available.
+- PAIN_SCORE: 1=no pain, 2=minor inconvenience, 3=real problem, 4=urgent, 5=critical business impact.
+- NEXT_STEP: always specific and actionable, not generic.
+- NOTES: only if there is something worth recording that does not fit other fields.
+
+Respond in the language the user writes. Be direct, structured, action-oriented.`;
+
+function InlineAI({loc,hq,onUpdate}) {
+  const [msgs,setMsgs]=useState([]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [pending,setPending]=useState(null);
+  const bottomRef=useRef(null);
+  const taRef=useRef(null);
+
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
+
+  const buildCtx=()=>{
+    let ctx="";
+    if(hq) ctx+=`\nCOMPANY: ${hq.company}\nIndustry: ${hq.industry||"?"}\nTurnover: ${hq.annualTurnover||"?"}\nEmployees: ${hq.employees||"?"}\nSeasonality: ${hq.seasonality||"?"}\nIntelligence: ${hq.intelligence||"not collected"}\nContact: ${hq.centralContact||"?"} (${hq.centralRole||"?"})`;
+    const sp=loc.spin||{};
+    const acts=(loc.activities||[]).slice(0,5).map(a=>`${a.date} ${a.type}: ${a.note}`).join("\n");
+    ctx+=`\nLOCATION: ${loc.location}\nContact: ${loc.contact||"?"} (${loc.role||"?"})\nCounty: ${loc.county||"?"}\nStage: ${loc.stage}\nTemp: ${loc.temp}\nWorkers: ${loc.workers||"?"}\nType: ${loc.workerType||"?"}\nSupplier: ${loc.currentSupplier||"?"}\nPain Score: ${loc.painScore||"?"}\nDecision Process: ${loc.decisionProcess||"?"}\nEconomic Buyer: ${loc.economicBuyer||"?"}\nSPIN-S: ${sp.s||"empty"}\nSPIN-P: ${sp.p||"empty"}\nSPIN-I: ${sp.i||"empty"}\nSPIN-N: ${sp.n||"empty"}\nPain Summary: ${sp.painSummary||"empty"}\nNotes: ${loc.notes||""}\nActivity:\n${acts||"none"}`;
+    return ctx;
+  };
+
+  const parseFields=(text)=>{
+    const m=text.match(/---FIELDS---([\s\S]*?)---END---/);
+    if(!m) return null;
+    const lines=m[1].trim().split("\n");
+    const fields={};
+    lines.forEach(l=>{
+      const idx=l.indexOf(":");
+      if(idx>0){
+        const key=l.substring(0,idx).trim();
+        const val=l.substring(idx+1).trim();
+        if(val&&val!=="[none]"&&val!=="?") fields[key]=val;
+      }
+    });
+    return Object.keys(fields).length>0?fields:null;
+  };
+
+  const stripFields=(text)=>text.replace(/---FIELDS---[\s\S]*?---END---/,"").trim();
+
+  const applyFields=(fields)=>{
+    const patch={};
+    const spin={...(loc.spin||{})};
+    let changed=false;
+    if(fields.SPIN_S){spin.s=fields.SPIN_S;changed=true;}
+    if(fields.SPIN_P){spin.p=fields.SPIN_P;changed=true;}
+    if(fields.SPIN_I){spin.i=fields.SPIN_I;changed=true;}
+    if(fields.SPIN_N){spin.n=fields.SPIN_N;changed=true;}
+    if(fields.PAIN_SUMMARY){spin.painSummary=fields.PAIN_SUMMARY;changed=true;}
+    if(changed) patch.spin=spin;
+    if(fields.PAIN_SCORE) patch.painScore=parseInt(fields.PAIN_SCORE)||null;
+    if(fields.NEXT_STEP){patch.nextStep=fields.NEXT_STEP;patch.nextStepDate=new Date().toISOString().slice(0,10);}
+    if(fields.NOTES){patch.notes=(loc.notes?loc.notes+"\n\n":"")+"[AI] "+fields.NOTES;}
+    // Add AI activity
+    const act={id:Date.now(),type:"Note",note:"[AI] Fields updated: "+Object.keys(fields).join(", "),date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};
+    patch.activities=[act,...(loc.activities||[])];
+    patch.lastContact=act.date;
+    onUpdate(loc.id,patch);
+    setPending(null);
+    setMsgs(prev=>[...prev,{role:"system",content:"✅ Fields applied to CRM."}]);
+  };
+
+  const send=async()=>{
+    const text=input.trim();if(!text||loading)return;
+    const userMsg={role:"user",content:text};
+    const newMsgs=[...msgs,userMsg];
+    setMsgs(newMsgs);setInput("");setLoading(true);setPending(null);
+    try{
+      const ctx=buildCtx();
+      const sysMsg=AI_SYS_INLINE+"\n\n--- CRM CONTEXT ---"+ctx;
+      const apiMsgs=newMsgs.filter(m=>m.role!=="system").map(m=>({role:m.role,content:m.content}));
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:sysMsg,messages:apiMsgs}),
+      });
+      const data=await res.json();
+      const raw=data.content?.[0]?.text||"Error.";
+      const fields=parseFields(raw);
+      const clean=stripFields(raw);
+      setMsgs(prev=>[...prev,{role:"assistant",content:clean}]);
+      if(fields) setPending(fields);
+    }catch(e){
+      setMsgs(prev=>[...prev,{role:"assistant",content:"Error: "+e.message}]);
+    }
+    setLoading(false);
+  };
+
+  const handleKey=(e)=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}};
+
+  const parseMd=(t)=>t
+    .replace(/\*\*(.*?)\*\*/g,"<strong style='color:"+C.txt+"'>$1</strong>")
+    .replace(/\*(.*?)\*/g,"<em>$1</em>")
+    .replace(/^[•\-] (.+)$/gm,"<div style='padding:1px 0 1px 12px;position:relative'><span style='position:absolute;left:0;color:"+C.blue+"'>›</span>$1</div>")
+    .replace(/^(\d+)\. (.+)$/gm,"<div style='padding:1px 0 1px 12px'><span style='color:"+C.blue+";margin-right:3px'>$1.</span>$2</div>")
+    .replace(/^#{1,3} (.+)$/gm,"<div style='color:"+C.blue+";font-weight:700;margin:6px 0 3px;font-size:11px;text-transform:uppercase'>$1</div>")
+    .replace(/\n\n/g,"<div style='height:6px'></div>")
+    .replace(/`([^`]+)`/g,"<code style='background:"+C.bg4+";padding:1px 3px;border-radius:2px;font-size:10px;color:"+C.teal+"'>$1</code>");
+
+  const fieldLabels={SPIN_S:"Situation",SPIN_P:"Problem",SPIN_I:"Implication",SPIN_N:"Need-Payoff",PAIN_SUMMARY:"Pain Summary",PAIN_SCORE:"Pain Score",NEXT_STEP:"Next Step",NOTES:"Notes"};
+
+  const quicks=[
+    {l:"📋 Qualify",t:"Analyze this lead and suggest CRM field values based on available data."},
+    {l:"📞 Pre-call",t:"Generate a pre-call brief. Suggest SPIN hypotheses to fill before the call."},
+    {l:"❓ SPIN",t:"Give me 3 targeted Implication questions and suggest SPIN field updates."},
+    {l:"✉️ Email",t:"Draft a follow-up email in Romanian and suggest a next step."},
+    {l:"📊 Review",t:"Review this deal stage, what is missing, and suggest field updates."},
+  ];
+
+  return(
+    <div style={{borderTop:`2px solid ${C.teal}`,background:C.bg0,display:"flex",flexDirection:"column",maxHeight:"55vh",minHeight:200}}>
+      {/* Quick actions */}
+      <div style={{padding:"6px 12px",display:"flex",gap:4,flexWrap:"wrap",flexShrink:0,borderBottom:`1px solid ${C.border}`,alignItems:"center"}}>
+        <span style={{fontSize:10,color:C.teal,fontWeight:700,letterSpacing:"0.05em",marginRight:4}}>🤖 AI</span>
+        {quicks.map(q=>(
+          <button key={q.l} className="btn" onClick={()=>{setInput(q.t);taRef.current?.focus();}}
+            style={{background:C.bg3,border:`1px solid ${C.border}`,color:C.txt3,padding:"3px 7px",borderRadius:5,fontSize:9}}>
+            {q.l}
+          </button>
+        ))}
+        <button className="btn" onClick={()=>setMsgs([])} style={{background:C.bg3,border:`1px solid ${C.border}`,color:C.txt3,padding:"3px 7px",borderRadius:5,fontSize:9,marginLeft:"auto"}}>Clear</button>
+      </div>
+
+      {/* Messages */}
+      <div style={{flex:1,overflowY:"auto",padding:"8px 12px",display:"flex",flexDirection:"column",gap:6}}>
+        {msgs.length===0&&<div style={{fontSize:11,color:C.txt3,padding:"20px 0",textAlign:"center"}}>Ask AI to analyze this lead, suggest SPIN fields, draft emails...</div>}
+        {msgs.map((m,i)=>(
+          <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",gap:6}}>
+            {m.role==="assistant"&&<div style={{width:20,height:20,borderRadius:5,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:2}}>🤖</div>}
+            {m.role==="system"&&<div style={{width:20,height:20,borderRadius:5,background:`${C.green}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:2}}>✓</div>}
+            <div style={{
+              maxWidth:"88%",
+              background:m.role==="user"?`${C.blue}15`:m.role==="system"?`${C.green}12`:C.bg2,
+              border:`1px solid ${m.role==="user"?C.blue+"33":m.role==="system"?C.green+"33":C.border}`,
+              borderRadius:8,padding:"7px 10px",fontSize:11,lineHeight:1.6,color:m.role==="system"?C.green:C.txt2,
+            }} dangerouslySetInnerHTML={{__html:parseMd(m.content)}}/>
+          </div>
+        ))}
+        {loading&&(
+          <div style={{display:"flex",gap:6}}>
+            <div style={{width:20,height:20,borderRadius:5,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0}}>🤖</div>
+            <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",display:"flex",gap:3}}>
+              <span style={{width:4,height:4,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite"}}/>
+              <span style={{width:4,height:4,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite 0.2s"}}/>
+              <span style={{width:4,height:4,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite 0.4s"}}/>
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef}/>
+      </div>
+
+      {/* Pending field suggestions */}
+      {pending&&(
+        <div style={{borderTop:`1px solid ${C.teal}44`,background:`${C.teal}08`,padding:"8px 12px",flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.05em"}}>SUGGESTED CRM UPDATES</div>
+            <div style={{display:"flex",gap:4}}>
+              <button className="btn" onClick={()=>applyFields(pending)} style={{background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"5px 12px",fontSize:10,borderRadius:6}}>✅ Apply All</button>
+              <button className="btn" onClick={()=>setPending(null)} style={{background:C.bg4,color:C.txt3,padding:"5px 8px",fontSize:10,borderRadius:6,border:`1px solid ${C.border}`}}>✕</button>
+            </div>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+            {Object.entries(pending).map(([k,v])=>(
+              <div key={k} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:10,maxWidth:"100%"}}>
+                <span style={{color:C.teal,fontWeight:600}}>{fieldLabels[k]||k}: </span>
+                <span style={{color:C.txt2}}>{String(v).substring(0,80)}{String(v).length>80?"...":""}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input */}
+      <div style={{borderTop:`1px solid ${C.border}`,padding:"8px 12px",display:"flex",gap:6,alignItems:"flex-end",flexShrink:0}}>
+        <textarea ref={taRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={handleKey}
+          placeholder="Ask AI... (Enter = send)" rows={1}
+          style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:6,padding:"7px 10px",fontSize:11,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.5}}/>
+        <button className="btn" onClick={send} disabled={loading||!input.trim()}
+          style={{background:loading||!input.trim()?C.bg4:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:loading||!input.trim()?C.txt3:"#fff",width:32,height:32,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>↑</button>
       </div>
     </div>
   );
@@ -2658,7 +2867,6 @@ export default function GremiCRM() {
           onEdit={()=>{if(!canEditLoc(selLoc))return;setLocForm(selLoc);setEditLocMode(true);setShowLocForm(true);}}
           onArchive={()=>archiveLoc(selLoc)}
           onUpdate={updLoc}
-          onAskAI={()=>{setTab("ai");}}
         />
       )}
 
