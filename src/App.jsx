@@ -1798,7 +1798,7 @@ function AIChat({selLoc,selHQ,hqs,locs,users}) {
       const apiMsgs=newMsgs.slice(1).map(m=>({role:m.role,content:m.content}));
       const res=await fetch("https://ojzqehgvmsftdztdtxrj.supabase.co/functions/v1/ai-proxy",{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:sysMsg,messages:apiMsgs}),
       });
       const data=await res.json();
