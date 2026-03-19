@@ -1805,7 +1805,7 @@ function AIChat({selLoc,selHQ,hqs,locs,users}) {
       const reply=data.content?.[0]?.text||"Error generating response.";
       setMsgs(prev=>[...prev,{role:"assistant",content:reply}]);
     }catch(e){
-      setMsgs(prev=>[...prev,{role:"assistant",content:"❌ Connection error. Try again."}]);
+      setMsgs(prev=>[...prev,{role:"assistant",content:"❌ Error: "+e.message}]);
     }
     setLoading(false);
   };
