@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import * as XLSX from "xlsx";
 
 // ─── SUPABASE ────────────────────────────────────────────────────
@@ -309,6 +309,7 @@ const getCSS = () => `
   .card{background:${C.bg2};border:1px solid ${C.border};border-radius:12px;transition:all 0.15s;}
   .card:hover{border-color:${C.border2};background:${C.bg3};}
   .pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;}
+  @keyframes pulse{0%,80%,100%{opacity:0.2}40%{opacity:1}}
   .tab{flex:1;padding:11px 4px;font-size:10px;font-weight:600;letter-spacing:0.07em;border:none;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;white-space:nowrap;}
   .modal{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;background:${C.bg1};}
   .mh{background:${C.bg0};padding:14px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;border-bottom:1px solid ${C.border};}
@@ -712,7 +713,7 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
 }
 
 // ─── LOCATION DETAIL MODAL ───────────────────────────────────────
-function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate}) {
+function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate,onAskAI}) {
   const hq=hqs.find(h=>h.id===loc.parentId);
   const sc=getSC()[loc.stage]||C.txt3;
   const uN=(id)=>users.find(u=>u.id===id)?.name||"—";
@@ -866,9 +867,10 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
           </div>
         )}
       </div>
-      <div className="mf">
-        {canEdit?<button className="btn" onClick={onEdit} style={{width:"100%",background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"13px",fontSize:14,borderRadius:10}}>✎ Edit</button>
-        :<div style={{padding:"13px",fontSize:12,color:C.txt3,textAlign:"center"}}>View only</div>}
+      <div className="mf" style={{display:"flex",gap:8}}>
+        {canEdit?<button className="btn" onClick={onEdit} style={{flex:1,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"13px",fontSize:14,borderRadius:10}}>✎ Edit</button>
+        :<div style={{flex:1,padding:"13px",fontSize:12,color:C.txt3,textAlign:"center"}}>View only</div>}
+        {onAskAI&&<button className="btn" onClick={onAskAI} style={{background:`${C.teal}18`,color:C.teal,padding:"13px 16px",fontSize:14,borderRadius:10,border:`1px solid ${C.teal}44`}}>🤖</button>}
       </div>
     </div>
   );
@@ -1745,6 +1747,159 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,curStage}) {
   );
 }
 
+// ─── AI ASSISTANT ─────────────────────────────────────────────
+const AI_SYSTEM = `You are the internal sales assistant for Gremi Personal Romania — a Polish staffing & outsourcing group operating in Romania through Gremi Personal SRL (CAEN 7810, outsourcing) and Antforce SRL (CAEN 7820, temporary staffing).
+
+You help the BD Director (Walery) and his sales team with:
+1. Lead qualification — analyze company data, identify potential, risks, immediate action
+2. Pre-call research brief — structured brief for discovery calls
+3. SPIN questions — tailored to client industry, size, and decision maker role
+4. Objection handling — practical responses for the Romanian market
+5. Follow-up drafts — emails, LinkedIn messages in RO/EN/PL
+6. Pipeline analysis — evaluate deal stage and next steps
+
+Sales methodology: SPIN Selling (Situation → Problem → Implication → Need-Payoff).
+Tone: senior colleague, direct, structured, action-oriented.
+Languages: respond in the language the user writes (Romanian, Russian, English, Polish).
+Always provide: Estimated Potential / Main Risk / Recommended Immediate Action.
+Do not invent data — if information is missing, say what needs to be researched.`;
+
+function AIChat({selLoc,selHQ,hqs,locs,users}) {
+  const [msgs,setMsgs]=useState([{role:"assistant",content:"**Sales AI Assistant — Gremi Personal**\n\nCum pot ajuta?\n\n• **Calificare lead** — paste date despre companie\n• **Pre-call brief** — pregătire înainte de apel\n• **Întrebări SPIN** — adaptate la client\n• **Email/LinkedIn draft** — follow-up profesional\n• **Obiecții** — răspunsuri pentru piața românească\n\nDacă ai un deal deschis în CRM, am deja contextul."}]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const bottomRef=useRef(null);
+  const taRef=useRef(null);
+
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
+
+  const buildContext=()=>{
+    let ctx="";
+    const hq=selHQ||(selLoc?hqs.find(h=>h.id===selLoc.parentId):null);
+    if(hq){
+      ctx+=`\n\nCOMPANY (HQ): ${hq.company}\nIndustry: ${hq.industry||"?"}\nAnnual Turnover: ${hq.annualTurnover||"?"}\nEmployees (total): ${hq.employees||"?"}\nAddress: ${hq.address||"?"}\nWebsite: ${hq.website||"?"}\nSeasonality: ${hq.seasonality||"?"}\nCentral Contact: ${hq.centralContact||"?"} (${hq.centralRole||"?"})\nPhone: ${hq.centralPhone||"?"}\nEmail: ${hq.centralEmail||"?"}\nIntelligence: ${hq.intelligence||"not collected yet"}\nNotes: ${hq.notes||""}`;
+    }
+    if(selLoc){
+      const sp=selLoc.spin||{};
+      const acts=(selLoc.activities||[]).slice(0,5).map(a=>`${a.date} ${a.type}: ${a.note}`).join("\n");
+      ctx+=`\n\nDEAL (Location): ${selLoc.location}\nContact: ${selLoc.contact||"?"} (${selLoc.role||"?"})\nCounty: ${selLoc.county||"?"}\nStage: ${selLoc.stage}\nTemperature: ${selLoc.temp}\nWorkers needed: ${selLoc.workers||"?"}\nWorker type: ${selLoc.workerType||"?"}\nService: ${selLoc.service||"?"}\nEntity: ${selLoc.companyName||"?"}\nCurrent Supplier: ${selLoc.currentSupplier||"?"}\nPain Score: ${selLoc.painScore||"?"}\nDecision Process: ${selLoc.decisionProcess||"?"}\nEconomic Buyer: ${selLoc.economicBuyer||"?"}\nChampion: ${selLoc.champion||"?"}\nSPIN-S: ${sp.s||"empty"}\nSPIN-P: ${sp.p||"empty"}\nSPIN-I: ${sp.i||"empty"}\nSPIN-N: ${sp.n||"empty"}\nPain Summary: ${sp.painSummary||"empty"}\nNotes: ${selLoc.notes||""}\nRecent Activity:\n${acts||"none"}`;
+    }
+    return ctx;
+  };
+
+  const send=async()=>{
+    const text=input.trim();if(!text||loading)return;
+    const userMsg={role:"user",content:text};
+    const newMsgs=[...msgs,userMsg];
+    setMsgs(newMsgs);setInput("");setLoading(true);
+    try{
+      const ctx=buildContext();
+      const sysMsg=AI_SYSTEM+(ctx?"\n\n--- CURRENT CRM CONTEXT ---"+ctx:"");
+      const apiMsgs=newMsgs.slice(1).map(m=>({role:m.role,content:m.content}));
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:sysMsg,messages:apiMsgs}),
+      });
+      const data=await res.json();
+      const reply=data.content?.[0]?.text||"Error generating response.";
+      setMsgs(prev=>[...prev,{role:"assistant",content:reply}]);
+    }catch(e){
+      setMsgs(prev=>[...prev,{role:"assistant",content:"❌ Connection error. Try again."}]);
+    }
+    setLoading(false);
+  };
+
+  const handleKey=(e)=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}};
+
+  const parseMd=(text)=>text
+    .replace(/\*\*(.*?)\*\*/g,"<strong style='color:"+C.txt+"'>$1</strong>")
+    .replace(/\*(.*?)\*/g,"<em>$1</em>")
+    .replace(/^• (.+)$/gm,"<div style='padding:2px 0 2px 14px;position:relative'><span style='position:absolute;left:0;color:"+C.blue+"'>›</span>$1</div>")
+    .replace(/^- (.+)$/gm,"<div style='padding:2px 0 2px 14px;position:relative'><span style='position:absolute;left:0;color:"+C.blue+"'>›</span>$1</div>")
+    .replace(/^(\d+)\. (.+)$/gm,"<div style='padding:2px 0 2px 14px'><span style='color:"+C.blue+";margin-right:4px'>$1.</span>$2</div>")
+    .replace(/^#{1,3} (.+)$/gm,"<div style='color:"+C.blue+";font-weight:700;margin:10px 0 4px;font-size:12px;letter-spacing:0.03em;text-transform:uppercase'>$1</div>")
+    .replace(/\n\n/g,"<div style='height:8px'></div>")
+    .replace(/`([^`]+)`/g,"<code style='background:"+C.bg4+";border:1px solid "+C.border+";padding:1px 4px;border-radius:3px;font-size:11px;color:"+C.teal+"'>$1</code>");
+
+  const hq=selHQ||(selLoc?hqs.find(h=>h.id===selLoc.parentId):null);
+  const dealName=selLoc?`${selLoc.company} — ${selLoc.location}`:hq?hq.company:null;
+
+  const quicks=[
+    {l:"📋 Qualify",t:"Analyze this lead. What is the potential, main risk, and recommended immediate action?"},
+    {l:"📞 Pre-call brief",t:"Generate a structured pre-call brief for my next call with this client. Include key SPIN questions."},
+    {l:"❓ SPIN questions",t:"Give me 3 targeted Implication questions for this client based on their industry, size, and situation."},
+    {l:"✉️ Follow-up email",t:"Draft a follow-up email in Romanian (formal, director-level tone) based on the current deal stage and activity history."},
+    {l:"🛡️ Objection",t:"The client said they already have a staffing supplier. How should I respond?"},
+    {l:"📊 Deal review",t:"Review this deal. What stage should it be in? What is missing? What should I do next?"},
+  ];
+
+  return(
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      {/* Context bar */}
+      {dealName&&(
+        <div style={{background:`${C.blue}12`,borderBottom:`1px solid ${C.border}`,padding:"8px 14px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+          <div style={{width:6,height:6,borderRadius:3,background:C.green,flexShrink:0}}/>
+          <div style={{fontSize:11,color:C.txt2}}>Context: <span style={{fontWeight:600,color:C.txt}}>{dealName}</span>{selLoc?` · ${selLoc.stage} · ${selLoc.temp}`:""}</div>
+        </div>
+      )}
+      {!dealName&&(
+        <div style={{background:`${C.amber}12`,borderBottom:`1px solid ${C.border}`,padding:"8px 14px",flexShrink:0}}>
+          <div style={{fontSize:11,color:C.amber}}>No deal selected. Open a deal from LEADS tab for contextual AI assistance, or ask a general question.</div>
+        </div>
+      )}
+
+      {/* Quick actions */}
+      <div style={{padding:"8px 14px",display:"flex",gap:5,flexWrap:"wrap",flexShrink:0,borderBottom:`1px solid ${C.border}`}}>
+        {quicks.map(q=>(
+          <button key={q.l} className="btn" onClick={()=>{setInput(q.t);taRef.current?.focus();}}
+            style={{background:C.bg3,border:`1px solid ${C.border}`,color:C.txt3,padding:"4px 9px",borderRadius:6,fontSize:10,transition:"all 0.15s"}}>
+            {q.l}
+          </button>
+        ))}
+        <button className="btn" onClick={()=>{setMsgs([msgs[0]]);}} style={{background:C.bg3,border:`1px solid ${C.border}`,color:C.txt3,padding:"4px 9px",borderRadius:6,fontSize:10,marginLeft:"auto"}}>🗑 Clear</button>
+      </div>
+
+      {/* Messages */}
+      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:10}}>
+        {msgs.map((m,i)=>(
+          <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",gap:8,alignItems:"flex-start"}}>
+            {m.role==="assistant"&&<div style={{width:24,height:24,borderRadius:6,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0,marginTop:2}}>🤖</div>}
+            <div style={{
+              maxWidth:"85%",
+              background:m.role==="user"?`${C.blue}18`:C.bg2,
+              border:`1px solid ${m.role==="user"?C.blue+"33":C.border}`,
+              borderRadius:m.role==="user"?"12px 12px 2px 12px":"12px 12px 12px 2px",
+              padding:"10px 13px",fontSize:12,lineHeight:1.7,color:C.txt2,
+            }} dangerouslySetInnerHTML={{__html:parseMd(m.content)}}/>
+            {m.role==="user"&&<div style={{width:24,height:24,borderRadius:6,background:C.bg4,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0,marginTop:2}}>👤</div>}
+          </div>
+        ))}
+        {loading&&(
+          <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+            <div style={{width:24,height:24,borderRadius:6,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}}>🤖</div>
+            <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:"12px 12px 12px 2px",padding:"10px 13px",display:"flex",gap:4}}>
+              <span style={{width:5,height:5,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite"}}/>
+              <span style={{width:5,height:5,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite 0.2s"}}/>
+              <span style={{width:5,height:5,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite 0.4s"}}/>
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef}/>
+      </div>
+
+      {/* Input */}
+      <div style={{borderTop:`1px solid ${C.border}`,padding:"10px 14px",display:"flex",gap:8,alignItems:"flex-end",flexShrink:0,background:C.bg0}}>
+        <textarea ref={taRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={handleKey}
+          placeholder="Ask about this lead, request SPIN questions, draft an email... (Enter = send)"
+          rows={2} style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:8,padding:"9px 12px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.6}}/>
+        <button className="btn" onClick={send} disabled={loading||!input.trim()}
+          style={{background:loading||!input.trim()?C.bg4:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:loading||!input.trim()?C.txt3:"#fff",width:38,height:38,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>↑</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────
 export default function GremiCRM() {
   const [users,setUsers]         = useState([]);
@@ -2044,7 +2199,7 @@ export default function GremiCRM() {
     XLSX.writeFile(wb,`SalesTeamCRM_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
-  const TABS=[["leads","LEADS"],["kpi","KPI"],["tpl","TEMPLATES"],["playbook","PLAYBOOK"],["team","TEAM"],["theme","THEME"],...(isAdmin?[["settings","SETTINGS"]]:[]),...(archived.length>0||isAdmin||isTeamLead?[["archive","ARCHIVE"+(archived.length?" ("+archived.length+")":"")]]:[])];
+  const TABS=[["leads","LEADS"],["kpi","KPI"],["tpl","TEMPLATES"],["playbook","PLAYBOOK"],["team","TEAM"],["ai","🤖 AI"],["theme","THEME"],...(isAdmin?[["settings","SETTINGS"]]:[]),...(archived.length>0||isAdmin||isTeamLead?[["archive","ARCHIVE"+(archived.length?" ("+archived.length+")":"")]]:[])];
 
   return(
     <div style={{fontFamily:"'Inter',sans-serif",background:C.bg1,height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",color:C.txt}}>
@@ -2376,6 +2531,9 @@ export default function GremiCRM() {
             {/* ── TEAM ── */}
       {tab==="team"&&<TeamTab users={users} locs={locs} onSelect={l=>{setSelLoc(l);}}/>}
 
+      {/* ── AI ASSISTANT ── */}
+      {tab==="ai"&&<AIChat selLoc={selLoc} selHQ={selHQ} hqs={hqs} locs={locs} users={users}/>}
+
       {/* ── SETTINGS (Admin) ── */}
       {tab==="settings"&&isAdmin&&(
         <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:12}}>
@@ -2500,6 +2658,7 @@ export default function GremiCRM() {
           onEdit={()=>{if(!canEditLoc(selLoc))return;setLocForm(selLoc);setEditLocMode(true);setShowLocForm(true);}}
           onArchive={()=>archiveLoc(selLoc)}
           onUpdate={updLoc}
+          onAskAI={()=>{setTab("ai");}}
         />
       )}
 
