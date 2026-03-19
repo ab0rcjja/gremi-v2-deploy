@@ -897,7 +897,7 @@ NOTES: [additional notes to append]
 
 Rules for fields:
 - Only include fields where you have a meaningful suggestion. Omit fields where you have no data.
-- Write field values in Romanian (the CRM language).
+- Write field values in the same language the user writes in.
 - SPIN fields: write as hypotheses if pre-meeting, as facts if post-meeting data is available.
 - PAIN_SCORE: 1=no pain, 2=minor inconvenience, 3=real problem, 4=urgent, 5=critical business impact.
 - NEXT_STEP: always specific and actionable, not generic.
@@ -973,8 +973,8 @@ function InlineAI({loc,hq,onUpdate}) {
       const ctx=buildCtx();
       const sysMsg=AI_SYS_INLINE+"\n\n--- CRM CONTEXT ---"+ctx;
       const apiMsgs=newMsgs.filter(m=>m.role!=="system").map(m=>({role:m.role,content:m.content}));
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+      const res=await fetch("https://ojzqehgvmsftdztdtxrj.supabase.co/functions/v1/ai-proxy",{
+        method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:sysMsg,messages:apiMsgs}),
       });
       const data=await res.json();
@@ -1974,7 +1974,7 @@ Always provide: Estimated Potential / Main Risk / Recommended Immediate Action.
 Do not invent data — if information is missing, say what needs to be researched.`;
 
 function AIChat({selLoc,selHQ,hqs,locs,users}) {
-  const [msgs,setMsgs]=useState([{role:"assistant",content:"**Sales AI Assistant — Gremi Personal**\n\nCum pot ajuta?\n\n• **Calificare lead** — paste date despre companie\n• **Pre-call brief** — pregătire înainte de apel\n• **Întrebări SPIN** — adaptate la client\n• **Email/LinkedIn draft** — follow-up profesional\n• **Obiecții** — răspunsuri pentru piața românească\n\nDacă ai un deal deschis în CRM, am deja contextul."}]);
+  const [msgs,setMsgs]=useState([{role:"assistant",content:"**Sales AI Assistant — Gremi Personal**\n\nHow can I help?\n\n• **Qualify lead** — paste company data\n• **Pre-call brief** — preparation before a call\n• **SPIN questions** — tailored to the client\n• **Email/LinkedIn draft** — professional follow-up\n• **Objections** — responses for the Romanian market\n\nIf you have a deal open in CRM, I already have the context."}]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
   const bottomRef=useRef(null);
