@@ -57,7 +57,6 @@ const locToDb = ({id,isHQ,_type,...l}) => ({
   spin:JSON.stringify({...l.spin,phase:l.spin?.phase||"pre"}||{s:"",p:"",i:"",n:"",painSummary:"",phase:"pre"}),
   decision_process:l.decisionProcess||"", champion:l.champion||"",
   economic_buyer:l.economicBuyer||"", decision_criteria:l.decisionCriteria||"",
-  current_supplier:l.currentSupplier||"",
   pain_score:l.painScore||null, next_step:l.nextStep||"", next_step_date:l.nextStepDate||"",
   won_date:l.wonDate||null, start_date:l.startDate||null, lost_date:l.lostDate||null,
   lost_lesson:l.lostLesson||"", lost_description:l.lostDescription||"", won_notes:l.wonNotes||"",
@@ -4538,44 +4537,43 @@ function AIChatTab({locs,hqs,users,cur,onUpdateLoc,onUpdateHQ,onSaveLoc,onSaveHQ
     const placed=won.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
     const hot=active.filter(l=>l.temp==="🔥 Hot");
     const overdue=active.filter(l=>isOD(l.nextStepDate,l.stage));
-    // Full HQ details
-    const hqDetails = hqs.slice(0,8).map(h=>`${h.company} (${h.industry||"?"}): ${h.employees||"?"}emp, turnover ${h.annualTurnover||"?"}, intelligence: ${h.intelligence?.substring(0,100)||"none"}`).join("\n");
-    // Full active deals with SPIN
-    const dealDetails = active.slice(0,10).map(l=>{
-      const hq=hqs.find(h=>h.id===l.parentId);
-      return `${l.company}/${l.location} [${l.stage}/${l.temp}]: ${l.workers||"?"}w ${l.workerType||""}, contact:${l.contact||"?"}(${l.role||"?"}), pain:${l.painScore||"?"}/5, SPIN-P:"${l.spin?.p?.substring(0,60)||"empty"}", nextStep:${l.nextStep||"none"} by ${l.nextStepDate||"?"}`;
+
+    // ALL companies with exact names (critical for updates)
+    const hqList = hqs.map(h=>`- "${h.company}" [${h.industry||"?"}] ${h.employees||"?"}emp${h.intelligence?", intel: "+h.intelligence.substring(0,80):""}`) .join("\n");
+
+    // ALL deals with exact names
+    const dealList = locs.map(l=>{
+      return `- "${l.company}" / "${l.location}" [${l.stage}/${l.temp}] ${l.workers||"?"}w ${l.workerType||""} contact:"${l.contact||""}"(${l.role||""}) phone:"${l.phone||""}" pain:${l.painScore||"?"}/5 nextStep:"${l.nextStep||""}" supplier:"${l.currentSupplier||""}"`;
     }).join("\n");
+
     return `You are the internal sales AI for Gremi Personal Romania. Talking with ${cur.name} (${cur.role}).
 
-PIPELINE SUMMARY:
-Total: ${locs.length} locations, ${active.length} active, ${won.length} won, ${placed} workers placed.
-Hot: ${hot.length}, Overdue: ${overdue.length}
-Stages: ${STAGES.map(s=>{const c=active.filter(l=>l.stage===s).length;return c>0?`${s}(${c})`:null}).filter(Boolean).join(", ")}
+PIPELINE: ${locs.length} deals total, ${active.length} active, ${won.length} won, ${placed} workers placed. Hot:${hot.length} Overdue:${overdue.length}
 
-COMPANIES (${hqs.length} total):
-${hqDetails}
+ALL COMPANIES IN CRM (use EXACT names from quotes for updates):
+${hqList}
 
-ACTIVE DEALS (top 10):
-${dealDetails}
+ALL DEALS IN CRM (use EXACT company/location names from quotes for updates):
+${dealList}
 
-CAPABILITIES: You can suggest CRM actions. End response with ONE JSON block:
+CAPABILITIES — end response with ONE JSON block:
 
-UPDATE existing deal:
+Update deal fields:
 \`\`\`json
-{"action":"update_loc","company":"EXACT name","location":"EXACT location","fields":{"stage":"Interested","temp":"🔥 Hot","nextStep":"Call Monday","nextStepDate":"2026-03-30","painScore":4,"spin_p":"pain text","spin_s":"situation","spin_i":"implication","spin_n":"need","notes":"context"}}
+{"action":"update_loc","company":"EXACT name from list","location":"EXACT location from list","fields":{"stage":"Interested","temp":"🔥 Hot","nextStep":"text","nextStepDate":"2026-04-01","painScore":4,"spin_p":"text","spin_s":"text","spin_i":"text","spin_n":"text","notes":"text","contact":"name","phone":"number","role":"title"}}
 \`\`\`
 
-UPDATE existing company:
+Update company fields:
 \`\`\`json
-{"action":"update_hq","company":"EXACT name","fields":{"intelligence":"research notes","employees":"500","annualTurnover":"5000000"}}
+{"action":"update_hq","company":"EXACT name from list","fields":{"intelligence":"text","employees":"300","annualTurnover":"5000000","centralContact":"name","centralPhone":"number","centralRole":"title"}}
 \`\`\`
 
-CREATE new lead (when user provides info about a new company):
+Create new lead:
 \`\`\`json
-{"action":"create_lead","hq_company":"Company Name","hq_industry":"Auto Parts","hq_address":"str. X, Cluj","hq_employees":"300","hq_intelligence":"what you know about them","loc_location":"Cluj-Napoca","loc_county":"Cluj","loc_workers":"20","loc_worker_type":"UA Ukrainian","loc_service":"Outsourcing","loc_contact":"Ion Popescu","loc_role":"HR Director","loc_phone":"0721000000","loc_email":"ion@company.ro","loc_notes":"any notes","spin_p":"pain hypothesis"}
+{"action":"create_lead","hq_company":"Name","hq_industry":"Auto Parts","hq_address":"address","hq_employees":"300","hq_intelligence":"research","loc_location":"City","loc_county":"County","loc_workers":"20","loc_worker_type":"UA Ukrainian","loc_service":"Outsourcing","loc_contact":"Name","loc_role":"HR Director","loc_phone":"07xx","loc_email":"email","loc_notes":"notes","spin_p":"pain"}
 \`\`\`
 
-Include ONLY known fields. Use exact company/location names for updates. Respond in the user\'s language.`;
+IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's language.`;
   };
 
   const parseAction=(text)=>{
@@ -4585,11 +4583,13 @@ Include ONLY known fields. Use exact company/location names for updates. Respond
   };
   const stripAction=(text)=>text.replace(/```json[\s\S]*?```/g,"").trim();
 
+  const normalize=(s="")=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+  const fuzzyFind=(arr,name,key="company")=>arr.find(x=>normalize(x[key])===normalize(name))||arr.find(x=>normalize(x[key]).includes(normalize(name).split(" ")[0]));
   const applyAction=(action)=>{
     if(!action||!onUpdateLoc||!onUpdateHQ)return;
     if(action.action==="update_loc"){
-      const loc=locs.find(l=>l.company.toLowerCase()===action.company?.toLowerCase()&&(!action.location||l.location?.toLowerCase()===action.location?.toLowerCase()));
-      if(!loc){setMsgs(prev=>[...prev,{role:"system",content:`❌ Location not found: ${action.company} / ${action.location}`}]);return;}
+      const loc=fuzzyFind(locs.filter(l=>!action.location||normalize(l.location)===normalize(action.location)||normalize(l.location).includes(normalize(action.location?.split(" ")[0]||""))),action.company);
+      if(!loc){const avail=locs.slice(0,5).map(l=>l.company+(l.location&&l.location!==l.company?" / "+l.location:"")).join(", ");setMsgs(prev=>[...prev,{role:"system",content:`❌ Not found: "${action.company}". Available: ${avail}`}]);return;}
       const patch={};
       const f=action.fields||{};
       if(f.stage)patch.stage=f.stage;
@@ -4609,8 +4609,8 @@ Include ONLY known fields. Use exact company/location names for updates. Respond
         setMsgs(prev=>[...prev,{role:"system",content:`✅ Updated ${loc.company}/${loc.location}: ${Object.keys(f).join(", ")}`}]);
       }
     } else if(action.action==="update_hq"){
-      const hq=hqs.find(h=>h.company.toLowerCase()===action.company?.toLowerCase());
-      if(!hq){setMsgs(prev=>[...prev,{role:"system",content:`❌ Company not found: ${action.company}`}]);return;}
+      const hq=fuzzyFind(hqs,action.company);
+      if(!hq){const availH=hqs.slice(0,5).map(h=>h.company).join(", ");setMsgs(prev=>[...prev,{role:"system",content:`❌ Company not found: "${action.company}". Available: ${availH}`}]);return;}
       const hqPatch={};
       const f=action.fields||{};
       if(f.intelligence)hqPatch.intelligence=(hq.intelligence?hq.intelligence+"\n\n":"")+"[AI] "+f.intelligence;
@@ -4634,7 +4634,7 @@ Include ONLY known fields. Use exact company/location names for updates. Respond
     try{
       // Find or create HQ
       let parentId=null;
-      const existingHQ=hqs.find(h=>h.company?.toLowerCase()===a.hq_company?.toLowerCase());
+      const existingHQ=fuzzyFind(hqs,a.hq_company);
       if(existingHQ){
         parentId=existingHQ.id;
         setMsgs(prev=>[...prev,{role:"system",content:`ℹ️ Company "${a.hq_company}" already exists — adding new location.`}]);
