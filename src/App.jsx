@@ -251,7 +251,7 @@ const EMPTY_HQ  = {id:null,isHQ:true,company:"",industry:"",centralContact:"",ce
 // ─── PLAYBOOK DATA ───────────────────────────────────────────────
 const INIT_PLAYBOOK = {
   stages:[
-    {id:"new",stage:"New",icon:"1",title:"Lead Qualification & Contact Discovery",target:"Complete research within 24h of lead entry. Do NOT move to Contacted without a specific person.",tasks:`PREREQUISITE: You have a company name. Your job now is to find the person who feels the pain.
+    {id:"new",quick:["Research on Termene.ro + eJobs BEFORE calling — how many open positions, how long?","Find a SPECIFIC person: HR Director, Plant Manager, or Ops Director — not just company","Write your pain hypothesis in SPIN-P before first contact","DO NOT move to Contacted without: name + role + contact method + SPIN-P hypothesis"],stage:"New",icon:"1",title:"Lead Qualification & Contact Discovery",target:"Complete research within 24h of lead entry. Do NOT move to Contacted without a specific person.",tasks:`PREREQUISITE: You have a company name. Your job now is to find the person who feels the pain.
 (Challenger Sale: you cannot teach or tailor without knowing who you're talking to)
 
 ━━━ STEP 1: COMPANY RESEARCH ━━━
@@ -306,7 +306,7 @@ Before moving to Contacted:
 
 DO NOT move to "Contacted" until all 6 are checked.`},
 
-    {id:"contacted",stage:"Contacted",icon:"2",title:"First Contact Sequence",target:"3 contact attempts across 3 channels within 7 business days.",tasks:`SOURCE: Never Split the Difference (Voss) — multi-touch sequencing
+    {id:"contacted",quick:["Day 1: Call + Email same day. Day 3: Call different time + LinkedIn. Day 7: Follow-up email","NEVER leave voicemail — give them no reason not to answer next call","Voss: 'Is it a bad idea altogether, or just bad timing?' invites honest reply","After 3 attempts no reply → No Answer. Never 4th/5th attempt same week"],stage:"Contacted",icon:"2",title:"First Contact Sequence",target:"3 contact attempts across 3 channels within 7 business days.",tasks:`SOURCE: Never Split the Difference (Voss) — multi-touch sequencing
 PREREQUISITE: You have a specific person's NAME + ROLE + at least one contact method.
 
 ━━━ THE MULTI-TOUCH SEQUENCE ━━━
@@ -345,7 +345,7 @@ They reply to your email with anything other than "not interested."
 They accept your LinkedIn request AND reply to your message.
 One positive signal = move to "Interested." Do not wait for enthusiasm.`},
 
-    {id:"interested",stage:"Interested",icon:"3",title:"Discovery & Meeting Preparation",target:"Meeting scheduled within 5 business days of prospect showing interest.",tasks:`SOURCE: SPIN Selling (Rackham) + The Challenger Sale (Dixon & Adamson)
+    {id:"interested",quick:["Open with Commercial Insight (Challenger) — teach before you ask","SPIN order: Situation → Problem → Implication → Need-Payoff. Never skip steps","IMPLICATION questions are the engine — make the cost of inaction visible","Write their EXACT words in each SPIN field — do not paraphrase","Close for next step: specific date + specific action, not 'I'll send something'"],stage:"Interested",icon:"3",title:"Discovery & Meeting Preparation",target:"Meeting scheduled within 5 business days of prospect showing interest.",tasks:`SOURCE: SPIN Selling (Rackham) + The Challenger Sale (Dixon & Adamson)
 This stage has one goal: understand their pain deeply enough to propose a specific solution.
 Do NOT send a proposal yet. Do NOT pitch a solution yet. Discover first.
 
@@ -396,7 +396,7 @@ Before moving to Meeting Scheduled:
 ☐ Meeting date and time confirmed in writing
 ☐ Contact person confirmed (name, role, phone)`},
 
-    {id:"meeting",stage:"Meeting Scheduled",icon:"4",title:"Meeting Execution",target:"Zero no-shows. Always confirm 24h before. Leave with a specific next step committed.",tasks:`SOURCE: The Challenger Sale (Dixon & Adamson) — Teach-Tailor-Take Control
+    {id:"meeting",quick:["Confirm 24h before — unconfirmed meetings cancel 3x more often","Prepare ONE Commercial Insight specific to their industry + size","Structure: Rapport → Teach → Tailor → Present → Pain Summary → Next Step","Get 'That's right' (Voss) before any close attempt — not 'you're right'","Leave immediately after commitment — do not linger"],stage:"Meeting Scheduled",icon:"4",title:"Meeting Execution",target:"Zero no-shows. Always confirm 24h before. Leave with a specific next step committed.",tasks:`SOURCE: The Challenger Sale (Dixon & Adamson) — Teach-Tailor-Take Control
 PREREQUISITE: Discovery Call done, SPIN filled, Commercial Insight prepared.
 This is NOT a discovery call. You have already done discovery. This is a presentation and advance.
 
@@ -460,7 +460,7 @@ Leave immediately after the commitment. Do not linger.
 — Log Activity entry with key quotes
 — Send thank-you email with summary of what you heard (use Post-Meeting template)`},
 
-    {id:"done",stage:"Meeting Done",icon:"5",title:"Proposal Preparation & Delivery",target:"Proposal sent within 24h of meeting. Follow-up call booked before sending.",tasks:`SOURCE: The Strategy and Tactics of Pricing (Nagle) — Economic Value to Customer
+    {id:"done",quick:["Send proposal within 24h — include Pain Summary using THEIR exact words","Section 2 = Economic Value Calculation (Nagle) — show cost of their alternative BEFORE price","NEVER send without a scheduled follow-up call — proposals without next steps die","UA = 2-4 weeks delivery. Asian = 4-6 MONTHS. State this clearly in proposal"],stage:"Meeting Done",icon:"5",title:"Proposal Preparation & Delivery",target:"Proposal sent within 24h of meeting. Follow-up call booked before sending.",tasks:`SOURCE: The Strategy and Tactics of Pricing (Nagle) — Economic Value to Customer
 RULE: Never send a proposal without a scheduled follow-up call. A proposal without a next step is a document that sits in someone's inbox.
 
 ━━━ IMMEDIATELY AFTER THE MEETING ━━━
@@ -516,7 +516,7 @@ A specific call booked, not "call me if you have questions."
 — Price before value calculation
 — Sending without a booked follow-up`},
 
-    {id:"proposal",stage:"Proposal Sent",icon:"6",title:"Follow-up Sequence",target:"Decision within 14 days. After 14 days without response: close or drop.",tasks:`SOURCE: Never Split the Difference (Voss) + The Challenger Sale (Dixon & Adamson)
+    {id:"proposal",quick:["Day 3: Call — walk through proposal together. This is where deals close","Day 7: Value email — new insight for their industry, NOT 'just checking in'","Day 14: Breakup message — Voss: permission to say no often triggers response","'We need more time' = something unresolved. Ask: what specifically?"],stage:"Proposal Sent",icon:"6",title:"Follow-up Sequence",target:"Decision within 14 days. After 14 days without response: close or drop.",tasks:`SOURCE: Never Split the Difference (Voss) + The Challenger Sale (Dixon & Adamson)
 RULE: The proposal is not the close. The follow-up call IS where deals close.
 Most deals are won or lost in the 72 hours after the proposal is sent.
 
@@ -564,7 +564,7 @@ After 14 days and breakup message with no response: No Answer.
 After breakup message and they confirm they chose someone else: Closed Lost.
 Fill in Lost Reason immediately. This data improves the whole team.`},
 
-    {id:"negotiation",stage:"Negotiation",icon:"7",title:"Terms Discussion & Closing",target:"Close or escalate within 10 days. Never negotiate against yourself.",tasks:`SOURCE: Never Split the Difference (Voss) + Thinking Strategically (Dixit & Nalebuff)
+    {id:"negotiation",quick:["Label emotion FIRST before any logic: 'It seems like budget pressure is real right now'","Never defend price — ask: 'How am I supposed to make this work at that number?'","Every concession = something in return. Never give freely","Ackerman: moves decrease in size. Final number = precise non-round (5,840 not 5,800)",">5% discount / >50 workers / non-standard terms → escalate to Walery immediately"],stage:"Negotiation",icon:"7",title:"Terms Discussion & Closing",target:"Close or escalate within 10 days. Never negotiate against yourself.",tasks:`SOURCE: Never Split the Difference (Voss) + Thinking Strategically (Dixit & Nalebuff)
 You are here because they want to buy but are pushing back on something.
 That is a good position. Do not destroy it by making unilateral concessions.
 
@@ -609,7 +609,7 @@ Escalation: "Lasati-ma sa aduc directorul nostru — are mai multa flexibilitate
 — Payment terms beyond 30 days
 Escalation is not weakness. It is a strategic move that signals seriousness.`},
 
-    {id:"won",stage:"Closed Won",icon:"✓",title:"Handover & Account Development",target:"Operations briefed within 24h. First check-in call within 1 week of workers starting.",tasks:`SOURCE: High Output Management (Grove) — process discipline at handover
+    {id:"won",quick:["Brief Operations within 24h — not 3 days, not 'when you get around to it'","Introduce dedicated coordinator to client by NAME and PHONE same day","UA = 2-4 weeks. Asian = MINIMUM 4-6 months. Never promise otherwise","Month 1 check-in: ask '1-10 satisfaction? What would make it 10?'","After month 1: ask for referral — most clients will, most salespeople never ask"],stage:"Closed Won",icon:"✓",title:"Handover & Account Development",target:"Operations briefed within 24h. First check-in call within 1 week of workers starting.",tasks:`SOURCE: High Output Management (Grove) — process discipline at handover
 Congratulations. Now the real work begins. Most client relationships are won or lost in the first 30 days.
 
 ━━━ WITHIN 24 HOURS OF SIGNING ━━━
@@ -642,7 +642,7 @@ Watch for upsell signals (see Account Development card in Reference Cards):
 "We're really proud of how this has gone. Do you know other companies — suppliers, partners — who might benefit from the same model?"
 Most satisfied clients will refer. Most salespeople never ask.`},
 
-    {id:"lost",stage:"Closed Lost",icon:"✕",title:"Post-Mortem & Re-entry Plan",target:"Lost Reason filled within 24h. Re-entry date set. Every loss teaches something.",tasks:`SOURCE: High Output Management (Grove) — process failures as learning inputs
+    {id:"lost",quick:["Fill Lost Reason in CRM within 24h — zero value if not captured","Price lost = EVC not shown. Competitor won = showed up too late. No decision = pain too low","Set re-entry date: competitor clients = 6 months. Timing = next season","One sentence: what would you do differently next time?"],stage:"Closed Lost",icon:"✕",title:"Post-Mortem & Re-entry Plan",target:"Lost Reason filled within 24h. Re-entry date set. Every loss teaches something.",tasks:`SOURCE: High Output Management (Grove) — process failures as learning inputs
 A lost deal is data. It has no value unless it is captured, analyzed, and used to improve the process.
 (Grove: "The output of a post-mortem is a process change. Not regret.")
 
@@ -686,7 +686,7 @@ Lost due to price → Note their budget ceiling in Intelligence.
 Lost due to legal concerns → This is a knowledge gap, not a real objection.
 → Prepare a one-page ITM/compliance FAQ. Send it as a follow-up. Their concern may dissolve.`},
 
-    {id:"noanswer",stage:"No Answer",icon:"—",title:"Re-engagement Protocol",target:"4 attempts across 4 channels before archiving. No more than one attempt per 3–4 days.",tasks:`SOURCE: Never Split the Difference (Voss) — silence is not rejection
+    {id:"noanswer",quick:["Max 4 attempts, different channel each time, 3-4 days apart","NEVER leave voicemail. NEVER call 4 times in one week — you will be blocked","Attempt 4: breakup message — 'closing file, available if situation changes'","60-day soft reminder: company situations change. Your timing may have been wrong"],stage:"No Answer",icon:"—",title:"Re-engagement Protocol",target:"4 attempts across 4 channels before archiving. No more than one attempt per 3–4 days.",tasks:`SOURCE: Never Split the Difference (Voss) — silence is not rejection
 "No Answer" does not mean "not interested." It means they are busy, distracted, or avoiding.
 Your job: give them a frictionless way to re-engage — or to say no clearly.
 (Voss: a clear "no" is more useful than silence. Invite it.)
@@ -725,7 +725,7 @@ On Attempt 3 or 4, consider:
 Paradoxically, giving them permission to say no often gets a response.
 People are uncomfortable ignoring — but comfortable declining.`},
   ],  extras:[
-    {id:"discoveryCall",stageGroup:"Interested",title:"Discovery Call Script (Phone)",color:"teal",text:`WHEN TO USE THIS
+    {id:"discoveryCall",quick:["Open with Challenger reframe — teach before you ask, not pitch","SPIN order: S(facts) → P(pain) → I(cost of pain) → N(value of solving)","Implication questions: 'If line runs short — what does that cost per shift?'","ONE Need-Payoff question, then wait. Do not fill the silence","Voss: get 'That's right' before closing for next step"],stageGroup:"Interested",title:"Discovery Call Script (Phone)",color:"teal",text:`WHEN TO USE THIS
 After first contact → prospect is 'Interested'. This is a 15–20 min PHONE call.
 NOT the physical meeting. NOT a pitch. A diagnostic conversation.
 Goal: understand their situation deeply, fill SPIN fields, book the next step.
@@ -787,7 +787,7 @@ AFTER THE CALL — update CRM same day:
 — Update Last Contact and Next Step + Date
 — Activity Log: key quotes and commitments`},
 
-    {id:"dm",stageGroup:"New",title:"Decision Maker Mapping",color:"indigo",text:`DO NOT CONTACT RANDOMLY — map before you call.
+    {id:"dm",quick:["Find MOBILIZER — person who challenges status quo internally","HR Director: compliance + ITM risk. Plant Manager: reliability + speed. Owner: cost + risk","Talker = friendly but can't decide. Blocker = has something to lose. Find around them","LinkedIn → Termene.ro → company website → cold call switchboard"],stageGroup:"New",title:"Decision Maker Mapping",color:"indigo",text:`DO NOT CONTACT RANDOMLY — map before you call.
 (Challenger Sale: organizations have Mobilizers, Blockers, and Talkers. Most salespeople call the wrong person.)
 
 ━━━ THREE TYPES OF CONTACTS ━━━
@@ -846,7 +846,7 @@ Voss personality type: Assertive. Get to the point. Show track record.
 You have: a SPECIFIC NAME + ROLE + CONTACT METHOD.
 Company name alone = New stage. Person = Contacted stage.`},
 
-    {id:"daily",stageGroup:"Always",title:"Daily Activity Standard",color:"amber",text:`SOURCE: High Output Management (Andy Grove) + Challenger Sale activity benchmarks
+    {id:"daily",quick:["15 outreach actions / 3 DM conversations / 1 next step booked — minimum floors not ceilings","Grove: manage LEADING indicators (calls, meetings booked), not lagging (deals closed)","Ratio: <1 meeting per 5 qualified calls = pitch or targeting broken","Friday: which deals haven't moved in 7 days? Action or drop"],stageGroup:"Always",title:"Daily Activity Standard",color:"amber",text:`SOURCE: High Output Management (Andy Grove) + Challenger Sale activity benchmarks
 
 ━━━ GROVE'S PRINCIPLE ━━━
 "A manager's output = the output of their organization + the output of neighboring organizations under their influence."
@@ -892,7 +892,7 @@ Fix the ratio before adding volume.
 — "Warming up" leads with no next step booked = not sales activity
 — Sending a proposal without a scheduled follow-up call = giving the deal away`},
 
-    {id:"principles",stageGroup:"Always",title:"Core Selling Principles",color:"txt",text:`These are not rules. They are the output of decades of research on what actually works in complex B2B sales.
+    {id:"principles",quick:["Rackham: features kill complex deals. Ask until THEY articulate the need","Challenger: relationship builders underperform. Teach + Tailor + Take Control","Voss: Never split the difference. Tactical empathy before logic. Silence is a tool","Grove: output = booked next steps, not 'I called 30 people'","If it's not in CRM — it didn't happen"],stageGroup:"Always",title:"Core Selling Principles",color:"txt",text:`These are not rules. They are the output of decades of research on what actually works in complex B2B sales.
 
 ━━━ FROM SPIN SELLING (Rackham — 35,000 sales calls studied) ━━━
 
@@ -953,7 +953,7 @@ If it is not in the CRM, it did not happen.
 Every call, every meeting, every "they said they'll think about it."
 Log it. Date it. Set a next step. Without this, you are not managing a pipeline — you are managing hope.`},
 
-    {id:"objectionHandler",stageGroup:"Negotiation",title:"Objection Handler",color:"red",text:`SOURCE: Never Split the Difference (Voss) + Challenger Sale (Dixon & Adamson)
+    {id:"objectionHandler",quick:["Label → Calibrated question → Respond. NEVER defend immediately","'Already have agency' → 'How well are they meeting your needs?' Then find the gap","'Too expensive' → Build EVC: show total cost of their alternative first","'Send email' → 'Before I do — two quick questions?' Then attach a call to the email","'Not right time' → 'What specifically isn't clear?' Find the real blocker"],stageGroup:"Negotiation",title:"Objection Handler",color:"red",text:`SOURCE: Never Split the Difference (Voss) + Challenger Sale (Dixon & Adamson)
 Key principle: An objection is not a "no." It is a signal that they are still thinking — but something is blocking them. Your job is to find and remove that block.
 
 ━━━ THE VOSS FRAMEWORK FOR ANY OBJECTION ━━━
@@ -1018,7 +1018,7 @@ Right approach:
 → If they still deflect: "Is this a bad idea altogether, or just bad timing?" (Voss: invite the safe 'no')
 → Getting a real "no" is better than a false "maybe" that disappears.`},
 
-    {id:"firstMeetingAgenda",stageGroup:"Meeting Scheduled",title:"First Meeting Agenda (On-Site)",color:"green",text:`SOURCE: The Challenger Sale (Dixon & Adamson) — Teach-Tailor-Take Control structure
+    {id:"firstMeetingAgenda",quick:["Prepare ONE Commercial Insight specific to their industry before walking in","0-6min: rapport + set agenda. 6-12min: Teach (insight). 12-22min: Tailor (SPIN deeper)","22-30min: Present. 30-33min: Pain summary — get 'That's right'. 33-36min: Next step","Never 'I'll send something' — book the next call before you leave","Leave immediately after commitment. Professional exit = professional impression"],stageGroup:"Meeting Scheduled",title:"First Meeting Agenda (On-Site)",color:"green",text:`SOURCE: The Challenger Sale (Dixon & Adamson) — Teach-Tailor-Take Control structure
 This is the PHYSICAL on-site meeting. You have already done the Discovery Call. You are here to present and advance, not to discover from scratch.
 
 ━━━ PRE-MEETING PREPARATION (day before) ━━━
@@ -1082,7 +1082,7 @@ Leave immediately after the commitment. Do not linger. Professional exit = profe
 — Log Activity with key quotes
 — Send confirmation email with summary of what you heard and confirmed next step`},
 
-    {id:"preDiscoveryPrep",stageGroup:"Contacted",title:"Pre-Call Preparation",color:"blue",text:`SOURCE: SPIN Selling (Rackham) + The Challenger Sale (Dixon & Adamson)
+    {id:"preDiscoveryPrep",quick:["Write your pain hypothesis (SPIN-P) BEFORE dialing — one sentence","Prepare 3 Implication questions specific to THIS client's industry + size","Know your ONE call goal — what specific next step do you want?","If you can't write the pain hypothesis — you're not ready to call"],stageGroup:"Contacted",title:"Pre-Call Preparation",color:"blue",text:`SOURCE: SPIN Selling (Rackham) + The Challenger Sale (Dixon & Adamson)
 Do this 15–20 minutes before any call. Not the day before — right before.
 
 ━━━ STEP 1: REVIEW INTELLIGENCE ━━━
@@ -1132,7 +1132,7 @@ Which worker profile: UA or Asian?
 Realistic delivery timeline: UA = 2–4 weeks. Asian = 4–6 MONTHS. Know this before you promise.
 Do not make commitments you cannot keep. Your reputation is on every promise.`},
 
-    {id:"coldCallOpener",stageGroup:"Contacted",title:"Cold Call Opener",color:"blue",text:`SOURCE: Never Split the Difference (Voss) + The Challenger Sale (Dixon & Adamson)
+    {id:"coldCallOpener",quick:["3 sentences: who you are → specific observation about THEM → one question","NEVER 'Is this a bad time?' NEVER pitch in first 20 seconds","'Send email' → 'Before I do — two quick questions?' Goal: attach a call","Gatekeeper: 'Re: email about operational staffing — can you transfer?'"],stageGroup:"Contacted",title:"Cold Call Opener",color:"blue",text:`SOURCE: Never Split the Difference (Voss) + The Challenger Sale (Dixon & Adamson)
 The first 20 seconds determine whether they stay on the line. Everything after that is execution.
 
 ━━━ WHAT DOES NOT WORK ━━━
@@ -1177,7 +1177,7 @@ If they don't know the name:
 Do NOT leave a voicemail. It gives them a reason not to answer the next call.
 Call again at a different time of day. Different day of week.`},
 
-    {id:"linkedinOutreach",stageGroup:"Contacted",title:"LinkedIn Outreach",color:"blue",text:`SOURCE: The Challenger Sale (Dixon & Adamson) + Never Split the Difference (Voss)
+    {id:"linkedinOutreach",quick:["First message: Hook (their news) + Insight (useful to them) + ONE question. No pitch","Never mention your company in first message","No reply 7 days: one follow-up with DIFFERENT angle. Still nothing: call","They reply: move immediately to booking a 15-min call"],stageGroup:"Contacted",title:"LinkedIn Outreach",color:"blue",text:`SOURCE: The Challenger Sale (Dixon & Adamson) + Never Split the Difference (Voss)
 LinkedIn is not for pitching. It is for opening a conversation with someone who would otherwise never take your call.
 
 ━━━ THE CHALLENGER PRINCIPLE ━━━
@@ -1217,7 +1217,7 @@ Move immediately to Discovery Call request. Do not pitch in chat.
 ━━━ IF NO REPLY AFTER SECOND MESSAGE ━━━
 Move to Cold Call. LinkedIn silence ≠ rejection. Different channel.`},
 
-    {id:"proposalStructure",stageGroup:"Proposal Sent",title:"Proposal Structure",color:"teal",text:`SOURCE: The Strategy and Tactics of Pricing (Nagle) — Economic Value to Customer framework
+    {id:"proposalStructure",quick:["Section 1: Pain Summary — their exact words back to them (builds trust)","Section 2: EVC — cost of their alternative BEFORE your price (Nagle)","Section 3: Specific solution — workers count, profile, entity, date","Section 6: Booked follow-up call — proposals without next steps die"],stageGroup:"Proposal Sent",title:"Proposal Structure",color:"teal",text:`SOURCE: The Strategy and Tactics of Pricing (Nagle) — Economic Value to Customer framework
 A proposal is not a brochure. It is a structured argument for why investing in your solution creates more value than it costs.
 
 ━━━ NAGLE'S CORE PRINCIPLE ━━━
@@ -1276,7 +1276,7 @@ NEVER end a proposal without a booked follow-up. A proposal without a next step 
 — Generic guarantees without specifics ("we guarantee quality")
 — Your pricing before you've shown the EVC calculation`},
 
-    {id:"closingTechniques",stageGroup:"Negotiation",title:"Closing Techniques",color:"green",text:`SOURCE: Never Split the Difference (Voss) + The Challenger Sale (Dixon & Adamson)
+    {id:"closingTechniques",quick:["Close only when: Pain ≥4 + Economic Buyer present + proposal discussed + no open objections","Get 'That's right' first — not 'you're right'","Assumptive: 'When is better — start of April or mid-month?' (assumes yes, asks timing)","Summary: 'We agreed: X workers, Y date, Z price. Sign?'","Escalation: 'Let me bring in our director — he can authorize what I can't'"],stageGroup:"Negotiation",title:"Closing Techniques",color:"green",text:`SOURCE: Never Split the Difference (Voss) + The Challenger Sale (Dixon & Adamson)
 
 ━━━ WHEN TO CLOSE ━━━
 Close only when all four conditions are true:
@@ -1321,7 +1321,7 @@ They say YES → confirm in writing immediately. Same day.
 They say NOT YET → "Ce anume lipseste pentru a lua decizia?" Find the real blocker.
 They say NO → "Ce s-a schimbat fata de ultima noastra conversatie?" Update Lost Reason in CRM.`},
 
-    {id:"negotiationTechniques",stageGroup:"Negotiation",title:"Negotiation Techniques",color:"orange",text:`SOURCE: Never Split the Difference (Voss) + The Strategy and Tactics of Pricing (Nagle) + Thinking Strategically (Dixit & Nalebuff)
+    {id:"negotiationTechniques",quick:["Label emotion first: 'It seems budget pressure is real right now'","Calibrated: 'How am I supposed to make this work?' — makes them solve it with you","Ackerman: 65%→85%→95%→100%. Final = precise non-round number","Never concede without trading: 'I can do X — if you confirm Y'",">5% / >50 workers / non-standard terms → call Walery NOW"],stageGroup:"Negotiation",title:"Negotiation Techniques",color:"orange",text:`SOURCE: Never Split the Difference (Voss) + The Strategy and Tactics of Pricing (Nagle) + Thinking Strategically (Dixit & Nalebuff)
 
 ━━━ ENTER NEGOTIATION ONLY AFTER ATTEMPTING TO CLOSE ━━━
 If they said yes → confirm and sign. Do NOT negotiate against yourself.
@@ -1395,7 +1395,7 @@ Escalation rules as strategic moves — not signs of weakness.
 — Payment terms beyond 30 days
 Escalation is a closing tool: "Let me bring in our director — he can authorize what I cannot."`},
 
-    {id:"competitorComparison",stageGroup:"Negotiation",title:"Competitive Positioning",color:"purple",text:`SOURCE: Competitive Strategy (Porter) + The Challenger Sale (Dixon & Adamson)
+    {id:"competitorComparison",quick:["Porter: differentiate on specialization, speed, legal expertise — not price","'We already have Adecco' → 'We complement, not replace — they do local, we do foreign'","Our strongest: 2-4 week UA delivery (documented). No agency matches this","Legal: we are employer of record. ITM comes to us, not to client","Reframe: 'What criteria matter most to you in choosing a foreign worker supplier?'"],stageGroup:"Negotiation",title:"Competitive Positioning",color:"purple",text:`SOURCE: Competitive Strategy (Porter) + The Challenger Sale (Dixon & Adamson)
 Porter: sustainable competitive advantage comes from either lower cost OR differentiation. Not both. Not neither.
 Gremi/Antforce: we do not compete on price. We compete on differentiation — specialization, speed, legal expertise.
 
@@ -1448,7 +1448,7 @@ Ask: "What criteria matter most to you in choosing a foreign worker supplier?"
 Then show how those criteria favor you — specifics, not generalities.
 (If they say price: go to Nagle's EVC. If they say reliability: go to your track record.)`},
 
-    {id:"postDealOnboarding",stageGroup:"Closed Won",title:"Post-Deal Onboarding",color:"green",text:`SOURCE: High Output Management (Grove) — process standardization as a management tool
+    {id:"postDealOnboarding",quick:["Brief Ops within 24h. Introduce coordinator by name + phone same day","UA: 2-4 weeks. Asian: 4-6 MONTHS minimum. NEVER promise Asian in 4 weeks","Day 1 on site: coordinator present. Any issue resolved within 24h","Month 1 formal check-in: satisfaction score + upcoming needs"],stageGroup:"Closed Won",title:"Post-Deal Onboarding",color:"green",text:`SOURCE: High Output Management (Grove) — process standardization as a management tool
 "A well-defined process is the foundation of consistent output." — Grove
 
 ━━━ THE FIRST 48 HOURS ━━━
@@ -1507,7 +1507,7 @@ Who: Salesperson
 Document what works on each client. Every successful onboarding teaches you something.
 The goal: make the 10th onboarding as smooth as the 1st — through process, not heroics.`},
 
-    {id:"accountManagementUpsell",stageGroup:"Closed Won",title:"Account Development & Upsell",color:"green",text:`SOURCE: The Challenger Sale (Dixon & Adamson) + High Output Management (Grove)
+    {id:"accountManagementUpsell",quick:["Week 1 → Week 2 → Month 1 → Month 3 check-ins. Minimum monthly contact","Upsell triggers: 'new line', 'night shift', 'peak earlier', 'other plant'","Referral ask after Month 1 — most clients will refer, most salespeople never ask","Keeping client costs 5-7x less than finding new one (Nagle)"],stageGroup:"Closed Won",title:"Account Development & Upsell",color:"green",text:`SOURCE: The Challenger Sale (Dixon & Adamson) + High Output Management (Grove)
 "The relationship starts at signing — it does not end there." (Challenger Sale)
 
 ━━━ WHY THIS MATTERS — THE ECONOMICS ━━━
@@ -1553,7 +1553,7 @@ Most satisfied clients are happy to refer. Most salespeople never ask.
 Your account management output = retention rate + expansion revenue + referrals generated.
 Measure it. If retention is below 90% — something in your onboarding or quality is broken. Fix the process, not the symptom.`},
 
-    {id:"meetingConfirmation",stageGroup:"Meeting Scheduled",title:"Meeting Confirmation",color:"green",text:`SOURCE: High Output Management (Grove) — confirmed next steps as process discipline
+    {id:"meetingConfirmation",quick:["Send 24h before — not 5min, not 2 days","Subject + agenda + duration + your phone. No pitch in confirmation","No reply by evening: call to confirm. Unconfirmed = coin flip","If they reschedule: propose 2 specific alternatives immediately"],stageGroup:"Meeting Scheduled",title:"Meeting Confirmation",color:"green",text:`SOURCE: High Output Management (Grove) — confirmed next steps as process discipline
 Rule: an unconfirmed meeting is a coin flip. A confirmed meeting is a commitment.
 
 ━━━ WHEN TO SEND ━━━
@@ -1898,7 +1898,7 @@ Top deals by workers: ${active.filter(l=>parseInt(l.workers)>0).sort((a,b)=>(par
   };
 
   return (
-    <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:10}}>
+    <div style={{flex:1,overflowY:"auto",padding:12,paddingBottom:72,display:"flex",flexDirection:"column",gap:10}}>
       {/* AI Summary Card */}
       <div style={{background:`linear-gradient(135deg,${C.bg2},${C.bg3})`,border:`1px solid ${C.teal}44`,borderRadius:12,padding:14}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:summaryLoading||summary?10:0}}>
@@ -2101,6 +2101,191 @@ Return ONLY valid JSON, no explanation.`;
   );
 }
 
+
+// ─── QUICK SCRIPT MODAL ──────────────────────────────────────────
+function QuickScriptModal({loc, hq, onClose}) {
+  const SCRIPT_TYPES = [
+    {id:"cold_call",   label:"📞 Cold Call",     icon:"📞", desc:"First call to this prospect"},
+    {id:"followup",    label:"📧 Follow-up",     icon:"📧", desc:"After no response"},
+    {id:"discovery",   label:"🔍 Discovery",     icon:"🔍", desc:"Qualifying call script"},
+    {id:"proposal",    label:"📄 Proposal",      icon:"📄", desc:"Walk through the offer"},
+    {id:"objection",   label:"⚡ Objection",     icon:"⚡", desc:"Handle pushback"},
+    {id:"closing",     label:"🤝 Closing",       icon:"🤝", desc:"Move toward signature"},
+    {id:"linkedin",    label:"🔗 LinkedIn",      icon:"🔗", desc:"First LinkedIn message"},
+    {id:"breakup",     label:"👋 Breakup",       icon:"👋", desc:"After 3+ attempts, no reply"},
+  ];
+
+  const [selType, setSelType] = useState("cold_call");
+  const [script, setScript] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const buildContext = () => {
+    const spin = loc.spin || {};
+    const activities = (loc.activities||[]).slice(0,3);
+    return `
+CLIENT: ${loc.company}${loc.location&&loc.location!==loc.company?" / "+loc.location:""}
+Contact: ${loc.contact||"unknown"} (${loc.role||"?"})
+Stage: ${loc.stage} | Temperature: ${loc.temp} | Pain Score: ${loc.painScore||"?"}/5
+Workers needed: ${loc.workers||"?"} ${loc.workerType||""}
+Service: ${loc.service||"?"}
+County: ${loc.county||"?"}
+
+SPIN DATA:
+S (Situation): ${spin.s||"not filled"}
+P (Problem): ${spin.p||"not filled"}
+I (Implication): ${spin.i||"not filled"}
+N (Need-Payoff): ${spin.n||"not filled"}
+Pain Summary: ${loc.painSummary||loc.painScore||"not filled"}
+Current Supplier: ${loc.currentSupplier||"none known"}
+
+COMPANY INTEL: ${hq?.intelligence?.substring(0,300)||"none"}
+Employees: ${hq?.employees||"?"} | Industry: ${hq?.industry||"?"}
+
+LAST ACTIVITIES:
+${activities.length?activities.map(a=>`[${a.date}] ${a.type}: ${a.note?.substring(0,80)||""}`).join("\n"):"No activity yet"}
+
+Next Step: ${loc.nextStep||"none"} by ${loc.nextStepDate||"?"}
+Last Contact: ${loc.lastContact||"never"}`;
+  };
+
+  const PROMPTS = {
+    cold_call: `Write a cold call script for a staffing salesperson at Gremi Personal Romania.
+Apply: Challenger Sale opener (specific observation about their business, not pitch), Voss (no "is this a bad time?"), SPIN opening questions.
+Format: 3 short sections — Opening (3 sentences), First Questions (3 SPIN-S/P questions), If They Engage (how to advance). Keep it conversational, in Romanian. Under 200 words total.`,
+
+    followup: `Write a follow-up call/email script for Gremi Personal Romania salesperson.
+They have had previous contact but no response for 5+ days.
+Apply: Challenger (bring new insight, not "just checking in"), Voss (invite safe no: "if this isn't relevant anymore, just let me know").
+Format: Opening (acknowledge gap), Value Add (one specific insight for their industry), Next Step ask. Under 150 words.`,
+
+    discovery: `Write a discovery call script for Gremi Personal Romania.
+The prospect is "Interested" — this is a qualifying call, not a pitch.
+Apply: SPIN structure (Situation → Problem → Implication → Need-Payoff), Challenger reframe opener.
+Format: 4 sections matching SPIN stages. For each: 2-3 specific questions tailored to their industry/situation. Under 250 words.`,
+
+    proposal: `Write a proposal walkthrough script for Gremi Personal Romania salesperson.
+They are calling to walk the client through a proposal already sent.
+Apply: Nagle EVC (show cost of their alternative), Voss "That's Right" summary before closing, Challenger "Take Control" for next step.
+Format: Opening (pain summary back to them), Value (EVC point), Solution summary, Next Step. Under 200 words.`,
+
+    objection: `Write objection handling scripts for Gremi Personal Romania.
+Focus on the most likely objections based on their stage and SPIN data.
+Apply: Voss (label → calibrated question → respond), Nagle (defend value not price), Challenger (reframe).
+Format: 2-3 likely objections for this specific client, each with: Label, Question, Response. Under 300 words.`,
+
+    closing: `Write a closing call script for Gremi Personal Romania salesperson.
+The deal is at negotiation/closing stage.
+Apply: Voss "That's Right" check before closing, Assumptive Close, Summary Close, escalation if needed.
+Format: Pain Summary (get "that's right"), Assumptive Close attempt, If Resistance (2 alternatives), Escalation option. Under 200 words.`,
+
+    linkedin: `Write a LinkedIn first message for Gremi Personal Romania.
+Apply: Challenger (hook = specific observation about them, insight = something useful, one question — no pitch), Voss (no pressure).
+Format: Single message max 5 sentences. No company pitch in first message. One question at end. In Romanian or English based on context.`,
+
+    breakup: `Write a professional breakup message for Gremi Personal Romania.
+After 3+ contact attempts with no response.
+Apply: Voss (give permission to say no — creates response), Grove (respect their time).
+Format: 3 sentences max. Acknowledge attempts, close file, leave door open. Zero passive-aggression. In Romanian.`,
+  };
+
+  const generate = async () => {
+    setLoading(true); setScript(""); setCopied(false);
+    const sysPrompt = `You are an expert B2B sales script writer for Gremi Personal Romania, a staffing company placing Ukrainian and Asian workers in Romanian manufacturing factories. You write scripts that sound natural and professional, not robotic. Every script must be personalized to the specific client context provided.`;
+    const userPrompt = `${PROMPTS[selType]}\n\nCLIENT CONTEXT:\n${buildContext()}\n\nWrite the script now. Use the client's actual name, company, pain points, and SPIN data wherever possible. Make it feel custom-written for this specific client, not generic.`;
+    try {
+      const res = await fetch(AI_PROXY, {
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,system:sysPrompt,messages:[{role:"user",content:userPrompt}]})
+      });
+      const d = await res.json();
+      setScript(d.content?.[0]?.text || "Error generating script.");
+    } catch(e) { setScript("Connection error: "+e.message); }
+    setLoading(false);
+  };
+
+  useEffect(() => { generate(); }, [selType]);
+
+  const copy = () => {
+    navigator.clipboard.writeText(script).then(() => { setCopied(true); setTimeout(()=>setCopied(false),2000); });
+  };
+
+  return (
+    <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="sheet" style={{maxHeight:"90vh"}}>
+        {/* Header */}
+        <div style={{padding:"13px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+          <div style={{width:28,height:28,borderRadius:8,background:`linear-gradient(135deg,${C.amber},${C.orange})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>📋</div>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:14,color:C.txt}}>Quick Script</div>
+            <div style={{fontSize:11,color:C.txt3}}>{loc.company}{loc.location&&loc.location!==loc.company?" · "+loc.location:""} · {loc.stage}</div>
+          </div>
+          <button className="xb" onClick={onClose}>×</button>
+        </div>
+
+        {/* Script type selector */}
+        <div style={{padding:"10px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",gap:6,flexWrap:"wrap",flexShrink:0,background:C.bg0}}>
+          {SCRIPT_TYPES.map(t=>(
+            <button key={t.id} className="btn" onClick={()=>setSelType(t.id)}
+              style={{padding:"6px 12px",fontSize:11,borderRadius:8,
+                background:selType===t.id?`${C.amber}22`:C.bg3,
+                color:selType===t.id?C.amber:C.txt3,
+                border:`1.5px solid ${selType===t.id?C.amber:C.border}`}}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Script content */}
+        <div style={{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:10}}>
+          {/* SPIN context pill row */}
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {[
+              {label:"Stage",val:loc.stage,c:C.blue},
+              {label:"Pain",val:loc.painScore?`${loc.painScore}/5`:"?",c:loc.painScore>=4?C.red:loc.painScore>=3?C.amber:C.txt3},
+              {label:"Workers",val:loc.workers||"?",c:C.amber},
+              {label:"Supplier",val:loc.currentSupplier||"none",c:C.orange},
+            ].map(({label,val,c})=>(
+              <div key={label} style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:6,padding:"3px 9px",fontSize:11}}>
+                <span style={{color:C.txt3}}>{label}: </span><span style={{color:c,fontWeight:600}}>{val}</span>
+              </div>
+            ))}
+            {(loc.spin?.p) && (
+              <div style={{width:"100%",background:`${C.indigo}10`,border:`1px solid ${C.indigo}22`,borderRadius:6,padding:"5px 9px",fontSize:11,color:C.indigo}}>
+                <span style={{fontWeight:600}}>Pain: </span>{loc.spin.p.substring(0,100)}{loc.spin.p.length>100?"...":""}
+              </div>
+            )}
+          </div>
+
+          {/* Generated script */}
+          {loading ? (
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12,padding:32}}>
+              <div style={{display:"flex",gap:5}}>{[0,.2,.4].map((d,i)=><span key={i} style={{width:8,height:8,background:C.amber,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}</div>
+              <div style={{fontSize:12,color:C.txt3}}>Generating script for {loc.company}...</div>
+            </div>
+          ) : script ? (
+            <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+              <pre style={{fontFamily:"'Inter',sans-serif",fontSize:13,color:C.txt,lineHeight:1.85,whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0}}>{script}</pre>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Footer actions */}
+        <div style={{padding:"12px 14px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,flexShrink:0}}>
+          <button className="btn" onClick={generate} disabled={loading}
+            style={{background:`${C.amber}18`,color:C.amber,padding:"11px 16px",fontSize:13,borderRadius:9,border:`1px solid ${C.amber}44`}}>
+            {loading?"...":"↻ Regenerate"}
+          </button>
+          <button className="btn" onClick={copy} disabled={!script||loading}
+            style={{flex:1,background:copied?`${C.green}22`:`linear-gradient(135deg,${C.amber},${C.orange})`,color:copied?C.green:"#fff",padding:"11px",fontSize:14,borderRadius:9,border:copied?`1px solid ${C.green}44`:"none",fontWeight:600}}>
+            {copied?"✓ Copied!":"📋 Copy Script"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── POST-CALL DEBRIEF MODAL ─────────────────────────────────────
 function PostCallDebrief({loc, hq, onClose, onApply}) {
@@ -2927,6 +3112,7 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
   const [showDebrief,setShowDebrief]=useState(false);
   const [showEmail,setShowEmail]=useState(false);
   const [showStageGuide,setShowStageGuide]=useState(false);
+  const [showQuickScript,setShowQuickScript]=useState(false);
   const [pendingStage,setPendingStage]=useState(null);
   const [stagePrompt,setStagePrompt]=useState("");
 
@@ -3134,13 +3320,15 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
         )}
       </div>
       <div className="mf" style={{display:"flex",gap:8}}>
-        <button className="btn" onClick={()=>setShowDebrief(true)} style={{background:`${C.blue}18`,color:C.blue2,padding:"12px 14px",fontSize:13,borderRadius:10,border:`1px solid ${C.blue}33`}}>📞</button>
-        <button className="btn" onClick={()=>setShowEmail(true)} style={{background:`${C.teal}18`,color:C.teal,padding:"12px 14px",fontSize:13,borderRadius:10,border:`1px solid ${C.teal}33`}}>✉️</button>
+        <button className="btn" onClick={()=>setShowDebrief(true)} style={{background:`${C.blue}18`,color:C.blue2,padding:"12px 14px",fontSize:13,borderRadius:10,border:`1px solid ${C.blue}33`}} title="Post-Call Debrief">📞</button>
+        <button className="btn" onClick={()=>setShowEmail(true)} style={{background:`${C.teal}18`,color:C.teal,padding:"12px 14px",fontSize:13,borderRadius:10,border:`1px solid ${C.teal}33`}} title="AI Email Draft">✉️</button>
+        <button className="btn" onClick={()=>setShowQuickScript(v=>!v)} style={{background:showQuickScript?`${C.amber}28`:`${C.amber}15`,color:C.amber,padding:"12px 14px",fontSize:13,borderRadius:10,border:`1px solid ${showQuickScript?C.amber:C.amber+"44"}`}} title="Quick Script for this client">📋</button>
         {canEdit?<button className="btn" onClick={onEdit} style={{flex:1,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"13px",fontSize:14,borderRadius:10}}>✎ Edit</button>
         :<div style={{flex:1,padding:"13px",fontSize:12,color:C.txt3,textAlign:"center"}}>View only</div>}
-        <button className="btn" onClick={()=>setShowAI(!showAI)} style={{background:showAI?`${C.teal}28`:`${C.teal}18`,color:C.teal,padding:"13px 16px",fontSize:14,borderRadius:10,border:`1px solid ${showAI?C.teal:C.teal+"44"}`}}>🤖</button>
+        <button className="btn" onClick={()=>setShowAI(!showAI)} style={{background:showAI?`${C.teal}28`:`${C.teal}18`,color:C.teal,padding:"13px 16px",fontSize:14,borderRadius:10,border:`1px solid ${showAI?C.teal:C.teal+"44"}`}} title="AI Assistant">🤖</button>
       </div>
       {showAI&&<InlineAI loc={loc} hq={hq} onUpdate={onUpdate} onUpdateHQ={onUpdateHQ}/>}
+      {showQuickScript&&<QuickScriptModal loc={loc} hq={hq} onClose={()=>setShowQuickScript(false)}/>}
       {showDebrief&&<PostCallDebrief loc={loc} hq={hq} onClose={()=>setShowDebrief(false)} onApply={onUpdate}/>}
       {showEmail&&<EmailDraftModal loc={loc} hq={hq} onClose={()=>setShowEmail(false)}/>}
       {showStageGuide&&(()=>{
@@ -3162,6 +3350,18 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
                 {card?(
                   <>
                     <div style={{background:`${C.amber}12`,border:`1px solid ${C.amber}33`,borderRadius:8,padding:"9px 12px",fontSize:12,color:C.amber,marginBottom:12}}>🎯 {card.target}</div>
+                    {card.quick&&card.quick.length>0&&(
+                      <div style={{background:`linear-gradient(135deg,${C.amber}15,${C.orange}08)`,border:`2px solid ${C.amber}44`,borderRadius:10,padding:"11px 14px",marginBottom:12}}>
+                        <div style={{fontSize:10,fontWeight:700,color:C.amber,letterSpacing:"0.1em",marginBottom:8}}>⚡ QUICK VIEW</div>
+                        {card.quick.map((b,i)=>(
+                          <div key={i} style={{display:"flex",gap:8,marginBottom:6}}>
+                            <span style={{color:C.amber,fontWeight:700,fontSize:12,flexShrink:0}}>{i+1}.</span>
+                            <span style={{fontSize:12,color:C.txt,lineHeight:1.6}}>{b}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{fontSize:10,color:C.txt3,marginBottom:8,fontStyle:"italic"}}>📖 Full manual:</div>
                     <pre style={{fontFamily:"'Inter',sans-serif",fontSize:13,color:C.txt2,lineHeight:1.9,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{card.tasks}</pre>
                   </>
                 ):(
@@ -3245,7 +3445,7 @@ function FilterBar({filters,setFilters,users,isAdmin,isTeamLead,curId,services,e
 function TeamTab({users,locs,onSelect}) {
   const [exp,setExp]=useState(null);
   return(
-    <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:10}}>
+    <div style={{flex:1,overflowY:"auto",padding:"12px 12px 80px",display:"flex",flexDirection:"column",gap:10}}>
       <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginBottom:2}}>TEAM OVERVIEW</div>
       {users.filter(u=>u.active).map(u=>{
         const ul=locs.filter(l=>l.salesId===u.id);const won=ul.filter(l=>l.stage==="Closed Won");const pipe=ul.filter(l=>l.stage!=="Closed Won"&&l.stage!=="Closed Lost");const late=ul.filter(l=>isOD(l.nextStepDate,l.stage));const placed=won.reduce((s,l)=>s+(parseInt(l.workers)||0),0);const isE=exp===u.id;
@@ -4029,14 +4229,87 @@ function ConfirmDelete({label, onConfirm}) {
   );
 }
 
+// ─── SCRIPTS TAB COMPONENT ───────────────────────────────────────
+function ScriptsTab({tplData, isAdmin, setTemplates}) {
+  const allCats=[...new Set((tplData||TPL_DATA).map(t=>t.category))];
+  const [selCat,setSelCat]=useState(allCats[0]||"Cold Call");
+  const [selTpl,setSelTpl]=useState(null);
+  const [editMode,setEditMode]=useState(false);
+  const [editText,setEditText]=useState("");
+  const [editTitle,setEditTitle]=useState("");
+  const [copied,setCopied]=useState(false);
+  const td = tplData||TPL_DATA;
+  const filtered=td.filter(t=>t.category===selCat);
+  const select=(tpl)=>{setSelTpl(tpl);setEditText(tpl.text);setEditTitle(tpl.title);setEditMode(false);setCopied(false);};
+  const copy=()=>{navigator.clipboard.writeText(editText).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});};
+  const saveTpl=()=>{if(setTemplates)setTemplates(td.map(t=>t.id===selTpl.id?{...t,title:editTitle,text:editText}:t));setSelTpl({...selTpl,title:editTitle,text:editText});setEditMode(false);};
+  const deleteTpl=(id)=>{if(confirm("Delete this script?")&&setTemplates){setTemplates(td.filter(t=>t.id!==id));setSelTpl(null);}};
+  return(
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div style={{display:"flex",gap:5,padding:"8px 10px",borderBottom:`1px solid ${C.border}`,overflowX:"auto",flexShrink:0,background:C.bg0}}>
+        {allCats.map(c=>(
+          <button key={c} className="btn" onClick={()=>{setSelCat(c);setSelTpl(null);}}
+            style={{padding:"5px 12px",fontSize:11,borderRadius:7,flexShrink:0,
+              background:selCat===c?`${C.blue}22`:C.bg3,color:selCat===c?C.blue2:C.txt3,
+              border:`1.5px solid ${selCat===c?C.blue:C.border}`}}>{c}</button>
+        ))}
+        {isAdmin&&setTemplates&&<button className="btn" onClick={()=>{const id="cust_"+Date.now();setTemplates([...td,{id,category:selCat,title:"New Script",text:""}]);}}
+          style={{marginLeft:"auto",background:`${C.green}18`,color:C.green,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.green}44`,flexShrink:0}}>+ Add</button>}
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:10,display:"flex",flexDirection:"column",gap:7}}>
+        {!selTpl&&filtered.map(t=>(
+          <div key={t.id} style={{background:C.bg2,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.blue}`,borderRadius:9,padding:"11px 13px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}
+            onClick={()=>select(t)}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:600,fontSize:13,color:C.txt,marginBottom:2}}>{t.title}</div>
+              <div style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.text.substring(0,70)}...</div>
+            </div>
+            {isAdmin&&<button className="btn" onClick={e=>{e.stopPropagation();select(t);setEditMode(true);}}
+              style={{background:`${C.blue}18`,color:C.blue2,padding:"3px 8px",fontSize:10,borderRadius:5,border:`1px solid ${C.blue}33`,marginLeft:8,flexShrink:0}}>✎</button>}
+          </div>
+        ))}
+        {!selTpl&&filtered.length===0&&<div style={{padding:32,textAlign:"center",color:C.txt3,fontSize:13}}>No scripts in this category.</div>}
+        {selTpl&&(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+              <button className="btn" onClick={()=>{setSelTpl(null);setEditMode(false);}} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Back</button>
+              {editMode?<input type="text" value={editTitle} onChange={e=>setEditTitle(e.target.value)} className="fi" style={{flex:1,fontSize:14,fontWeight:700}}/>
+              :<div style={{fontWeight:700,fontSize:14,color:C.txt,flex:1}}>{selTpl.title}</div>}
+              {isAdmin&&!editMode&&<button className="btn" onClick={()=>setEditMode(true)} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 10px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>✎</button>}
+              {isAdmin&&setTemplates&&<ConfirmDelete label="Del" onConfirm={()=>deleteTpl(selTpl.id)}/>}
+            </div>
+            <textarea value={editText} onChange={e=>setEditText(e.target.value)} readOnly={!editMode} rows={18}
+              style={{width:"100%",background:editMode?C.bg4:C.bg3,border:`1px solid ${editMode?C.blue:C.border}`,color:C.txt,borderRadius:10,padding:"12px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.85,outline:"none"}}/>
+            {editMode?(
+              <div style={{display:"flex",gap:8}}>
+                <button className="btn" onClick={saveTpl} style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"11px",fontSize:13,borderRadius:9}}>✓ Save</button>
+                <button className="btn" onClick={()=>{setEditText(selTpl.text);setEditTitle(selTpl.title);setEditMode(false);}} style={{background:C.bg3,color:C.txt3,padding:"11px 14px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>Cancel</button>
+              </div>
+            ):(
+              <>
+                <button className="btn" onClick={copy}
+                  style={{width:"100%",background:copied?`${C.green}22`:`linear-gradient(135deg,${C.teal},${C.blue})`,color:copied?C.green:"#fff",padding:"12px",fontSize:14,borderRadius:9,border:copied?`1px solid ${C.green}44`:"none",fontWeight:600}}>
+                  {copied?"✓ Copied!":"📋 Copy Script"}
+                </button>
+                <div style={{fontSize:10,color:C.txt3,textAlign:"center",fontStyle:"italic"}}>Customize [VARIABLES] before sending</div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── PLAYBOOK TAB ─────────────────────────────────────────────────
-function PlaybookTab({playbook,setPlaybook,isAdmin}) {
+function PlaybookTab({playbook,setPlaybook,isAdmin,templates,setTemplates}) {
   const [tab,setTab]=useState("stages");
   const [selId,setSelId]=useState(null);
-  const [editing,setEditing]=useState(null); // {mode:"stage"|"extra", item}
+  const [editing,setEditing]=useState(null); // {mode:"stage"|"extra"|"script", item}
   const [newExtra,setNewExtra]=useState(false);
   const stages=playbook.stages||INIT_PLAYBOOK.stages;
   const extras=playbook.extras||INIT_PLAYBOOK.extras;
+  const tplData=templates||TPL_DATA;
 
   const updateStage=(id,patch)=>setPlaybook({...playbook,stages:stages.map(s=>s.id===id?{...s,...patch}:s)});
   const updateExtra=(id,patch)=>setPlaybook({...playbook,extras:extras.map(e=>e.id===id?{...e,...patch}:e)});
@@ -4054,6 +4327,11 @@ function PlaybookTab({playbook,setPlaybook,isAdmin}) {
   if(editing) {
     const save=()=>{
       if(editing.mode==="stage") updateStage(editing.item.id,editing.item);
+      else if(editing.mode==="script"&&setTemplates) {
+        const tpls=templates||TPL_DATA;
+        if(tpls.find(t=>t.id===editing.item.id)) setTemplates(tpls.map(t=>t.id===editing.item.id?editing.item:t));
+        else setTemplates([...tpls,editing.item]);
+      }
       else updateExtra(editing.item.id,editing.item);
       setEditing(null);
     };
@@ -4100,9 +4378,9 @@ function PlaybookTab({playbook,setPlaybook,isAdmin}) {
   return(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,flexShrink:0,alignItems:"center"}}>
-        {[["stages","Pipeline Stages"],["extras","Reference Cards"]].map(([id,label])=>(
+        {[["stages","📋 Pipeline"],["extras","📚 Reference"],["scripts","💬 Scripts"]].map(([id,label])=>(
           <button key={id} className="tab" onClick={()=>{setTab(id);setSelId(null);}}
-            style={{background:tab===id?C.bg2:C.bg0,color:tab===id?C.txt:C.txt3,borderBottomColor:tab===id?C.blue:"transparent",padding:"10px 18px"}}>
+            style={{background:tab===id?C.bg2:C.bg0,color:tab===id?C.txt:C.txt3,borderBottomColor:tab===id?C.blue:"transparent",padding:"10px 14px",fontSize:12}}>
             {label}
           </button>
         ))}
@@ -4110,6 +4388,12 @@ function PlaybookTab({playbook,setPlaybook,isAdmin}) {
           <button className="btn" onClick={addExtra}
             style={{marginLeft:"auto",marginRight:10,background:`${C.green}18`,color:C.green,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.green}44`}}>
             + Add Card
+          </button>
+        )}
+        {isAdmin&&tab==="scripts"&&setTemplates&&(
+          <button className="btn" onClick={()=>{setEditing({mode:"script",item:{id:"custom_"+Date.now(),category:"Cold Call",title:"",text:""}});}}
+            style={{marginLeft:"auto",marginRight:10,background:`${C.green}18`,color:C.green,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.green}44`}}>
+            + Add Script
           </button>
         )}
       </div>
@@ -4141,9 +4425,22 @@ function PlaybookTab({playbook,setPlaybook,isAdmin}) {
               <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt,flex:1}}>{selStage.stage}</div>
               {isAdmin&&<button className="btn" onClick={()=>setEditing({mode:"stage",item:{...selStage}})} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>✎ Edit</button>}
             </div>
+            {/* Quick View card */}
+            {selStage.quick&&selStage.quick.length>0&&(
+              <div style={{background:`linear-gradient(135deg,${C.amber}15,${C.orange}08)`,border:`2px solid ${C.amber}44`,borderRadius:10,padding:"12px 14px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:C.amber,letterSpacing:"0.1em",marginBottom:8}}>⚡ QUICK VIEW — przed rozmową</div>
+                {selStage.quick.map((b,i)=>(
+                  <div key={i} style={{display:"flex",gap:8,marginBottom:i<selStage.quick.length-1?6:0}}>
+                    <span style={{color:C.amber,fontWeight:700,fontSize:12,flexShrink:0,marginTop:1}}>{i+1}.</span>
+                    <span style={{fontSize:12,color:C.txt,lineHeight:1.6}}>{b}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
               <div style={{fontWeight:600,fontSize:13,color:C.txt,marginBottom:4}}>{selStage.title}</div>
               <div style={{display:"inline-block",background:`${C.amber}18`,color:C.amber,border:`1px solid ${C.amber}33`,borderRadius:7,padding:"4px 10px",fontSize:11,marginBottom:12}}>🎯 {selStage.target}</div>
+              <div style={{fontSize:10,color:C.txt3,marginBottom:12,fontStyle:"italic"}}>📖 Full manual — lea to learn, use Quick View above before calls</div>
               <pre style={{fontFamily:"'Inter',sans-serif",fontSize:12,color:C.txt2,lineHeight:1.9,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{selStage.tasks}</pre>
             </div>
           </div>
@@ -4204,18 +4501,32 @@ function PlaybookTab({playbook,setPlaybook,isAdmin}) {
               <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt,flex:1}}>{selExtra.title}</div>
               {isAdmin&&<button className="btn" onClick={()=>setEditing({mode:"extra",item:{...selExtra}})} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>✎ Edit</button>}
             </div>
+            {selExtra.quick&&selExtra.quick.length>0&&(
+              <div style={{background:`linear-gradient(135deg,${C.amber}15,${C.orange}08)`,border:`2px solid ${C.amber}44`,borderRadius:10,padding:"12px 14px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:C.amber,letterSpacing:"0.1em",marginBottom:8}}>⚡ QUICK VIEW — kluczowe punkty</div>
+                {selExtra.quick.map((b,i)=>(
+                  <div key={i} style={{display:"flex",gap:8,marginBottom:i<selExtra.quick.length-1?6:0}}>
+                    <span style={{color:C.amber,fontWeight:700,fontSize:12,flexShrink:0,marginTop:1}}>{i+1}.</span>
+                    <span style={{fontSize:12,color:C.txt,lineHeight:1.6}}>{b}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
+              <div style={{fontSize:10,color:C.txt3,marginBottom:10,fontStyle:"italic"}}>📖 Full manual — read to learn</div>
               <pre style={{fontFamily:"'Inter',sans-serif",fontSize:12,color:C.txt2,lineHeight:1.9,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{selExtra.text}</pre>
             </div>
           </div>
         )}
+
+        {tab==="scripts"&&<ScriptsTab tplData={tplData} isAdmin={isAdmin} setTemplates={setTemplates}/>}
       </div>
     </div>
   );
 }
 
 // ─── AI CHAT TAB ─────────────────────────────────────────────────
-function AIChatTab({locs,hqs,users,cur,onUpdateLoc,onUpdateHQ}) {
+function AIChatTab({locs,hqs,users,cur,onUpdateLoc,onUpdateHQ,onSaveLoc,onSaveHQ}) {
   const [msgs,setMsgs]=useState([]); const [input,setInput]=useState(""); const [loading,setLoading]=useState(false);
   const [pending,setPending]=useState(null);
   const bottomRef=useRef(null); const taRef=useRef(null);
@@ -4247,15 +4558,24 @@ ${hqDetails}
 ACTIVE DEALS (top 10):
 ${dealDetails}
 
-CAPABILITIES: You can suggest CRM field updates. When recommending changes to a specific deal or company, end your response with a JSON block:
+CAPABILITIES: You can suggest CRM actions. End response with ONE JSON block:
+
+UPDATE existing deal:
 \`\`\`json
-{"action":"update_loc","company":"EXACT company name","location":"EXACT location name","fields":{"stage":"...","nextStep":"...","painScore":3,"spin_p":"...","notes":"..."}}
+{"action":"update_loc","company":"EXACT name","location":"EXACT location","fields":{"stage":"Interested","temp":"🔥 Hot","nextStep":"Call Monday","nextStepDate":"2026-03-30","painScore":4,"spin_p":"pain text","spin_s":"situation","spin_i":"implication","spin_n":"need","notes":"context"}}
 \`\`\`
-Or for HQ:
+
+UPDATE existing company:
 \`\`\`json
-{"action":"update_hq","company":"EXACT company name","fields":{"intelligence":"...","annualTurnover":"...","employees":"..."}}
+{"action":"update_hq","company":"EXACT name","fields":{"intelligence":"research notes","employees":"500","annualTurnover":"5000000"}}
 \`\`\`
-Only include fields you are confident about. Respond in the user's language.`;
+
+CREATE new lead (when user provides info about a new company):
+\`\`\`json
+{"action":"create_lead","hq_company":"Company Name","hq_industry":"Auto Parts","hq_address":"str. X, Cluj","hq_employees":"300","hq_intelligence":"what you know about them","loc_location":"Cluj-Napoca","loc_county":"Cluj","loc_workers":"20","loc_worker_type":"UA Ukrainian","loc_service":"Outsourcing","loc_contact":"Ion Popescu","loc_role":"HR Director","loc_phone":"0721000000","loc_email":"ion@company.ro","loc_notes":"any notes","spin_p":"pain hypothesis"}
+\`\`\`
+
+Include ONLY known fields. Use exact company/location names for updates. Respond in the user\'s language.`;
   };
 
   const parseAction=(text)=>{
@@ -4305,6 +4625,43 @@ Only include fields you are confident about. Respond in the user's language.`;
     setPending(null);
   };
 
+  const applyCreate=async(action)=>{
+    if(!onSaveHQ||!onSaveLoc){
+      setMsgs(prev=>[...prev,{role:"system",content:"❌ Cannot create leads from this context. Use the main 🤖 AI tab."}]);
+      return;
+    }
+    const a=action;
+    try{
+      // Find or create HQ
+      let parentId=null;
+      const existingHQ=hqs.find(h=>h.company?.toLowerCase()===a.hq_company?.toLowerCase());
+      if(existingHQ){
+        parentId=existingHQ.id;
+        setMsgs(prev=>[...prev,{role:"system",content:`ℹ️ Company "${a.hq_company}" already exists — adding new location.`}]);
+      } else {
+        const newHQ={...EMPTY_HQ,company:a.hq_company||"",industry:a.hq_industry||"",address:a.hq_address||"",employees:a.hq_employees||"",intelligence:a.hq_intelligence||"",id:null};
+        const created=await onSaveHQ(newHQ);
+        parentId=created?.id||Date.now();
+        setMsgs(prev=>[...prev,{role:"system",content:`✅ New company created: ${a.hq_company}`}]);
+      }
+      // Create location
+      const spin={s:a.spin_s||"",p:a.spin_p||"",i:a.spin_i||"",n:a.spin_n||""};
+      const newLoc={...EMPTY_LOC,
+        parentId,company:a.hq_company||"",location:a.loc_location||a.hq_company||"",
+        county:a.loc_county||"",address:a.loc_address||"",workers:a.loc_workers||"",
+        workerType:a.loc_worker_type||"",service:a.loc_service||"Outsourcing",
+        contact:a.loc_contact||"",role:a.loc_role||"",phone:a.loc_phone||"",email:a.loc_email||"",
+        notes:a.loc_notes||"",spin,painSummary:a.spin_p||"",
+        stage:"New",temp:"❄️ Cold",salesId:cur?.id,id:null
+      };
+      await onSaveLoc(newLoc,null);
+      setMsgs(prev=>[...prev,{role:"system",content:`✅ New lead created: ${a.hq_company} / ${a.loc_location}`}]);
+      setPending(null);
+    }catch(e){
+      setMsgs(prev=>[...prev,{role:"system",content:"❌ Error creating lead: "+e.message}]);
+    }
+  };
+
   const send=async()=>{
     const text=input.trim(); if(!text||loading) return;
     const newMsgs=[...msgs,{role:"user",content:text}]; setMsgs(newMsgs); setInput(""); setLoading(true); setPending(null);
@@ -4313,7 +4670,10 @@ Only include fields you are confident about. Respond in the user's language.`;
       const d=await res.json(); const raw=d.content?.[0]?.text||"Error.";
       const action=parseAction(raw); const clean=stripAction(raw);
       setMsgs(prev=>[...prev,{role:"assistant",content:clean}]);
-      if(action)setPending(action);
+      if(action){
+        if(action.action==="create_lead") applyCreate(action); // auto-execute create
+        else setPending(action); // show Apply button for updates
+      }
     }catch(e){setMsgs(prev=>[...prev,{role:"assistant",content:"Error: "+e.message}]);}
     setLoading(false);
   };
@@ -4560,7 +4920,7 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
   const ActionGroup=({icon,title,color,items})=>{
     if(!items.length)return null;
     return(
-      <div style={{background:C.bg2,border:`1px solid ${color}33`,borderLeft:`3px solid ${color}`,borderRadius:10,overflow:"hidden",marginBottom:8}}>
+      <div style={{background:C.bg2,border:`1px solid ${color}33`,borderLeft:`3px solid ${color}`,borderRadius:10,marginBottom:8}}>
         <div style={{padding:"8px 14px",background:`${color}10`,display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:14}}>{icon}</span>
           <span style={{fontSize:10,fontWeight:700,color:color,letterSpacing:"0.06em"}}>{title.toUpperCase()}</span>
@@ -4572,7 +4932,7 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
   };
 
   return(
-    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minHeight:0}}>
       {/* Section toggle */}
       <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,background:C.bg0,flexShrink:0}}>
         {[["actions","⚡ Today's Actions"],["stats","📊 Pipeline Stats"]].map(([id,label])=>(
@@ -4583,7 +4943,7 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
         ))}
       </div>
 
-      <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:10}}>
+      <div style={{flex:1,overflowY:"auto",padding:12,paddingBottom:70,display:"flex",flexDirection:"column",gap:10}}>
         {/* AI Brief — shown in both sections */}
         <div style={{background:`linear-gradient(135deg,${C.bg2},${C.bg3})`,border:`1px solid ${C.teal}44`,borderRadius:12,padding:14}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:(summaryLoading||summary||aiLoading||aiAnalysis)?10:0}}>
@@ -4804,6 +5164,7 @@ export default function GremiCRM() {
   const [showPwd,setShowPwd]=useState(false);
   const [showAdmin,setShowAdmin]=useState(false);
   const [showQuickAI,setShowQuickAI]=useState(false);
+  const [quickAITab,setQuickAITab]=useState("import");
   const [expandedHQs,setExpandedHQs]=useState({});
   const [dbReady,setDbReady]=useState(false);
   const [dbError,setDbError]=useState("");
@@ -5025,19 +5386,6 @@ export default function GremiCRM() {
 
   if(!curUser) return <LoginScreen onLogin={u=>{setCurUser(u);}}/>;
 
-  const TABS=[
-    {id:"today",label:"Today",icon:"📊"},
-    {id:"leads",label:"Leads",icon:"🏭"},
-    {id:"team",label:"Team",icon:"👥"},
-    {id:"kpi",label:"KPI",icon:"📈"},
-    {id:"playbook",label:"Book",icon:"📖"},
-    {id:"templates",label:"Scripts",icon:"💬"},
-    {id:"ai",label:"AI",icon:"🤖"},
-    {id:"archive",label:"Archive",icon:"📦"},
-    {id:"theme",label:"Theme",icon:"🎨"},
-    {id:"settings",label:"Settings",icon:"⚙"},
-  ];
-
   // KPI numbers
   const kpiActive = locs.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
   const kpiWon = locs.filter(l=>l.stage==="Closed Won");
@@ -5048,7 +5396,6 @@ export default function GremiCRM() {
   const TABS_DEF = [
     {id:"dashboard",label:"DASHBOARD"},
     {id:"leads",label:"LEADS"},
-    {id:"templates",label:"SCRIPTS"},
     {id:"playbook",label:"PLAYBOOK"},
     {id:"team",label:"TEAM"},
     {id:"ai",label:"🤖 AI"},
@@ -5057,7 +5404,7 @@ export default function GremiCRM() {
   ];
 
   // Mobile tab icons for bottom nav
-  const TAB_ICONS = {dashboard:"📊",leads:"🏭",templates:"💬",playbook:"📖",team:"👥",ai:"🤖",archive:"📦",settings:"⚙"};
+  const TAB_ICONS = {dashboard:"📊",leads:"🏭",playbook:"📖",team:"👥",ai:"🤖",archive:"📦",settings:"⚙"};
 
   return(
     <div style={{fontFamily:"'Inter',sans-serif",background:C.bg1,height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",color:C.txt}}>
@@ -5202,7 +5549,7 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-
+                    
                     </div>)}
                   </div>
                 );
@@ -5212,9 +5559,8 @@ export default function GremiCRM() {
         )}
 
         {tab==="team"&&<TeamTab users={users} locs={locs} onSelect={l=>{setSelLoc(l);setTab("leads");}}/>}
-        {tab==="playbook"&&<PlaybookTab playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin}/>}
-        {tab==="templates"&&<TemplatesTab isAdmin={isAdmin} templates={templates} setTemplates={setTemplates}/>}
-        {tab==="ai"&&<AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser} onUpdateLoc={updLoc} onUpdateHQ={updHQ}/>}
+        {tab==="playbook"&&<PlaybookTab playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin} templates={templates} setTemplates={setTemplates}/>}
+        {tab==="ai"&&<AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser} onUpdateLoc={updLoc} onUpdateHQ={updHQ} onSaveLoc={saveLoc} onSaveHQ={saveHQ}/>}
         {tab==="archive"&&<ArchiveTab archive={archive} onRestore={restore} isAdmin={isAdmin}/>}
         {tab==="settings"&&<SettingsTab curUser={curUser} users={users} setUsers={setUsers} services={services} setServices={setServices} entities={entities} setEntities={setEntities} playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin} onChangePwd={()=>setShowPwd(true)} onAdmin={()=>setShowAdmin(true)} theme={theme} setTheme={t=>{setTheme(t);C=THEMES[t]||THEMES.navy;try{localStorage.setItem("gremi_theme",t);}catch(e){}}}/>}
       </div>
@@ -5243,29 +5589,24 @@ export default function GremiCRM() {
             <button className="xb" onClick={()=>setShowQuickAI(false)}>×</button>
           </div>
           {/* Two sub-tabs: Import | Pipeline Chat */}
-          {(()=>{
-            const [qTab,setQTab]=React.useState("import");
-            return(
-              <>
-                <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:C.bg0}}>
-                  {[["import","🤖 AI Import Lead"],["chat","💬 Pipeline Chat"]].map(([id,label])=>(
-                    <button key={id} className="tab" onClick={()=>setQTab(id)}
-                      style={{flex:1,background:qTab===id?`${C.blue}12`:"transparent",color:qTab===id?C.blue2:C.txt3,borderBottom:`2px solid ${qTab===id?C.blue:"transparent"}`}}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                {qTab==="import"?(
-                  <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-                    <ConversationalLeadInput hqs={hqs} locs={locs} users={users} curId={curUser.id} services={services} entities={entities}
-                      onCreated={(preview)=>{handleConversationalCreate(preview);setShowQuickAI(false);}} forceOpen={true}/>
-                  </div>
-                ):(
-                  <AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser} onUpdateLoc={updLoc} onUpdateHQ={updHQ}/>
-                )}
-              </>
-            );
-          })()}
+          <>
+            <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:C.bg0}}>
+              {[["import","🤖 AI Import Lead"],["chat","💬 Pipeline Chat"]].map(([id,label])=>(
+                <button key={id} className="tab" onClick={()=>setQuickAITab(id)}
+                  style={{flex:1,background:quickAITab===id?`${C.blue}12`:"transparent",color:quickAITab===id?C.blue2:C.txt3,borderBottom:`2px solid ${quickAITab===id?C.blue:"transparent"}`}}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {quickAITab==="import"?(
+              <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+                <ConversationalLeadInput hqs={hqs} locs={locs} users={users} curId={curUser.id} services={services} entities={entities}
+                  onCreated={(preview)=>{handleConversationalCreate(preview);setShowQuickAI(false);}} forceOpen={true}/>
+              </div>
+            ):(
+              <AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser} onUpdateLoc={updLoc} onUpdateHQ={updHQ} onSaveLoc={saveLoc} onSaveHQ={saveHQ}/>
+            )}
+          </>
         </div>
       )}
 
