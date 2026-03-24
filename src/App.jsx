@@ -2175,7 +2175,7 @@ YOUR ROLE:
           headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
           body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1400,
             system:buildSysPrompt(),
-            messages:[{role:"user",content:"Analyze this lead completely. Tell me: what stage is this really at, what's the pain level, and what script makes most sense right now. Then write the script."}]
+            messages:[{role:"user",content:`Look at everything: the stage, SPIN data, activity log, last contact, next step, pain score, supplier info. What is really happening with this lead right now? What does this person actually need from the salesperson today? Write the most useful script for this exact situation — and explain your reasoning in 2 sentences before the script.`}]
           })
         });
         const d = await res.json();
@@ -2257,7 +2257,7 @@ YOUR ROLE:
         <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minHeight:0}}>
 
           {/* SCRIPT PANEL — always visible, always editable */}
-          <div style={{flex:"0 0 auto",maxHeight:"45%",display:"flex",flexDirection:"column",borderBottom:`2px solid ${C.amber}44`,background:C.bg0}}>
+          <div style={{flex:"0 0 42%",minHeight:160,display:"flex",flexDirection:"column",borderBottom:`2px solid ${C.amber}44`,background:C.bg0,overflow:"hidden"}}>
             <div style={{padding:"6px 14px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
               <span style={{fontSize:10,fontWeight:700,color:C.amber,letterSpacing:"0.08em"}}>📄 SCRIPT</span>
               {scriptEdited&&<span style={{fontSize:10,color:C.blue2,background:`${C.blue}15`,padding:"2px 8px",borderRadius:10}}>edited — not yet reviewed by AI</span>}
@@ -5636,7 +5636,8 @@ export default function GremiCRM() {
                           {l.nextStep&&<div style={{marginTop:4,fontSize:11,color:C.amber,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>→ {l.nextStep}</div>}
                         </div>
                       );
-                     })}
+                    
+                    })}
                     </div>)}
                   </div>
                 );
