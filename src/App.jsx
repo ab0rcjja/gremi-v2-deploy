@@ -713,7 +713,7 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
 }
 
 // ─── LOCATION DETAIL MODAL ───────────────────────────────────────
-function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate}) {
+function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate,onUpdateHQ}) {
   const hq=hqs.find(h=>h.id===loc.parentId);
   const sc=getSC()[loc.stage]||C.txt3;
   const uN=(id)=>users.find(u=>u.id===id)?.name||"—";
@@ -873,7 +873,7 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
         :<div style={{flex:1,padding:"13px",fontSize:12,color:C.txt3,textAlign:"center"}}>View only</div>}
         <button className="btn" onClick={()=>setShowAI(!showAI)} style={{background:showAI?`${C.teal}28`:`${C.teal}18`,color:C.teal,padding:"13px 16px",fontSize:14,borderRadius:10,border:`1px solid ${showAI?C.teal:C.teal+"44"}`}}>🤖</button>
       </div>
-      {showAI&&<InlineAI loc={loc} hq={hq} onUpdate={onUpdate}/>}
+      {showAI&&<InlineAI loc={loc} hq={hq} onUpdate={onUpdate} onUpdateHQ={onUpdateHQ}/>}
     </div>
   );
 }
@@ -885,27 +885,40 @@ CRITICAL INSTRUCTION — FIELD SUGGESTIONS:
 When you analyze a lead or answer a question, ALWAYS include a section at the END of your response with suggested CRM field values in this EXACT format:
 
 ---FIELDS---
-SPIN_S: [your suggestion for Situation field]
-SPIN_P: [your suggestion for Problem field]  
-SPIN_I: [your suggestion for Implication field]
-SPIN_N: [your suggestion for Need-Payoff field]
-PAIN_SUMMARY: [one sentence pain summary]
-PAIN_SCORE: [1-5, where 5 is highest urgency]
+HQ_INTELLIGENCE: [research about the company — products, markets, dynamics, competitors, LinkedIn insights]
+HQ_ANNUAL_TURNOVER: [annual revenue in RON]
+HQ_EMPLOYEES: [total company headcount]
+HQ_SEASONALITY: [seasonal patterns, e.g. "Peak: March-September"]
+WORKERS: [number of workers needed at this location]
+WORKER_TYPE: [one of: 🇺🇦 Ukrainian, 🌏 Asian, 🇺🇦+🌏 Mix]
+CURRENT_SUPPLIER: [current staffing supplier name, or "none"]
+DECISION_PROCESS: [who decides and how, e.g. "HR recommends → Owner signs"]
+ECONOMIC_BUYER: [who holds the budget / signs the contract]
+CHAMPION: [internal ally who supports the deal]
+DECISION_CRITERIA: [what matters most: price, speed, compliance, quality]
+SPIN_S: [Situation — facts about current state]
+SPIN_P: [Problem — difficulties and pain]
+SPIN_I: [Implication — consequences and costs of the problem]
+SPIN_N: [Need-Payoff — value of solving it]
+PAIN_SUMMARY: [one sentence pain summary for the proposal]
+PAIN_SCORE: [1-5, where 5 is critical business impact]
 NEXT_STEP: [specific next action]
-NOTES: [additional notes to append]
+LOC_NOTES: [notes to append to location]
 ---END---
 
 Rules for fields:
 - Only include fields where you have a meaningful suggestion. Omit fields where you have no data.
 - Write field values in the same language the user writes in.
+- HQ_ fields update the COMPANY record. Other fields update the LOCATION/DEAL record.
 - SPIN fields: write as hypotheses if pre-meeting, as facts if post-meeting data is available.
 - PAIN_SCORE: 1=no pain, 2=minor inconvenience, 3=real problem, 4=urgent, 5=critical business impact.
 - NEXT_STEP: always specific and actionable, not generic.
-- NOTES: only if there is something worth recording that does not fit other fields.
+- WORKER_TYPE: must be exactly one of the three options listed.
+- HQ_INTELLIGENCE: this is the main research field. Put everything you know about the company here — revenue dynamics, products, clients, vacancies found, competitors, seasonality patterns, LinkedIn insights about decision makers. Be thorough.
 
 Respond in the language the user writes. Be direct, structured, action-oriented.`;
 
-function InlineAI({loc,hq,onUpdate}) {
+function InlineAI({loc,hq,onUpdate,onUpdateHQ}) {
   const [msgs,setMsgs]=useState([]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
@@ -943,25 +956,46 @@ function InlineAI({loc,hq,onUpdate}) {
   const stripFields=(text)=>text.replace(/---FIELDS---[\s\S]*?---END---/,"").trim();
 
   const applyFields=(fields)=>{
-    const patch={};
+    // --- Location patch ---
+    const locPatch={};
     const spin={...(loc.spin||{})};
-    let changed=false;
-    if(fields.SPIN_S){spin.s=fields.SPIN_S;changed=true;}
-    if(fields.SPIN_P){spin.p=fields.SPIN_P;changed=true;}
-    if(fields.SPIN_I){spin.i=fields.SPIN_I;changed=true;}
-    if(fields.SPIN_N){spin.n=fields.SPIN_N;changed=true;}
-    if(fields.PAIN_SUMMARY){spin.painSummary=fields.PAIN_SUMMARY;changed=true;}
-    if(changed) patch.spin=spin;
-    if(fields.PAIN_SCORE) patch.painScore=parseInt(fields.PAIN_SCORE)||null;
-    if(fields.NEXT_STEP){patch.nextStep=fields.NEXT_STEP;patch.nextStepDate=new Date().toISOString().slice(0,10);}
-    if(fields.NOTES){patch.notes=(loc.notes?loc.notes+"\n\n":"")+"[AI] "+fields.NOTES;}
-    // Add AI activity
-    const act={id:Date.now(),type:"Note",note:"[AI] Fields updated: "+Object.keys(fields).join(", "),date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};
-    patch.activities=[act,...(loc.activities||[])];
-    patch.lastContact=act.date;
-    onUpdate(loc.id,patch);
+    let spinChanged=false;
+    if(fields.SPIN_S){spin.s=fields.SPIN_S;spinChanged=true;}
+    if(fields.SPIN_P){spin.p=fields.SPIN_P;spinChanged=true;}
+    if(fields.SPIN_I){spin.i=fields.SPIN_I;spinChanged=true;}
+    if(fields.SPIN_N){spin.n=fields.SPIN_N;spinChanged=true;}
+    if(fields.PAIN_SUMMARY){spin.painSummary=fields.PAIN_SUMMARY;spinChanged=true;}
+    if(spinChanged) locPatch.spin=spin;
+    if(fields.PAIN_SCORE) locPatch.painScore=parseInt(fields.PAIN_SCORE)||null;
+    if(fields.NEXT_STEP){locPatch.nextStep=fields.NEXT_STEP;locPatch.nextStepDate=new Date().toISOString().slice(0,10);}
+    if(fields.LOC_NOTES){locPatch.notes=(loc.notes?loc.notes+"\n\n":"")+"[AI] "+fields.LOC_NOTES;}
+    if(fields.WORKERS) locPatch.workers=fields.WORKERS;
+    if(fields.WORKER_TYPE) locPatch.workerType=fields.WORKER_TYPE;
+    if(fields.CURRENT_SUPPLIER) locPatch.currentSupplier=fields.CURRENT_SUPPLIER;
+    if(fields.DECISION_PROCESS) locPatch.decisionProcess=fields.DECISION_PROCESS;
+    if(fields.ECONOMIC_BUYER) locPatch.economicBuyer=fields.ECONOMIC_BUYER;
+    if(fields.CHAMPION) locPatch.champion=fields.CHAMPION;
+    if(fields.DECISION_CRITERIA) locPatch.decisionCriteria=fields.DECISION_CRITERIA;
+    // Activity log
+    const locFields=Object.keys(fields).filter(k=>!k.startsWith("HQ_"));
+    if(locFields.length>0){
+      const act={id:Date.now(),type:"Note",note:"[AI] Fields updated: "+locFields.join(", "),date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};
+      locPatch.activities=[act,...(loc.activities||[])];
+      locPatch.lastContact=act.date;
+      onUpdate(loc.id,locPatch);
+    }
+    // --- HQ patch ---
+    const hqFields=Object.keys(fields).filter(k=>k.startsWith("HQ_"));
+    if(hqFields.length>0&&hq&&onUpdateHQ){
+      const hqPatch={};
+      if(fields.HQ_INTELLIGENCE){hqPatch.intelligence=(hq.intelligence?hq.intelligence+"\n\n":"")+"[AI] "+fields.HQ_INTELLIGENCE;}
+      if(fields.HQ_ANNUAL_TURNOVER) hqPatch.annualTurnover=fields.HQ_ANNUAL_TURNOVER;
+      if(fields.HQ_EMPLOYEES) hqPatch.employees=fields.HQ_EMPLOYEES;
+      if(fields.HQ_SEASONALITY) hqPatch.seasonality=fields.HQ_SEASONALITY;
+      onUpdateHQ(hq.id,hqPatch);
+    }
     setPending(null);
-    setMsgs(prev=>[...prev,{role:"system",content:"✅ Fields applied to CRM."}]);
+    setMsgs(prev=>[...prev,{role:"system",content:"✅ Fields applied to CRM ("+(locFields.length>0?locFields.length+" deal fields":"")+(hqFields.length>0?(locFields.length>0?" + ":"")+hqFields.length+" company fields":"")+")."}]);
   };
 
   const send=async()=>{
@@ -996,11 +1030,11 @@ function InlineAI({loc,hq,onUpdate}) {
     .replace(/\*(.*?)\*/g,"<em>$1</em>")
     .replace(/^[•\-] (.+)$/gm,"<div style='padding:1px 0 1px 12px;position:relative'><span style='position:absolute;left:0;color:"+C.blue+"'>›</span>$1</div>")
     .replace(/^(\d+)\. (.+)$/gm,"<div style='padding:1px 0 1px 12px'><span style='color:"+C.blue+";margin-right:3px'>$1.</span>$2</div>")
-    .replace(/^#{1,3} (.+)$/gm,"<div style='color:"+C.blue+";font-weight:700;margin:6px 0 3px;font-size:11px;text-transform:uppercase'>$1</div>")
+    .replace(/^#{1,3} (.+)$/gm,"<div style='color:"+C.blue+";font-weight:700;margin:8px 0 4px;font-size:13px;text-transform:uppercase'>$1</div>")
     .replace(/\n\n/g,"<div style='height:6px'></div>")
-    .replace(/`([^`]+)`/g,"<code style='background:"+C.bg4+";padding:1px 3px;border-radius:2px;font-size:10px;color:"+C.teal+"'>$1</code>");
+    .replace(/`([^`]+)`/g,"<code style='background:"+C.bg4+";padding:2px 5px;border-radius:3px;font-size:12px;color:"+C.teal+"'>$1</code>");
 
-  const fieldLabels={SPIN_S:"Situation",SPIN_P:"Problem",SPIN_I:"Implication",SPIN_N:"Need-Payoff",PAIN_SUMMARY:"Pain Summary",PAIN_SCORE:"Pain Score",NEXT_STEP:"Next Step",NOTES:"Notes"};
+  const fieldLabels={SPIN_S:"Situation",SPIN_P:"Problem",SPIN_I:"Implication",SPIN_N:"Need-Payoff",PAIN_SUMMARY:"Pain Summary",PAIN_SCORE:"Pain Score",NEXT_STEP:"Next Step",LOC_NOTES:"Notes",WORKERS:"Workers Needed",WORKER_TYPE:"Worker Type",CURRENT_SUPPLIER:"Current Supplier",DECISION_PROCESS:"Decision Process",ECONOMIC_BUYER:"Economic Buyer",CHAMPION:"Champion",DECISION_CRITERIA:"Decision Criteria",HQ_INTELLIGENCE:"Intelligence",HQ_ANNUAL_TURNOVER:"Annual Turnover",HQ_EMPLOYEES:"Company Employees",HQ_SEASONALITY:"Seasonality"};
 
   const quicks=[
     {l:"📋 Qualify",t:"Analyze this lead and suggest CRM field values based on available data."},
@@ -1011,41 +1045,41 @@ function InlineAI({loc,hq,onUpdate}) {
   ];
 
   return(
-    <div style={{borderTop:`2px solid ${C.teal}`,background:C.bg0,display:"flex",flexDirection:"column",maxHeight:"55vh",minHeight:200}}>
+    <div style={{borderTop:`2px solid ${C.teal}`,background:C.bg0,display:"flex",flexDirection:"column",maxHeight:"70vh",minHeight:280}}>
       {/* Quick actions */}
-      <div style={{padding:"6px 12px",display:"flex",gap:4,flexWrap:"wrap",flexShrink:0,borderBottom:`1px solid ${C.border}`,alignItems:"center"}}>
-        <span style={{fontSize:10,color:C.teal,fontWeight:700,letterSpacing:"0.05em",marginRight:4}}>🤖 AI</span>
+      <div style={{padding:"8px 14px",display:"flex",gap:5,flexWrap:"wrap",flexShrink:0,borderBottom:`1px solid ${C.border}`,alignItems:"center"}}>
+        <span style={{fontSize:12,color:C.teal,fontWeight:700,letterSpacing:"0.05em",marginRight:4}}>🤖 AI</span>
         {quicks.map(q=>(
           <button key={q.l} className="btn" onClick={()=>{setInput(q.t);taRef.current?.focus();}}
-            style={{background:C.bg3,border:`1px solid ${C.border}`,color:C.txt3,padding:"3px 7px",borderRadius:5,fontSize:9}}>
+            style={{background:C.bg3,border:`1px solid ${C.border}`,color:C.txt3,padding:"5px 10px",borderRadius:6,fontSize:11}}>
             {q.l}
           </button>
         ))}
-        <button className="btn" onClick={()=>setMsgs([])} style={{background:C.bg3,border:`1px solid ${C.border}`,color:C.txt3,padding:"3px 7px",borderRadius:5,fontSize:9,marginLeft:"auto"}}>Clear</button>
+        <button className="btn" onClick={()=>setMsgs([])} style={{background:C.bg3,border:`1px solid ${C.border}`,color:C.txt3,padding:"5px 10px",borderRadius:6,fontSize:11,marginLeft:"auto"}}>Clear</button>
       </div>
 
       {/* Messages */}
-      <div style={{flex:1,overflowY:"auto",padding:"8px 12px",display:"flex",flexDirection:"column",gap:6}}>
-        {msgs.length===0&&<div style={{fontSize:11,color:C.txt3,padding:"20px 0",textAlign:"center"}}>Ask AI to analyze this lead, suggest SPIN fields, draft emails...</div>}
+      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:8}}>
+        {msgs.length===0&&<div style={{fontSize:13,color:C.txt3,padding:"24px 0",textAlign:"center"}}>Ask AI to analyze this lead, suggest SPIN fields, draft emails...</div>}
         {msgs.map((m,i)=>(
           <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",gap:6}}>
-            {m.role==="assistant"&&<div style={{width:20,height:20,borderRadius:5,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:2}}>🤖</div>}
-            {m.role==="system"&&<div style={{width:20,height:20,borderRadius:5,background:`${C.green}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:2}}>✓</div>}
+            {m.role==="assistant"&&<div style={{width:26,height:26,borderRadius:6,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0,marginTop:2}}>🤖</div>}
+            {m.role==="system"&&<div style={{width:26,height:26,borderRadius:6,background:`${C.green}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0,marginTop:2}}>✓</div>}
             <div style={{
               maxWidth:"88%",
               background:m.role==="user"?`${C.blue}15`:m.role==="system"?`${C.green}12`:C.bg2,
               border:`1px solid ${m.role==="user"?C.blue+"33":m.role==="system"?C.green+"33":C.border}`,
-              borderRadius:8,padding:"7px 10px",fontSize:11,lineHeight:1.6,color:m.role==="system"?C.green:C.txt2,
+              borderRadius:10,padding:"10px 14px",fontSize:13,lineHeight:1.7,color:m.role==="system"?C.green:C.txt2,
             }} dangerouslySetInnerHTML={{__html:parseMd(m.content)}}/>
           </div>
         ))}
         {loading&&(
           <div style={{display:"flex",gap:6}}>
-            <div style={{width:20,height:20,borderRadius:5,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0}}>🤖</div>
-            <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:"7px 10px",display:"flex",gap:3}}>
-              <span style={{width:4,height:4,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite"}}/>
-              <span style={{width:4,height:4,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite 0.2s"}}/>
-              <span style={{width:4,height:4,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite 0.4s"}}/>
+            <div style={{width:26,height:26,borderRadius:6,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🤖</div>
+            <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px",display:"flex",gap:4}}>
+              <span style={{width:6,height:6,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite"}}/>
+              <span style={{width:6,height:6,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite 0.2s"}}/>
+              <span style={{width:6,height:6,background:C.blue,borderRadius:"50%",animation:"pulse 1s infinite 0.4s"}}/>
             </div>
           </div>
         )}
@@ -1056,15 +1090,15 @@ function InlineAI({loc,hq,onUpdate}) {
       {pending&&(
         <div style={{borderTop:`1px solid ${C.teal}44`,background:`${C.teal}08`,padding:"8px 12px",flexShrink:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.05em"}}>SUGGESTED CRM UPDATES</div>
+            <div style={{fontSize:12,fontWeight:700,color:C.teal,letterSpacing:"0.05em"}}>SUGGESTED CRM UPDATES</div>
             <div style={{display:"flex",gap:4}}>
-              <button className="btn" onClick={()=>applyFields(pending)} style={{background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"5px 12px",fontSize:10,borderRadius:6}}>✅ Apply All</button>
-              <button className="btn" onClick={()=>setPending(null)} style={{background:C.bg4,color:C.txt3,padding:"5px 8px",fontSize:10,borderRadius:6,border:`1px solid ${C.border}`}}>✕</button>
+              <button className="btn" onClick={()=>applyFields(pending)} style={{background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"7px 14px",fontSize:12,borderRadius:7}}>✅ Apply All</button>
+              <button className="btn" onClick={()=>setPending(null)} style={{background:C.bg4,color:C.txt3,padding:"7px 10px",fontSize:12,borderRadius:7,border:`1px solid ${C.border}`}}>✕</button>
             </div>
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             {Object.entries(pending).map(([k,v])=>(
-              <div key={k} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:10,maxWidth:"100%"}}>
+              <div key={k} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 10px",fontSize:12,maxWidth:"100%"}}>
                 <span style={{color:C.teal,fontWeight:600}}>{fieldLabels[k]||k}: </span>
                 <span style={{color:C.txt2}}>{String(v).substring(0,80)}{String(v).length>80?"...":""}</span>
               </div>
@@ -1074,12 +1108,12 @@ function InlineAI({loc,hq,onUpdate}) {
       )}
 
       {/* Input */}
-      <div style={{borderTop:`1px solid ${C.border}`,padding:"8px 12px",display:"flex",gap:6,alignItems:"flex-end",flexShrink:0}}>
+      <div style={{borderTop:`1px solid ${C.border}`,padding:"10px 14px",display:"flex",gap:8,alignItems:"flex-end",flexShrink:0}}>
         <textarea ref={taRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={handleKey}
-          placeholder="Ask AI... (Enter = send)" rows={1}
-          style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:6,padding:"7px 10px",fontSize:11,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.5}}/>
+          placeholder="Ask AI... (Enter = send)" rows={2}
+          style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:8,padding:"10px 12px",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.5}}/>
         <button className="btn" onClick={send} disabled={loading||!input.trim()}
-          style={{background:loading||!input.trim()?C.bg4:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:loading||!input.trim()?C.txt3:"#fff",width:32,height:32,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>↑</button>
+          style={{background:loading||!input.trim()?C.bg4:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:loading||!input.trim()?C.txt3:"#fff",width:40,height:40,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>↑</button>
       </div>
     </div>
   );
@@ -2396,6 +2430,20 @@ export default function GremiCRM() {
     }catch(e){alert("Error updating: "+e.message);}
   };
 
+  const updHQ=async(id,p)=>{
+    try{
+      const dbP={};
+      if(p.intelligence!==undefined)dbP.intelligence=p.intelligence;
+      if(p.annualTurnover!==undefined)dbP.annual_turnover=p.annualTurnover;
+      if(p.employees!==undefined)dbP.employees=p.employees;
+      if(p.seasonality!==undefined)dbP.seasonality=p.seasonality;
+      if(p.notes!==undefined)dbP.notes=p.notes;
+      await dbPatch("crm_hqs",`id=eq.${id}`,dbP);
+      setHqs(prev=>prev.map(h=>h.id===id?{...h,...p}:h));
+      if(selHQ?.id===id)setSelHQ(prev=>({...prev,...p}));
+    }catch(e){alert("Error updating HQ: "+e.message);}
+  };
+
   const exportXLSX=()=>{
     const ld=locs.map(l=>({"Company":l.company,"Location":l.location,"Contact":l.contact,"Role":l.role,"Phone":l.phone,"Email":l.email,"County":l.county,"Industry":l.industry,"Employees":l.employees,"Stage":l.stage,"Temp":l.temp,"Workers":l.workers,"Worker Type":l.workerType,"Service":l.service,"Entity":l.companyName,"Salesperson":uN(l.salesId),"Next Step Date":l.nextStepDate,"Last Contact":l.lastContact,"Source":l.source,"Notes":l.notes}));
     const hd=hqs.map(h=>({"Company":h.company,"Industry":h.industry,"Central Contact":h.centralContact,"Role":h.centralRole,"Phone":h.centralPhone,"Email":h.centralEmail,"Locations":locs.filter(l=>l.parentId===h.id).length,"Notes":h.notes}));
@@ -2867,6 +2915,7 @@ export default function GremiCRM() {
           onEdit={()=>{if(!canEditLoc(selLoc))return;setLocForm(selLoc);setEditLocMode(true);setShowLocForm(true);}}
           onArchive={()=>archiveLoc(selLoc)}
           onUpdate={updLoc}
+          onUpdateHQ={updHQ}
         />
       )}
 
