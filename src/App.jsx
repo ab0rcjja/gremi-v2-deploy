@@ -2103,183 +2103,257 @@ Return ONLY valid JSON, no explanation.`;
 
 // ─── QUICK SCRIPT MODAL ──────────────────────────────────────────
 function QuickScriptModal({loc, hq, onClose}) {
-  const SCRIPT_TYPES = [
-    {id:"cold_call",   label:"📞 Cold Call",     icon:"📞", desc:"First call to this prospect"},
-    {id:"followup",    label:"📧 Follow-up",     icon:"📧", desc:"After no response"},
-    {id:"discovery",   label:"🔍 Discovery",     icon:"🔍", desc:"Qualifying call script"},
-    {id:"proposal",    label:"📄 Proposal",      icon:"📄", desc:"Walk through the offer"},
-    {id:"objection",   label:"⚡ Objection",     icon:"⚡", desc:"Handle pushback"},
-    {id:"closing",     label:"🤝 Closing",       icon:"🤝", desc:"Move toward signature"},
-    {id:"linkedin",    label:"🔗 LinkedIn",      icon:"🔗", desc:"First LinkedIn message"},
-    {id:"breakup",     label:"👋 Breakup",       icon:"👋", desc:"After 3+ attempts, no reply"},
+  const LANGS = [
+    {id:"ro",label:"🇷🇴 RO"},{id:"pl",label:"🇵🇱 PL"},
+    {id:"en",label:"🇬🇧 EN"},{id:"ru",label:"🇷🇺 RU"},
   ];
 
-  const [selType, setSelType] = useState("cold_call");
-  const [script, setScript] = useState("");
+  const [msgs, setMsgs] = useState([]);       // conversation history
+  const [script, setScript] = useState("");    // live editable script
+  const [input, setInput] = useState("");      // user chat input
   const [loading, setLoading] = useState(false);
+  const [selLang, setSelLang] = useState("ro");
   const [copied, setCopied] = useState(false);
+  const [scriptEdited, setScriptEdited] = useState(false); // flag: user touched script
+  const bottomRef = useRef(null);
+  const taRef = useRef(null);
 
-  const buildContext = () => {
+  useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[msgs,loading]);
+
+  const LANG_NAMES = {ro:"Romanian (română)",pl:"Polish (polski)",en:"English",ru:"Russian (русский)"};
+
+  const buildSysPrompt = () => {
     const spin = loc.spin || {};
-    const activities = (loc.activities||[]).slice(0,3);
-    return `
-CLIENT: ${loc.company}${loc.location&&loc.location!==loc.company?" / "+loc.location:""}
-Contact: ${loc.contact||"unknown"} (${loc.role||"?"})
+    const acts = (loc.activities||[]).slice(0,5);
+    return `You are a senior B2B sales coach and script writer for Gremi Personal Romania.
+We place Ukrainian and Asian workers in Romanian manufacturing factories.
+
+LEAD DATA — analyze everything:
+Company: ${loc.company}${loc.location&&loc.location!==loc.company?" / "+loc.location:""}
+Contact: ${loc.contact||"unknown"} (${loc.role||"?"}) | Phone: ${loc.phone||""} | Email: ${loc.email||""}
 Stage: ${loc.stage} | Temperature: ${loc.temp} | Pain Score: ${loc.painScore||"?"}/5
-Workers needed: ${loc.workers||"?"} ${loc.workerType||""}
-Service: ${loc.service||"?"}
-County: ${loc.county||"?"}
+Workers needed: ${loc.workers||"?"} ${loc.workerType||""} | Service: ${loc.service||"?"}
+County: ${loc.county||"?"} | Current Supplier: ${loc.currentSupplier||"none"}
+Next Step: "${loc.nextStep||"none set"}" | Due: ${loc.nextStepDate||"not set"}
+Last Contact: ${loc.lastContact||"never"}
 
-SPIN DATA:
-S (Situation): ${spin.s||"not filled"}
-P (Problem): ${spin.p||"not filled"}
-I (Implication): ${spin.i||"not filled"}
-N (Need-Payoff): ${spin.n||"not filled"}
-Pain Summary: ${loc.painSummary||loc.painScore||"not filled"}
-Current Supplier: ${loc.currentSupplier||"none known"}
+SPIN:
+S: ${spin.s||"empty"}\nP: ${spin.p||"empty"}\nI: ${spin.i||"empty"}\nN: ${spin.n||"empty"}
 
-COMPANY INTEL: ${hq?.intelligence?.substring(0,300)||"none"}
+INTEL: ${hq?.intelligence?.substring(0,400)||"none"}
 Employees: ${hq?.employees||"?"} | Industry: ${hq?.industry||"?"}
+HQ Contact: ${hq?.centralContact||""} (${hq?.centralRole||""}) ${hq?.centralPhone||""}
 
-LAST ACTIVITIES:
-${activities.length?activities.map(a=>`[${a.date}] ${a.type}: ${a.note?.substring(0,80)||""}`).join("\n"):"No activity yet"}
+ACTIVITY LOG:
+${acts.length?acts.map(a=>"["+a.date+"] "+a.type+": "+(a.note||"").substring(0,100)).join("\n"):"No activity yet"}
 
-Next Step: ${loc.nextStep||"none"} by ${loc.nextStepDate||"?"}
-Last Contact: ${loc.lastContact||"never"}`;
+LANGUAGE: Write all scripts in ${LANG_NAMES[selLang]||"Romanian"}. 
+
+YOUR ROLE:
+- You are a collaborative coach. You write scripts AND discuss strategy.
+- The user can edit the script directly — when they share their version, analyze it and give feedback.
+- The user may disagree with your lead assessment — listen and adjust.
+- When you produce a script, put it between markers: ===SCRIPT_START=== and ===SCRIPT_END===
+- Outside the markers: your coaching comments, reasoning, suggestions.
+- Keep coaching comments brief (2-4 sentences). The script is the main output.`;
   };
 
-  const PROMPTS = {
-    cold_call: `Write a cold call script for a staffing salesperson at Gremi Personal Romania.
-Apply: Challenger Sale opener (specific observation about their business, not pitch), Voss (no "is this a bad time?"), SPIN opening questions.
-Format: 3 short sections — Opening (3 sentences), First Questions (3 SPIN-S/P questions), If They Engage (how to advance). Keep it conversational, in Romanian. Under 200 words total.`,
-
-    followup: `Write a follow-up call/email script for Gremi Personal Romania salesperson.
-They have had previous contact but no response for 5+ days.
-Apply: Challenger (bring new insight, not "just checking in"), Voss (invite safe no: "if this isn't relevant anymore, just let me know").
-Format: Opening (acknowledge gap), Value Add (one specific insight for their industry), Next Step ask. Under 150 words.`,
-
-    discovery: `Write a discovery call script for Gremi Personal Romania.
-The prospect is "Interested" — this is a qualifying call, not a pitch.
-Apply: SPIN structure (Situation → Problem → Implication → Need-Payoff), Challenger reframe opener.
-Format: 4 sections matching SPIN stages. For each: 2-3 specific questions tailored to their industry/situation. Under 250 words.`,
-
-    proposal: `Write a proposal walkthrough script for Gremi Personal Romania salesperson.
-They are calling to walk the client through a proposal already sent.
-Apply: Nagle EVC (show cost of their alternative), Voss "That's Right" summary before closing, Challenger "Take Control" for next step.
-Format: Opening (pain summary back to them), Value (EVC point), Solution summary, Next Step. Under 200 words.`,
-
-    objection: `Write objection handling scripts for Gremi Personal Romania.
-Focus on the most likely objections based on their stage and SPIN data.
-Apply: Voss (label → calibrated question → respond), Nagle (defend value not price), Challenger (reframe).
-Format: 2-3 likely objections for this specific client, each with: Label, Question, Response. Under 300 words.`,
-
-    closing: `Write a closing call script for Gremi Personal Romania salesperson.
-The deal is at negotiation/closing stage.
-Apply: Voss "That's Right" check before closing, Assumptive Close, Summary Close, escalation if needed.
-Format: Pain Summary (get "that's right"), Assumptive Close attempt, If Resistance (2 alternatives), Escalation option. Under 200 words.`,
-
-    linkedin: `Write a LinkedIn first message for Gremi Personal Romania.
-Apply: Challenger (hook = specific observation about them, insight = something useful, one question — no pitch), Voss (no pressure).
-Format: Single message max 5 sentences. No company pitch in first message. One question at end. In Romanian or English based on context.`,
-
-    breakup: `Write a professional breakup message for Gremi Personal Romania.
-After 3+ contact attempts with no response.
-Apply: Voss (give permission to say no — creates response), Grove (respect their time).
-Format: 3 sentences max. Acknowledge attempts, close file, leave door open. Zero passive-aggression. In Romanian.`,
+  const extractScript = (text) => {
+    const m = text.match(/===SCRIPT_START===\s*([\s\S]*?)\s*===SCRIPT_END===/);
+    return m ? m[1].trim() : null;
   };
+  const stripScript = (text) =>
+    text.replace(/===SCRIPT_START===[\s\S]*?===SCRIPT_END===/g,"").trim();
 
-  const generate = async () => {
-    setLoading(true); setScript(""); setCopied(false);
-    const sysPrompt = `You are an expert B2B sales script writer for Gremi Personal Romania, a staffing company placing Ukrainian and Asian workers in Romanian manufacturing factories. You write scripts that sound natural and professional, not robotic. Every script must be personalized to the specific client context provided.`;
-    const userPrompt = `${PROMPTS[selType]}\n\nCLIENT CONTEXT:\n${buildContext()}\n\nWrite the script now. Use the client's actual name, company, pain points, and SPIN data wherever possible. Make it feel custom-written for this specific client, not generic.`;
+  // Initial analysis on open
+  useEffect(()=>{
+    const init = async () => {
+      setLoading(true); setScript(""); setMsgs([]); setScriptEdited(false);
+      try {
+        const res = await fetch(AI_PROXY,{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
+          body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1400,
+            system:buildSysPrompt(),
+            messages:[{role:"user",content:"Analyze this lead completely. Tell me: what stage is this really at, what's the pain level, and what script makes most sense right now. Then write the script."}]
+          })
+        });
+        const d = await res.json();
+        const raw = d.content?.[0]?.text || "Error.";
+        const extracted = extractScript(raw);
+        const comment = stripScript(raw);
+        if(extracted) setScript(extracted);
+        setMsgs([{role:"assistant", content:comment, scriptVersion:extracted}]);
+      } catch(e){ setMsgs([{role:"assistant",content:"Connection error: "+e.message}]); }
+      setLoading(false);
+    };
+    init();
+  }, [selLang]);
+
+  const send = async () => {
+    const text = input.trim(); if(!text||loading) return;
+    // Always include current script state in context
+    const scriptContext = script
+      ? (scriptEdited
+          ? `\n\n[User's edited script — please review and comment on it]:\n===SCRIPT_START===\n${script}\n===SCRIPT_END===`
+          : `\n\n[Current script]:\n===SCRIPT_START===\n${script}\n===SCRIPT_END===`)
+      : "";
+    const userMsg = text + scriptContext;
+    const newMsgs = [...msgs,{role:"user",content:text}];
+    setMsgs(newMsgs); setInput(""); setLoading(true); setScriptEdited(false);
     try {
-      const res = await fetch(AI_PROXY, {
+      const apiMsgs = newMsgs.map((m,i)=>({
+        role:m.role,
+        content: i===newMsgs.length-1 && m.role==="user" ? userMsg : m.content
+      }));
+      const res = await fetch(AI_PROXY,{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,system:sysPrompt,messages:[{role:"user",content:userPrompt}]})
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1400,system:buildSysPrompt(),messages:apiMsgs})
       });
       const d = await res.json();
-      setScript(d.content?.[0]?.text || "Error generating script.");
-    } catch(e) { setScript("Connection error: "+e.message); }
+      const raw = d.content?.[0]?.text || "Error.";
+      const extracted = extractScript(raw);
+      const comment = stripScript(raw);
+      if(extracted) setScript(extracted);
+      setMsgs(prev=>[...prev,{role:"assistant",content:comment,scriptVersion:extracted}]);
+    } catch(e){ setMsgs(prev=>[...prev,{role:"assistant",content:"Error: "+e.message}]); }
     setLoading(false);
-  };
-
-  useEffect(() => { generate(); }, [selType]);
-
-  const copy = () => {
-    navigator.clipboard.writeText(script).then(() => { setCopied(true); setTimeout(()=>setCopied(false),2000); });
   };
 
   return (
     <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div className="sheet" style={{maxHeight:"90vh"}}>
+      <div style={{
+        position:"fixed",bottom:0,left:0,right:0,top:0,
+        display:"flex",flexDirection:"column",background:C.bg1,zIndex:200
+      }}>
         {/* Header */}
-        <div style={{padding:"13px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+        <div style={{padding:"11px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0,background:C.bg0}}>
           <div style={{width:28,height:28,borderRadius:8,background:`linear-gradient(135deg,${C.amber},${C.orange})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>📋</div>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:700,fontSize:14,color:C.txt}}>Quick Script</div>
-            <div style={{fontSize:11,color:C.txt3}}>{loc.company}{loc.location&&loc.location!==loc.company?" · "+loc.location:""} · {loc.stage}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:700,fontSize:14,color:C.txt}}>Script Workshop</div>
+            <div style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              {loc.company}{loc.location&&loc.location!==loc.company?" · "+loc.location:""}&nbsp;·&nbsp;
+              <span style={{color:getSC()[loc.stage]||C.txt3}}>{loc.stage}</span>
+              {loc.painScore?<span style={{marginLeft:6,color:loc.painScore>=4?C.red:loc.painScore>=3?C.amber:C.txt3}}>· Pain {loc.painScore}/5</span>:null}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:5,alignItems:"center"}}>
+            {LANGS.map(l=>(
+              <button key={l.id} className="btn" onClick={()=>setSelLang(l.id)}
+                style={{padding:"4px 8px",fontSize:10,borderRadius:6,
+                  background:selLang===l.id?`${C.amber}22`:C.bg3,
+                  color:selLang===l.id?C.amber:C.txt3,
+                  border:`1px solid ${selLang===l.id?C.amber:C.border}`,
+                  fontWeight:selLang===l.id?700:400}}>
+                {l.label}
+              </button>
+            ))}
           </div>
           <button className="xb" onClick={onClose}>×</button>
         </div>
 
-        {/* Script type selector */}
-        <div style={{padding:"10px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",gap:6,flexWrap:"wrap",flexShrink:0,background:C.bg0}}>
-          {SCRIPT_TYPES.map(t=>(
-            <button key={t.id} className="btn" onClick={()=>setSelType(t.id)}
-              style={{padding:"6px 12px",fontSize:11,borderRadius:8,
-                background:selType===t.id?`${C.amber}22`:C.bg3,
-                color:selType===t.id?C.amber:C.txt3,
-                border:`1.5px solid ${selType===t.id?C.amber:C.border}`}}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Main — split: script top, chat bottom */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minHeight:0}}>
 
-        {/* Script content */}
-        <div style={{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:10}}>
-          {/* SPIN context pill row */}
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {[
-              {label:"Stage",val:loc.stage,c:C.blue},
-              {label:"Pain",val:loc.painScore?`${loc.painScore}/5`:"?",c:loc.painScore>=4?C.red:loc.painScore>=3?C.amber:C.txt3},
-              {label:"Workers",val:loc.workers||"?",c:C.amber},
-              {label:"Supplier",val:loc.currentSupplier||"none",c:C.orange},
-            ].map(({label,val,c})=>(
-              <div key={label} style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:6,padding:"3px 9px",fontSize:11}}>
-                <span style={{color:C.txt3}}>{label}: </span><span style={{color:c,fontWeight:600}}>{val}</span>
-              </div>
-            ))}
-            {(loc.spin?.p) && (
-              <div style={{width:"100%",background:`${C.indigo}10`,border:`1px solid ${C.indigo}22`,borderRadius:6,padding:"5px 9px",fontSize:11,color:C.indigo}}>
-                <span style={{fontWeight:600}}>Pain: </span>{loc.spin.p.substring(0,100)}{loc.spin.p.length>100?"...":""}
-              </div>
-            )}
+          {/* SCRIPT PANEL — always visible, always editable */}
+          <div style={{flex:"0 0 auto",maxHeight:"45%",display:"flex",flexDirection:"column",borderBottom:`2px solid ${C.amber}44`,background:C.bg0}}>
+            <div style={{padding:"6px 14px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+              <span style={{fontSize:10,fontWeight:700,color:C.amber,letterSpacing:"0.08em"}}>📄 SCRIPT</span>
+              {scriptEdited&&<span style={{fontSize:10,color:C.blue2,background:`${C.blue}15`,padding:"2px 8px",borderRadius:10}}>edited — not yet reviewed by AI</span>}
+              {script&&(
+                <button className="btn" onClick={()=>{navigator.clipboard.writeText(script).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});}}
+                  style={{marginLeft:"auto",background:copied?`${C.green}18`:`${C.amber}15`,color:copied?C.green:C.amber,padding:"4px 10px",fontSize:11,borderRadius:6,border:`1px solid ${copied?C.green:C.amber}33`,fontWeight:600}}>
+                  {copied?"✓ Copied":"📋 Copy"}
+                </button>
+              )}
+            </div>
+            <textarea
+              value={script}
+              onChange={e=>{setScript(e.target.value);setScriptEdited(true);}}
+              placeholder={loading?"Generating script...":"Script will appear here. You can edit it directly."}
+              style={{flex:1,background:"transparent",border:"none",color:C.txt,padding:"0 14px 12px",
+                fontSize:13,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.85,outline:"none",
+                overflowY:"auto"}}/>
           </div>
 
-          {/* Generated script */}
-          {loading ? (
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12,padding:32}}>
-              <div style={{display:"flex",gap:5}}>{[0,.2,.4].map((d,i)=><span key={i} style={{width:8,height:8,background:C.amber,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}</div>
-              <div style={{fontSize:12,color:C.txt3}}>Generating script for {loc.company}...</div>
+          {/* CHAT PANEL */}
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minHeight:0}}>
+            {/* Messages */}
+            <div style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column",gap:10}}>
+              {loading&&msgs.length===0&&(
+                <div style={{display:"flex",gap:4,padding:20,justifyContent:"center"}}>
+                  {[0,.2,.4].map((d,i)=><span key={i} style={{width:7,height:7,background:C.amber,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}
+                  <span style={{marginLeft:8,fontSize:12,color:C.txt3}}>Analyzing lead...</span>
+                </div>
+              )}
+              {msgs.map((m,i)=>(
+                <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",flexDirection:m.role==="user"?"row-reverse":"row"}}>
+                  <div style={{width:24,height:24,borderRadius:6,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,
+                    background:m.role==="user"?`${C.blue}22`:`${C.amber}22`}}>
+                    {m.role==="user"?"👤":"🎯"}
+                  </div>
+                  <div style={{maxWidth:"85%",background:m.role==="user"?`${C.blue}10`:C.bg2,
+                    border:`1px solid ${m.role==="user"?C.blue+"22":C.border}`,
+                    borderRadius:10,padding:"9px 13px"}}>
+                    {m.scriptVersion&&(
+                      <div style={{fontSize:10,color:C.amber,marginBottom:5,fontWeight:600}}>
+                        ↑ Script updated · <button className="btn" onClick={()=>setScript(m.scriptVersion)}
+                          style={{background:`${C.amber}18`,color:C.amber,padding:"2px 8px",fontSize:9,borderRadius:4,border:`1px solid ${C.amber}33`}}>Restore this version</button>
+                      </div>
+                    )}
+                    <div style={{fontSize:12,color:C.txt,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{m.content}</div>
+                  </div>
+                </div>
+              ))}
+              {loading&&msgs.length>0&&(
+                <div style={{display:"flex",gap:4,padding:"4px 0"}}>
+                  <div style={{width:24,height:24,borderRadius:6,background:`${C.amber}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>🎯</div>
+                  <div style={{display:"flex",gap:4,alignItems:"center",padding:"8px 12px",background:C.bg2,borderRadius:10,border:`1px solid ${C.border}`}}>
+                    {[0,.2,.4].map((d,i)=><span key={i} style={{width:5,height:5,background:C.amber,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef}/>
             </div>
-          ) : script ? (
-            <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
-              <pre style={{fontFamily:"'Inter',sans-serif",fontSize:13,color:C.txt,lineHeight:1.85,whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0}}>{script}</pre>
-            </div>
-          ) : null}
-        </div>
 
-        {/* Footer actions */}
-        <div style={{padding:"12px 14px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,flexShrink:0}}>
-          <button className="btn" onClick={generate} disabled={loading}
-            style={{background:`${C.amber}18`,color:C.amber,padding:"11px 16px",fontSize:13,borderRadius:9,border:`1px solid ${C.amber}44`}}>
-            {loading?"...":"↻ Regenerate"}
-          </button>
-          <button className="btn" onClick={copy} disabled={!script||loading}
-            style={{flex:1,background:copied?`${C.green}22`:`linear-gradient(135deg,${C.amber},${C.orange})`,color:copied?C.green:"#fff",padding:"11px",fontSize:14,borderRadius:9,border:copied?`1px solid ${C.green}44`:"none",fontWeight:600}}>
-            {copied?"✓ Copied!":"📋 Copy Script"}
-          </button>
+            {/* Quick chips */}
+            {msgs.length>0&&!loading&&(
+              <div style={{padding:"5px 10px",display:"flex",gap:4,flexWrap:"wrap",flexShrink:0,borderTop:`1px solid ${C.border}`,background:C.bg0}}>
+                {[
+                  scriptEdited?"Review my edits":"Regenerate script",
+                  "I disagree with your assessment",
+                  "Make it shorter",
+                  "More aggressive",
+                  "Add price objection",
+                  "As email",
+                  "Formal tone",
+                ].map(s=>(
+                  <button key={s} className="btn" onClick={()=>{setInput(s);taRef.current?.focus();}}
+                    style={{padding:"3px 9px",fontSize:10,borderRadius:12,
+                      background:s==="Review my edits"?`${C.blue}18`:C.bg3,
+                      color:s==="Review my edits"?C.blue2:C.txt3,
+                      border:`1px solid ${s==="Review my edits"?C.blue+"44":C.border}`}}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Input */}
+            <div style={{padding:"10px 12px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,flexShrink:0,alignItems:"flex-end",background:C.bg0}}>
+              <textarea ref={taRef} value={input} onChange={e=>setInput(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+                placeholder="Chat with AI coach... disagree, ask to change, explain context"
+                rows={2}
+                style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:8,
+                  padding:"9px 12px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.5,outline:"none"}}/>
+              <button className="btn" onClick={send} disabled={loading||!input.trim()}
+                style={{background:loading||!input.trim()?C.bg4:`linear-gradient(135deg,${C.amber},${C.orange})`,
+                  color:loading||!input.trim()?C.txt3:"#fff",width:38,height:38,borderRadius:8,
+                  display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>↑</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -5562,8 +5636,7 @@ export default function GremiCRM() {
                           {l.nextStep&&<div style={{marginTop:4,fontSize:11,color:C.amber,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>→ {l.nextStep}</div>}
                         </div>
                       );
-                    })}
-
+                     })}
                     </div>)}
                   </div>
                 );
