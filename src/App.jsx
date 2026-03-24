@@ -34,6 +34,7 @@ const hqToDb  = ({id,isHQ,_type,...h}) => ({
   central_phone:h.centralPhone||"", central_email:h.centralEmail||"",
   annual_turnover:h.annualTurnover||"", employees:h.employees||"",
   seasonality:h.seasonality||"", lead_source:h.leadSource||"", intelligence:h.intelligence||"",
+  pre_call_checklist:JSON.stringify(h.preCallChecklist||{}),
 });
 const hqFromDb = (r) => ({
   id:r.id, isHQ:true, company:r.company||"", industry:r.industry||"",
@@ -250,33 +251,1349 @@ const EMPTY_HQ  = {id:null,isHQ:true,company:"",industry:"",centralContact:"",ce
 // ─── PLAYBOOK DATA ───────────────────────────────────────────────
 const INIT_PLAYBOOK = {
   stages:[
-    {id:"new",stage:"New",icon:"1",title:"Lead Qualification & Contact Discovery",target:"Complete within 24h of lead entry",tasks:"STEP 1 — COMPANY RESEARCH:\n— Termene.ro / ListaFirme.ro: revenue, employee count, CUI, registered address\n— Company website: products, locations, management page\n— eJobs / BestJobs / OLX: are they posting vacancies?\n\nSTEP 2 — FIND THE DECISION MAKER:\nWHO TO FIND (in order of priority):\n1. HR Director / HR Manager\n2. Plant Manager / Production Manager\n3. Operations Director\n4. Owner / General Manager\n\nHOW TO FIND THEM:\n— LinkedIn: search '[Company] + Romania'\n— Company website: 'Despre noi' / 'Echipa'\n— Google: '[Company] director HR Romania'\n\nSTEP 4 — CRM ENTRY:\n— Create HQ record: company, industry, address, website\n— Set worker type (UA / Asia / Mix)\n— Do NOT move to 'Contacted' until you have a SPECIFIC PERSON with name and contact"},
-    {id:"contacted",stage:"Contacted",icon:"2",title:"First Contact Sequence",target:"3 contact attempts within 7 business days",tasks:"PREREQUISITE: You have a specific person's NAME, ROLE, and contact method.\n\nDAY 1 — FIRST TOUCH:\n— CALL the direct number (morning 9-11 or afternoon 14-16)\n— SAME DAY: send introductory EMAIL\n\nDAY 3 — SECOND TOUCH:\n— CALL again at a DIFFERENT time\n— If still no answer: send LinkedIn connection request\n\nDAY 7 — THIRD TOUCH:\n— Follow-up EMAIL\n— If LinkedIn accepted: send message there\n\nIF NO RESPONSE AFTER 3 ATTEMPTS:\n— Move to 'No Answer'\n— Set follow-up reminder for 30 days"},
-    {id:"interested",stage:"Interested",icon:"3",title:"Discovery & Meeting Preparation",target:"Meeting scheduled within 5 days",tasks:"SPIN DISCOVERY (fill ALL four fields):\nS — SITUATION: Headcount, shifts, current suppliers, open positions\nP — PROBLEM: Time to fill, turnover rate, compliance concerns\nI — IMPLICATION: Cost of delays, impact on orders, ITM risk\nN — NEED-PAYOFF: Stable team, predictable costs, zero admin\n\nIF MEETING IS ON-SITE:\n— Ask for a factory tour. Count the empty workstations. That's your number."},
-    {id:"meeting",stage:"Meeting Scheduled",icon:"4",title:"Meeting Execution",target:"Zero no-shows. Always confirm 24h before.",tasks:"24H BEFORE:\n— Confirm: 'Confirm intalnirea de maine la [ORA].'\n\nMEETING STRUCTURE (30 min):\nFIRST 5 MIN — Rapport: Thank them. Do NOT pitch.\nNEXT 15 MIN — SPIN Discovery: Let THEM talk about THEIR problems.\nLAST 10 MIN — Present solution: ONLY after you understand their situation\n\nAFTER: Same day: update Activity Log + SPIN fields"},
-    {id:"done",stage:"Meeting Done",icon:"5",title:"Proposal Preparation & Delivery",target:"Offer sent within 24h of meeting",tasks:"WITHIN 24 HOURS:\n— Send follow-up email (use post-meeting template)\n— Attach customized offer: worker count, rate, service, timeline, terms\n— Include company presentation and references\n\nCRM: Update stage → 'Proposal Sent'. Set Next Action: follow-up in 3 days."},
-    {id:"proposal",stage:"Proposal Sent",icon:"6",title:"Follow-up Sequence",target:"Decision within 14 days",tasks:"DAY 3: CALL the decision maker directly.\nDAY 7: EMAIL with additional value.\nDAY 14: FINAL ATTEMPT — breakup message.\n\nIF NO RESPONSE AFTER 14 DAYS:\n— Move to 'Closed Lost' or 'No Answer'\n— Set follow-up reminder for 3 months"},
-    {id:"negotiation",stage:"Negotiation",icon:"7",title:"Terms Discussion & Closing",target:"Close or escalate within 10 days",tasks:"HANDLE OBJECTIONS:\n— Use Objection Response templates\n— Always acknowledge the concern before responding\n— Focus on total cost, not just hourly rate\n\nESCALATE TO WALERY IF:\n— Discount > 5%\n— Non-standard terms\n— Order > 50 workers"},
-    {id:"won",stage:"Closed Won",icon:"✓",title:"Handover & Account Development",target:"Operational handover within 48h",tasks:"IMMEDIATE:\n— Update all CRM fields: final worker count, rate, service, entity, start date\n— Notify operations team\n— Send 'thank you and next steps' email\n\nACCOUNT DEVELOPMENT:\n— Ask for referral after month 1\n— Schedule quarterly review"},
-    {id:"lost",stage:"Closed Lost",icon:"✕",title:"Post-Mortem & Re-entry Plan",target:"Analyse, learn, plan return",tasks:"IMMEDIATELY AFTER LOSING:\n— Fill in Lost Reason in CRM — required\n— Update all SPIN fields with real info\n\nRE-ENTRY PLAN:\n— Lost to competitor → Check back in 6 months\n— Lost due to timing → Set follow-up for next season\n— Lost due to price → Note their budget ceiling"},
-    {id:"noanswer",stage:"No Answer",icon:"—",title:"Re-engagement Protocol",target:"Re-engage without being annoying",tasks:"PROTOCOL:\nAttempt 1 — Day 1: Call, no voicemail\nAttempt 2 — Day 3: Call + LinkedIn message\nAttempt 3 — Day 7: Call + email\nAttempt 4 — Day 14: Final call + final email\n\nAFTER 4 ATTEMPTS:\n— Pain Score → 1\n— Next Step: return in 60 days"},
-  ],
-  extras:[
-    {id:"dm",title:"Decision Maker Approach",color:"indigo",text:"HR DIRECTOR / HR MANAGER\nCares about: compliance, ITM risk, contract terms, worker documentation\n\nPLANT MANAGER / PRODUCTION MANAGER\nCares about: capacity, speed of delivery, worker quality, shift coverage\n\nOPERATIONS DIRECTOR\nCares about: total cost, scalability, supplier reliability\n\nOWNER / CEO / GENERAL MANAGER\nCares about: bottom line, risk, strategic partnership, long-term value"},
-    {id:"daily",title:"Daily Activity Standard",color:"amber",text:"MINIMUM DAILY TARGETS:\n— 15 outreach actions (calls + emails + LinkedIn)\n— 3 meaningful conversations with decision makers\n— 1 meeting scheduled or proposal sent"},
-    {id:"principles",title:"Key Principles",color:"txt",text:"1. LISTEN MORE THAN YOU TALK\n2. NEVER SEND AN OFFER WITHOUT DISCOVERY\n3. LOG EVERYTHING — If it is not in the CRM, it did not happen.\n4. FOLLOW UP OR FOLLOW OUT\n5. RESPECT THE PROCESS\n6. ASK FOR HELP — Escalation is not weakness.\n7. PROTECT THE RELATIONSHIP"},
-    {id:"objectionHandler",title:"Objection Handler",color:"red",text:"TOP 5 OBJECTIONS:\n\n1. WE ALREADY HAVE AN AGENCY\n→ 'Great — it means you see the value. My question: are they fully meeting your needs? Most clients came to us while still working with another agency — more volume, faster delivery, or different worker profile. Would comparing make sense?'\n\n2. FOREIGN WORKERS ARE TOO COMPLICATED LEGALLY\n→ 'That is exactly why clients choose us instead of handling it themselves. We manage 100% of the legal process — permits, ITM, contracts. You don't touch any of it.'\n\n3. NOT THE RIGHT SEASON NOW\n→ 'That is why I am calling now. Our best clients start 6–8 weeks before peak. If April is your peak, we start in February. Can we do a discovery call so you are ready?'\n\n4. TOO EXPENSIVE\n→ 'Let us look at the full picture. What is your current cost per worker — including recruitment, turnover, onboarding, admin, compliance? Our all-inclusive model is typically cheaper once you add everything.'\n\n5. SEND IT BY EMAIL\n→ 'Of course. Before I do — so I send something relevant, not a generic brochure — can I ask: how many people do you need, and what is the timeline?'"},
-    {id:"firstMeetingAgenda",title:"First Meeting Agenda (On-Site / Physical)",color:"green",text:"THIS IS THE PHYSICAL ON-SITE MEETING — not the phone discovery call.\nSequence: Discovery Call (phone) → qualify → THEN schedule this meeting.\n\nFIRST MEETING STRUCTURE:\n\n[0–3 min] ENTRY + SMALL TALK\nCompliment something specific. Do NOT start with 'Let me tell you about our company.'\n\n[3–5 min] COMPANY INTRO — max 2 minutes\n→ One sentence: 'We place Ukrainian and Asian workers in Romanian manufacturing.'\n→ Scale: 'We work with 50+ companies, 500+ workers under management.'\n→ One relevant case for their industry. Then STOP pitching.\n\n[5–10 min] TRANSITION TO DISCOVERY\n'That is enough about us — tell me about your staffing challenges.'\nListen. Take notes. Do not interrupt.\n\n[10–30 min] SPIN DISCOVERY\nFollow the Discovery Call Structure: S → P → I → N.\n\n[30–33 min] PAIN SUMMARY — verify you understood\n'Let me check I understood correctly. You have [X] open positions, it takes [Y] weeks to fill them, and the cost of that gap is roughly [Z]. Is that right?'\nIf they confirm — you have your SPIN-P for the proposal.\n\n[33–36 min] NEXT STEP — be specific\nNever say 'I will send you something.'\nSay: 'Based on what I heard, I want to prepare a specific proposal for [X] workers by [DATE]. Can we do 20 minutes on [SPECIFIC DATE] to walk through it?'\nGet a YES or a specific alternative. No 'maybe'.\n\n[36 min] EXIT\nLeave immediately after the commitment. Do not linger.\n\nAFTER THE MEETING (same day):\n— Update SPIN with real answers\n— Set Next Step date in CRM\n— Update Last Contact\n— Send thank-you email with summary of what you heard"},
-    {id:"preDiscoveryPrep",title:"Pre-Discovery Preparation",color:"blue",text:"STEP 2 OF PREPARATION — Do This 15 Minutes Before Dialing\n(Step 1 = Pre-Call Research Checklist, done the day before. This is the final review.)\n\nWHAT TO DO IN 15 MINUTES BEFORE THE CALL:\n\n1. REVIEW INTELLIGENCE\nRe-read HQ Intelligence. Revenue, dynamics, vacancies, DM LinkedIn. If you did not write it — go back and find it first.\n\n2. CHECK PRE-CALL CHECKLIST\nResearch < 80% → collect missing info before calling. Do not call blind.\n\n3. WRITE YOUR PAIN HYPOTHESIS\nOne sentence: what is most likely hurting this client right now.\nWrite it in SPIN-P BEFORE the call. This is your starting assumption.\nExample: 'They posted 8 vacancies 10 weeks ago and still cannot fill them — peak season is coming.'\n\n4. PREPARE 3 IMPLICATION QUESTIONS\nWrite them specifically for this client, this industry, this size.\nWrite them in SPIN-I before the call.\nExample: 'If the line is not full in April — what happens to your Q2 delivery plan?'\n\n5. SET YOUR CALL GOAL\nOne specific next step you want to get from this call.\nMeeting? Intro to economic buyer? Agreement to receive a proposal?\nKnow it before you dial.\n\n6. KNOW YOUR OFFER\nWhich service? Ukrainian or Asian workers? What timeline can you commit to?\nDo not make promises you cannot keep.\n\nRULE: If you cannot write the pain hypothesis — you are not ready to call."},
-    {id:"coldCallOpener",title:"Cold Call Opener",color:"blue",text:"THE FIRST 20 SECONDS DETERMINE EVERYTHING\n\nBAD OPENER (do not do this):\n'Buna ziua, suntem o agentie de personal si oferim muncitori pentru productie...'\nWhy it fails: starts with 'we', pitches before asking, no reason to listen.\n\nGOOD OPENER (use this structure):\n'Buna ziua, ma numesc Walery, sunt de la Gremi Personal. Am vazut ca compania dvs. s-a extins semnificativ in ultimii doi ani. Voiam sa va intreb — cum gestionati nevoia de personal in sezonul de varf?'\nWhy it works: shows you studied them, asks a question, does not pitch.\n\nSTRUCTURE (3 sentences):\n1. Who you are + company (1 sentence)\n2. Why you are calling THEM specifically — one concrete fact about their business (1 sentence)\n3. Question or insight that opens the conversation (1 sentence)\n\nRULES:\n— First 20 seconds: do NOT pitch, ask a question\n— Show you studied the company — one specific fact\n— Goal of the call: not to sell, to get the next step\n— If gatekeeper: 'Am trimis un email dl-ului [NAME] referitor la personal operational. Puteti sa ma transferati?'\n— If voicemail: do NOT leave one. Call again at a different time."},
-    {id:"linkedinOutreach",title:"LinkedIn Outreach",color:"blue",text:"FIRST MESSAGE TO DECISION MAKER ON LINKEDIN — max 5 sentences\n\nTHREE ELEMENTS:\n1. Hook — their post, company news, shared context (shows you did research)\n2. Useful insight — for them, not about you\n3. One question — no pitch\n\nEXAMPLES BY DM TYPE:\n\nHR DIRECTOR:\n'Am vazut ca recrutati operatori de linie de cateva luni. Companiile din productie cu care lucram au redus timpul de recrutare cu 60% trecand la outsourcing. Va intreb — cat timp aloca echipa dvs. lunar pentru recrutare?'\n\nOPERATIONS DIRECTOR:\n'Felicitari pentru extinderea liniei de productie. Din experienta cu producatori similari — cel mai mare risc in primele 3 luni este stabilitatea echipei. Cum gestionati asta momentan?'\n\nRULES:\n— Never mention your company in the first message\n— Never pitch in the first message\n— One question only — not two\n— If they reply → move to Discovery Call\n— If no reply after 7 days → send one follow-up with a different angle\n— If no reply after second message → move to Cold Call approach"},
-    {id:"proposalStructure",title:"Proposal Structure",color:"teal",text:"WHAT YOUR PROPOSAL MUST CONTAIN (in this order):\n\n1. PAIN SUMMARY (1 paragraph)\nRepeat back what you heard. Show you understood their situation.\nUse their words, not yours.\nSource: your SPIN-P + Pain Summary field in CRM.\nExample: 'Based on our conversation: your Cluj location needs 15 operators for April peak. You have posted these roles for 10 weeks without success. Each week of delay costs approximately X RON in reduced output.'\n\n2. SOLUTION — SPECIFIC\nNot 'we provide workers'. Specific: how many, what profiles, what timeline.\n→ 15 operators, production profile, available April 1\n→ UA workers on temporary protection, 2-week onboarding\n→ Gremi Personal as official employer\n\n3. FINANCIAL MODEL\n→ RON/hour rate, all-inclusive breakdown\n→ Comparison with direct hire total cost (show the math)\n→ Break-even point\n\n4. PROCESS — HOW IT WORKS\n→ Signing → IGI submission → worker selection → onboarding\n→ Replacement guarantee terms\n→ Your dedicated coordinator\n\n5. PROOF — ONE CASE STUDY\nSame industry + similar size. Real numbers if possible.\n'Cris-Tim Ilfov: 42 workers placed in 3 weeks, contract extended 6 months later.'\n\n6. NEXT STEP\nDo not end the proposal without a specific ask.\n'I propose a 20-minute call on [DATE] to walk through this together. Are you available?'\n\nCRITICAL: Never send a proposal without a scheduled follow-up call. A proposal without a next step is a dead proposal."},
-    {id:"closingTechniques",title:"Closing Techniques",color:"green",text:"SEQUENCE: First CLOSE (ask for the decision) → only if they resist on price → then NEGOTIATE (negotiationTechniques).\nDo not go to negotiation before attempting to close. Most deals close without price objection.\n\nWHEN TO CLOSE\nClose only when:\n— Client confirmed the pain (Pain Score 4–5)\n— Economic Buyer is involved\n— Proposal has been sent AND discussed\n— No open objections remaining\n\nDo NOT close after the first call. Do NOT close by email.\n\nCLOSING TECHNIQUES:\n\n1. ASSUMPTIVE CLOSE\n'Cand va este mai convenabil sa incepem — la inceputul lui aprilie sau la mijlocul lunii?'\nAssumes yes, asks only about timing. Works when pain is confirmed.\n\n2. SUMMARY CLOSE\n'Am convenit: 50 de persoane, start 1 aprilie, pret X RON/ora. Semnam?'\nSummarizes all agreements. Removes ambiguity. Asks for signature.\n\n3. URGENCY CLOSE\n'Cota de lucratori pentru mai se inchide. Companiile care au depus cererea mai devreme primesc deja oameni.'\nUse only when true. Never invent urgency.\n\n4. TRIAL CLOSE\n'Daca rezolvam problema cu partea juridica — sunteti pregatiti sa mergeti mai departe?'\nTests readiness without full commitment. Good for handling last objection.\n\nAFTER EVERY CLOSING ATTEMPT:\n— They say YES → immediately confirm in writing\n— They say NOT YET → ask 'What is missing for you to decide?'\n— They say NO → ask 'What changed since our last conversation?' then update Lost Reason in CRM"},
-    {id:"negotiationTechniques",title:"Negotiation Techniques",color:"orange",text:"ENTER NEGOTIATION ONLY AFTER attempting to close.\nIf they said yes → do not negotiate, confirm and sign.\nIf they pushed back on price or terms → now negotiate.\n\nPRINCIPLES:\n— Never give a concession without getting something in return\n— First concession sets the anchor — make it small\n— Know your walk-away number before the call\n— Silence is a tool — after making an offer, wait\n\nCOMMON REQUESTS + HOW TO RESPOND:\n\nRequest: 'Can you lower the rate?'\nResponse: 'I can look at the rate if we can confirm the volume. If you commit to [X] workers for [Y] months, I can offer [adjusted rate]. Does that work?'\n\nRequest: 'We need a trial period.'\nResponse: 'Understood. We can do a 30-day pilot with [X] workers. After 30 days, if you are satisfied, we sign the full contract. If not — no penalty. Fair?'\n\nRequest: 'Competitor offered cheaper.'\nResponse: 'What is the total cost they quoted — including all fees, housing, transport, admin? Our rate is all-inclusive. Let us compare on the same basis.'\n\nESCALATION RULES — involve Walery when:\n— Discount requested > 5%\n— Non-standard contract terms\n— Order volume > 50 workers\n— Client requests exclusivity\n— Payment terms beyond 30 days"},
-    {id:"competitorComparison",title:"Competitor Comparison",color:"purple",text:"HOW GREMI / ANTFORCE DIFFERS FROM ADECCO, MANPOWER, LUGERA, TRENKWALDER\n\nSPECIALIZATION:\nLarge agencies: wide profile, all segments, white collar + blue collar\nGremi/Antforce: focus on foreign workers for manufacturing. We go deep, not wide.\n→ Your pitch: 'They handle everything. We handle foreign workers for production better than anyone.'\n\nSPEED:\nLarge agencies: standard process, internal bureaucracy, 4–8 week timelines\nGremi/Antforce: direct recruitment channels, faster onboarding, 2–4 weeks UA\n→ Your pitch: 'We delivered 35 workers to Dacia Parts in 18 days.'\n\nLEGAL SUPPORT:\nLarge agencies: standard HR compliance\nGremi/Antforce: full IGI support, work permits, ITM documentation, we are the official employer\n→ Your pitch: 'ITM comes to us. Not to you.'\n\nFLEXIBILITY:\nLarge agencies: fixed packages, minimum volumes, long-term contracts\nGremi/Antforce: customized to client, pilot batches possible, no minimum commitment\n→ Your pitch: 'Start with 5 workers. No risk. Scale when it works.'\n\nCONTACT:\nLarge agencies: account manager changes every 6 months\nGremi/Antforce: dedicated coordinator for the lifetime of the contract\n→ Your pitch: 'You will have one phone number for everything.'\n\nWHEN CLIENT SAYS 'WE ALREADY WORK WITH ADECCO':\n'I understand. Many of our best clients also work with large agencies — for their local needs. We complement, not replace. Our niche is foreign workers. They cannot match our speed and legal expertise in this area.'"},
-    {id:"postDealOnboarding",title:"Post-Deal Onboarding",color:"green",text:"WHAT HAPPENS AFTER SIGNING — first 30 days\nHandlowiec must know this process to make correct promises to clients.\n\nDAY 1–3: CONTRACT SIGNING + HANDOVER\nWho: Handlowiec + Operations\n— Sign contract, collect all client specs (location, shift, tasks, start date)\n— Introduce client to their dedicated coordinator\n— Handover briefing to Ops team\n\nDAY 3–7: IGI SUBMISSION + RECRUITMENT START\nWho: Operations\n— Submit worker documentation to IGI (for non-UA workers)\n— Start worker selection from database or launch recruitment\n— Confirm start date with client\n\nDAY 7–21: WORKER PROCESSING\nWho: Operations + Coordinator\n— Medical checks, contracts signing, safety briefing\n— Housing and transport arrangement\n— Client briefed on worker profiles\n\nDAY 21–30: FIRST WORKERS ON SITE\nWho: Coordinator\n— First day on-site: coordinator present\n— Onboarding checklist completed\n— Any issues resolved within 24h\n\nDAY 30+: REGULAR CHECK-IN\nWho: Handlowiec\n— Monthly call with client: satisfaction, any issues, expansion opportunity\n— Update CRM: Last Contact, Next Action\n— Ask for referral: 'Do you know other companies with similar needs?'\n\nCRITICAL DATES TO PROMISE CORRECTLY:\n— Ukrainian workers: 2–4 weeks from signing to on-site\n— Asian workers: 4–6 MONTHS from signing to on-site\n— Never promise Asian workers in 4 weeks. It is not possible."},
-    {id:"accountManagementUpsell",title:"Account Management & Upsell",color:"green",text:"AFTER THE DEAL IS SIGNED — the relationship starts, not ends\n\nCHECK-IN SCHEDULE:\n— Week 1: coordinator on-site first day, any issues resolved within 24h\n— Week 2: call with client contact — how are the workers settling in?\n— Month 1: formal check-in — satisfaction, any performance issues, upcoming needs\n— Month 3: strategic review — what is working, what can improve, expansion?\n— Ongoing: every 2 weeks, at minimum monthly contact\n\nWHAT TO TRACK:\n— Worker turnover rate on the client's site\n— Client complaints (speed of resolution = trust)\n— Client satisfaction score (ask directly: 1–10, what would make it 10?)\n\nUPSELL TRIGGERS — listen for these:\n→ 'We are opening a new production line' = new location deal\n→ 'We are adding a night shift' = more workers same location\n→ 'Peak season is coming earlier this year' = volume increase\n→ 'Our Prahova plant has the same problem' = new HQ + location\n→ 'My colleague at [Company X] has the same issue' = referral lead\n\nHOW TO ASK FOR REFERRAL:\n'We really enjoyed working together on this. Do you know other companies — suppliers, partners, industry contacts — who might have similar staffing needs?'\nAsk after month 1, when you have delivered results.\n\nRULE: Keeping a client costs 5x less than finding a new one. Every deal is the start of a long relationship, not a transaction."},
-    {id:"meetingConfirmation",title:"Meeting Confirmation",color:"green",text:"SEND 24 HOURS BEFORE THE MEETING:\n\nSubject: Confirmare intalnire maine — [Ora] — Walery / Gremi Personal\n\n'Buna ziua [Nume], confirm intalnirea noastra de maine, [Data] la ora [Ora] la sediul dvs. din [Adresa]. Agenda: ~30 minute pentru a intelege situatia dvs. cu personalul de productie si a vedea daca va putem fi de folos. Daca apare ceva neprevazut, va rog sa ma anuntati la [telefon]. Ne vedem maine. Cu stima, Walery'\n\nRULES:\n— Send 24 hours before — not 5 minutes before\n— No pitch in the confirmation\n— State the duration — client plans their time\n— If online meeting — include Zoom / Meet link immediately\n— If no confirmation received → call to verify\n\nWHY THIS MATTERS:\nA confirmed meeting is 3x less likely to be cancelled than an unconfirmed one.\nIt also shows professionalism from first contact."},
+    {id:"new",stage:"New",icon:"1",title:"Lead Qualification & Contact Discovery",target:"Complete research within 24h of lead entry. Do NOT move to Contacted without a specific person.",tasks:`PREREQUISITE: You have a company name. Your job now is to find the person who feels the pain.
+(Challenger Sale: you cannot teach or tailor without knowing who you're talking to)
+
+━━━ STEP 1: COMPANY RESEARCH ━━━
+
+WHERE TO LOOK:
+— Termene.ro / ListaFirme.ro: revenue trend, employee count, CUI, registered address, administrators
+— Company website: products, clients, locations, management page ("Echipa" / "Management")
+— eJobs / BestJobs / OLX Jobs: how many open positions? Which profiles? How long posted?
+— LinkedIn company page: recent posts, hiring activity, company size changes
+— Google News: "[Company name] Romania" — any expansions, new contracts, changes
+
+WHAT YOU'RE LOOKING FOR:
+— Is the company growing or shrinking? (Growing = more workers needed)
+— How many vacancies, how long open? (Long-open = frustrated HR, high pain)
+— Do they work with agencies already? (Check job postings — "via [agency name]")
+— Who are their clients? (Gives you leverage: "I work with other suppliers to [their client]")
+
+Write findings in HQ → INTELLIGENCE field. This is your pre-call brief.
+
+━━━ STEP 2: FIND THE DECISION MAKER ━━━
+(Challenger: find the Mobilizer — the person who challenges the status quo internally)
+
+WHO TO FIND (priority order):
+1. HR Director / HR Manager — feels compliance and recruitment pain daily
+2. Plant Manager / Production Manager — feels capacity and reliability pain daily
+3. Operations Director — feels total cost and scalability pain
+4. Owner / GM — feels everything when it's bad enough
+
+HOW TO FIND THEM:
+— LinkedIn: search "[Company] Romania" → filter People → HR Director / Plant Manager
+— Company website: "Echipa" page — names and roles often listed
+— Google: "[Company name] director HR Romania" or "[Company] manager productie"
+— Termene.ro: shows administrators (often the owner/GM)
+— Cold call the switchboard: "With whom does your HR Director / Plant Manager discuss staffing suppliers?"
+
+━━━ STEP 3: HYPOTHESIZE THE PAIN ━━━
+(Rackham — SPIN Selling: top performers hypothesize the problem before first contact)
+
+Write ONE sentence in SPIN-P before calling:
+→ "They have 8 open operator positions on eJobs for 10 weeks — peak season in April. Pain: can't staff up in time."
+→ "They expanded last year, headcount up 40% — likely overwhelmed HR with local recruitment."
+If you cannot write this sentence: you need more research. Go back to Step 1.
+
+━━━ STEP 4: CRM ENTRY CHECKLIST ━━━
+Before moving to Contacted:
+☐ HQ record created: company, industry, address, website
+☐ HQ Intelligence filled with research findings
+☐ Location record created with county and estimated workers needed
+☐ Worker type hypothesis noted (UA / Asian / Mix)
+☐ SPIN-P hypothesis written
+☐ Specific person identified with name, role, and contact method
+
+DO NOT move to "Contacted" until all 6 are checked.`},
+
+    {id:"contacted",stage:"Contacted",icon:"2",title:"First Contact Sequence",target:"3 contact attempts across 3 channels within 7 business days.",tasks:`SOURCE: Never Split the Difference (Voss) — multi-touch sequencing
+PREREQUISITE: You have a specific person's NAME + ROLE + at least one contact method.
+
+━━━ THE MULTI-TOUCH SEQUENCE ━━━
+Why multi-channel: each person has a preferred channel. You don't know which one yet.
+Never repeat the same channel twice in a row — vary timing and medium.
+
+DAY 1 — FIRST TOUCH
+Morning (9:00–11:00) or afternoon (14:00–16:00) — never lunchtime.
+→ CALL the direct number. Use your Cold Call Opener (see Reference Cards).
+→ SAME DAY: send introductory email (use First Contact Email template in Scripts).
+Do not wait for the call to land before sending the email. Both go Day 1.
+
+DAY 3 — SECOND TOUCH
+→ CALL again at a DIFFERENT time than Day 1 (if you called morning, call afternoon now)
+→ If no answer on call: send LinkedIn connection request with short note (see LinkedIn Outreach in Scripts)
+→ Do NOT leave voicemails. They give the prospect a reason not to answer.
+
+DAY 7 — THIRD TOUCH
+→ Follow-up EMAIL — different angle than Day 1 (use Follow-up template in Scripts)
+→ If LinkedIn accepted: send first LinkedIn message (see LinkedIn Outreach in Scripts)
+
+━━━ VOSS: INVITE A SAFE 'NO' ━━━
+If you reach them and they say "we're not interested":
+→ "Is it a bad idea altogether, or just bad timing?"
+A "no" is more useful than silence. It tells you where you stand.
+(Voss: people who say "no" feel safe. People who say nothing are avoiding you.)
+
+━━━ IF NO RESPONSE AFTER 3 ATTEMPTS ━━━
+→ Move to "No Answer"
+→ Set follow-up reminder for 30 days
+→ Do NOT make a 4th, 5th, 6th attempt in the same week. You will be blocked.
+
+━━━ WHAT "INTERESTED" LOOKS LIKE ━━━
+They pick up and ask you a question.
+They reply to your email with anything other than "not interested."
+They accept your LinkedIn request AND reply to your message.
+One positive signal = move to "Interested." Do not wait for enthusiasm.`},
+
+    {id:"interested",stage:"Interested",icon:"3",title:"Discovery & Meeting Preparation",target:"Meeting scheduled within 5 business days of prospect showing interest.",tasks:`SOURCE: SPIN Selling (Rackham) + The Challenger Sale (Dixon & Adamson)
+This stage has one goal: understand their pain deeply enough to propose a specific solution.
+Do NOT send a proposal yet. Do NOT pitch a solution yet. Discover first.
+
+━━━ THE CHALLENGER COMMERCIAL INSIGHT ━━━
+Before discovery, open with one insight they probably don't know:
+→ "Companies in your industry that switched to outsourced foreign workers reduced their HR overhead by an average of 30%. I want to understand if that's relevant for you."
+→ "The average cost of a direct hire for a production operator in Romania — including onboarding and first-year turnover — is 3–4x the monthly salary. Most companies don't calculate it that way."
+This positions you as an expert, not a vendor. It makes them curious about their own situation.
+(Challenger: Teach before you Ask. Insight before offer.)
+
+━━━ SPIN DISCOVERY — ALL FOUR FIELDS REQUIRED ━━━
+(Rackham: you cannot close without completing all four. Skipping any one = weak proposal.)
+
+S — SITUATION (facts, use sparingly — don't interrogate)
+→ "How many production workers do you have currently?"
+→ "Are you working with any staffing agency now?"
+→ "How many open positions are you carrying right now, and how long have they been open?"
+Write exact answers in SPIN-S.
+
+P — PROBLEM (expose dissatisfaction — this is where most salespeople stop)
+→ "What's the main challenge when it comes to filling those roles?"
+→ "When a line is understaffed — what does that look like operationally?"
+→ "Have you had situations where a worker leaves in the first month?"
+Write their exact words in SPIN-P. Do NOT paraphrase.
+
+I — IMPLICATION (connect problem to consequences — this is the engine)
+→ "If the line runs short by 10 workers — what does that cost per shift?"
+→ "Has this affected any delivery commitments to your clients?"
+→ "How much time does your HR team spend on recruitment vs. strategic work?"
+→ "What happens to this situation in April when your peak starts?"
+Write financial and operational impact in SPIN-I.
+(Rackham: Implication Questions separate top performers from average performers)
+
+N — NEED-PAYOFF (let them articulate the value — one question, then wait)
+→ "If you had 25 reliable operators starting in 3 weeks — what would that change for you?"
+Write their exact answer in SPIN-N. This becomes your proposal language.
+(Rackham: Never say the value for them. Ask. Wait. They sell themselves.)
+
+━━━ BOOKING THE MEETING ━━━
+After discovery — propose a physical meeting at their site:
+→ "Based on what you've told me — it would make sense for me to come to your plant. I want to see the setup properly before proposing something specific. Would [day] or [day] work?"
+Physical meeting = stronger commitment. Ask for it directly.
+
+━━━ MINIMUM TO MOVE FORWARD ━━━
+Before moving to Meeting Scheduled:
+☐ All 4 SPIN fields filled with real answers (not hypotheses)
+☐ Pain Score ≥ 3
+☐ Meeting date and time confirmed in writing
+☐ Contact person confirmed (name, role, phone)`},
+
+    {id:"meeting",stage:"Meeting Scheduled",icon:"4",title:"Meeting Execution",target:"Zero no-shows. Always confirm 24h before. Leave with a specific next step committed.",tasks:`SOURCE: The Challenger Sale (Dixon & Adamson) — Teach-Tailor-Take Control
+PREREQUISITE: Discovery Call done, SPIN filled, Commercial Insight prepared.
+This is NOT a discovery call. You have already done discovery. This is a presentation and advance.
+
+━━━ 24H BEFORE — CONFIRMATION ━━━
+Send confirmation email (use Meeting Confirmation template in Scripts).
+Subject: "Confirmare intalnire maine — [ORA] — Walery / Gremi Personal"
+Include: time, location, proposed agenda (30 min), your phone number.
+If no reply by evening: call to confirm. A meeting without confirmation is a coin flip.
+
+━━━ PREPARATION — day before ━━━
+(Challenger: top performers prepare a specific Commercial Insight for this client's industry and size)
+
+Prepare:
+— ONE Commercial Insight: a fact or reframe specific to their industry + size
+— 3 Implication Questions based on their SPIN-P (go deeper than Discovery Call)
+— Your specific proposal: workers count, profile, entity, timeline, rate range
+— One case study from same industry or same county (real numbers)
+
+Re-read SPIN-P from CRM. Their exact words = your opening.
+
+━━━ MEETING STRUCTURE — 30–40 MINUTES ━━━
+
+[0–3 min] ENTRY — rapport, NOT pitch
+Compliment something specific: their facility, a news item about the company, their LinkedIn post.
+DO NOT start with "Let me tell you about Gremi Personal."
+
+[3–6 min] SET THE AGENDA
+"I'd like to spend about 30 minutes. I want to share a few observations about staffing in your industry — then go deeper on your situation — and if it makes sense, we'll talk about what we could do together. Works for you?"
+(Challenger: setting the agenda signals professionalism and gives you control)
+
+[6–12 min] TEACH — Commercial Insight
+Deliver your prepared insight. Specific to their industry and size.
+Show data. Challenge an assumption they hold.
+DO NOT present your solution yet. Insight comes first.
+
+[12–22 min] TAILOR — go deeper on SPIN
+Ask prepared Implication questions. Verify and deepen what you learned in Discovery Call.
+→ "You mentioned you were short [X] workers last peak. What did that cost operationally?"
+→ "What does April look like this year — are you expecting higher demand?"
+Listen. Take notes. Update SPIN.
+
+[22–30 min] PRESENT — specific solution
+Only now present.
+"Based on everything you've told me: [X] UA operators, outsourcing via Gremi Personal SRL, delivery by [date]. All-inclusive rate in the range of [X–Y] RON per worker per month."
+
+[30–33 min] PAIN SUMMARY — verify alignment (Voss: get "That's right")
+"Let me confirm I understood correctly. You need [X] operators by [date], your current setup can't deliver that, and each week of delay costs roughly [Z RON]. Is that right?"
+Wait for "That's right." That's your green light to close for next step.
+
+[33–36 min] NEXT STEP — specific and committed
+Never: "I'll send you something."
+Always: "I'll prepare the full proposal and send it by [date]. Can we do 20 minutes on [day] at [time] to walk through it together?"
+Get YES with a date. Confirm email address.
+
+[36 min] EXIT
+Leave immediately after the commitment. Do not linger.
+
+━━━ AFTER THE MEETING — same day ━━━
+— Update SPIN-S, P, I, N with real answers from the meeting
+— Set Next Step date in CRM
+— Log Activity entry with key quotes
+— Send thank-you email with summary of what you heard (use Post-Meeting template)`},
+
+    {id:"done",stage:"Meeting Done",icon:"5",title:"Proposal Preparation & Delivery",target:"Proposal sent within 24h of meeting. Follow-up call booked before sending.",tasks:`SOURCE: The Strategy and Tactics of Pricing (Nagle) — Economic Value to Customer
+RULE: Never send a proposal without a scheduled follow-up call. A proposal without a next step is a document that sits in someone's inbox.
+
+━━━ IMMEDIATELY AFTER THE MEETING ━━━
+Before you write the proposal:
+— Update all SPIN fields with real answers from the meeting
+— Set Next Step date
+— Log Activity entry
+— Send thank-you email same day (see Post-Meeting template in Scripts)
+  → Summary of what you heard (their words, not yours)
+  → Confirm what you agreed to prepare
+  → Confirm the follow-up call date and time
+
+━━━ PROPOSAL STRUCTURE (Nagle: EVC framework) ━━━
+
+SECTION 1 — PAIN SUMMARY (their words, not yours)
+Mirror back exactly what they told you in SPIN-P and SPIN-I.
+"Based on our conversation: your Cluj location needs 15 operators for April peak. You have posted these roles for 10 weeks without success. Each week of delay costs approximately [X RON] in overtime and gaps."
+Effect: they read this and think "he understood me." Trust increases before they see the price.
+
+SECTION 2 — ECONOMIC VALUE CALCULATION (required)
+Show the full cost of their alternative, not just your price.
+Build this comparison:
+— Direct hire: recruitment + onboarding + first-year turnover × salary
+— HR admin hours: [Y hours/month] × internal HR cost
+— Overtime during vacancy periods: [Z hours × rate]
+— ITM compliance risk exposure
+— Management time spent on staffing
+Total cost of NOT using us = [X RON/month for their workers]
+Our all-inclusive rate = [Y RON/month]
+Gap = their value gained
+
+SECTION 3 — SOLUTION (specific)
+Not "foreign workers." Specific:
+— [X] operators, [UA/Asian] profile
+— Start date: [DATE] (check realistic timeline: UA = 2–4 weeks)
+— Legal entity: Gremi Personal SRL or Antforce SRL (and why this one)
+— Included: permits, ITM documentation, coordinator, replacement guarantee
+
+SECTION 4 — PROCESS
+Signing → IGI → selection → onboarding → Day 1 coordinator on site
+
+SECTION 5 — PROOF
+One case study from same industry or county. Real numbers only.
+
+SECTION 6 — NEXT STEP
+A specific call booked, not "call me if you have questions."
+→ "I'll walk you through this on [day] at [time]. I've already blocked 20 minutes."
+
+━━━ WHAT TO AVOID IN A PROPOSAL ━━━
+— Company history paragraphs (they don't care)
+— Long service lists (irrelevant to their situation)
+— Generic guarantees ("we guarantee quality")
+— Price before value calculation
+— Sending without a booked follow-up`},
+
+    {id:"proposal",stage:"Proposal Sent",icon:"6",title:"Follow-up Sequence",target:"Decision within 14 days. After 14 days without response: close or drop.",tasks:`SOURCE: Never Split the Difference (Voss) + The Challenger Sale (Dixon & Adamson)
+RULE: The proposal is not the close. The follow-up call IS where deals close.
+Most deals are won or lost in the 72 hours after the proposal is sent.
+
+━━━ THE FOLLOW-UP SEQUENCE ━━━
+
+DAY OF SENDING — confirm receipt
+Send proposal. Within 2 hours: WhatsApp or SMS.
+→ "Am trimis propunerea pe email. Confirmati ca ati primit-o?"
+Simple. Fast. Starts a conversation thread.
+
+DAY 3 — THE CRITICAL CALL
+Call the decision maker directly. This is your most important action in this stage.
+Objective: walk through the proposal together, surface objections, advance.
+→ "Am trimis propunerea acum 3 zile — voiam sa o parcurgem impreuna. Aveti 20 de minute?"
+If they haven't read it: "Nici o problema — o deschidem impreuna acum."
+If they push back on price: go to Negotiation Techniques (Reference Cards).
+(Challenger: take control — do not wait for them to call you)
+
+DAY 7 — VALUE EMAIL
+Do NOT send "just checking in." Bring something new.
+Options:
+→ A relevant case study from their industry with real numbers
+→ A market insight: "Am vazut ca cererea de operatori in [judet] a crescut cu 20% in ultimele 6 saptamani."
+→ An update: "Am disponibilitate pentru [X] muncitori din profilul dvs. in urmatoarele 3 saptamani."
+(Challenger: every touch should teach something, even in follow-up)
+
+DAY 14 — BREAKUP MESSAGE
+If no response after 14 days of trying: send the breakup message (see Scripts).
+Tone: respectful, not passive-aggressive. Leave the door open.
+→ Subject: "Ultima incercare — [COMPANIA]"
+→ "Am incercat sa va contactez de cateva ori fara succes. Inchid dosarul din sistemul nostru. Daca situatia se schimba — sunt disponibil."
+(Voss: a clear "no" is better than a false "maybe." The breakup message often gets a response.)
+
+━━━ WHAT TO DO IF THEY SAY "WE NEED MORE TIME" ━━━
+→ "Of course. What specifically is giving you pause?"
+→ Find the real objection. "More time" = something unresolved.
+Options: budget not approved, another stakeholder involved, comparing with competitor.
+Each has a specific response — see Objection Handler in Reference Cards.
+
+━━━ WHEN TO MOVE TO NEGOTIATION ━━━
+They engage but push back on price or terms → move to Negotiation stage.
+
+━━━ WHEN TO CLOSE AS LOST OR NO ANSWER ━━━
+After 14 days and breakup message with no response: No Answer.
+After breakup message and they confirm they chose someone else: Closed Lost.
+Fill in Lost Reason immediately. This data improves the whole team.`},
+
+    {id:"negotiation",stage:"Negotiation",icon:"7",title:"Terms Discussion & Closing",target:"Close or escalate within 10 days. Never negotiate against yourself.",tasks:`SOURCE: Never Split the Difference (Voss) + Thinking Strategically (Dixit & Nalebuff)
+You are here because they want to buy but are pushing back on something.
+That is a good position. Do not destroy it by making unilateral concessions.
+
+━━━ BEFORE THE NEGOTIATION CALL ━━━
+Know your walk-away number before you dial. Write it down.
+Know what you can trade (volume commitment, contract length, payment terms).
+Know your escalation trigger (>5% discount, >50 workers, non-standard terms → call Walery).
+
+━━━ VOSS: TACTICAL EMPATHY FIRST ━━━
+Whatever they push back on — label it before defending.
+→ "It seems like the budget constraint is real right now."
+→ "It sounds like you're comparing us against another quote."
+→ "It looks like there's pressure internally to get a lower number."
+They need to feel understood before they can agree to anything.
+(Voss: you cannot persuade someone who feels misunderstood)
+
+━━━ CALIBRATED QUESTIONS (not defenses) ━━━
+When they push on price:
+→ "How am I supposed to make this work at that number?"
+→ "What would make this feel fair to both sides?"
+→ "If we solved [specific concern] — would that change things?"
+These invite them to solve the problem WITH you, not against you.
+
+━━━ NEVER CONCEDE WITHOUT TRADING ━━━
+Every concession = something in return.
+→ "I can look at the rate — if we confirm volume and contract length."
+→ "I can do a pilot — if we agree now: successful pilot = full contract signed immediately."
+→ "I can extend payment terms — if you commit to a 6-month minimum."
+A concession given freely signals that your price was wrong to begin with. (Nagle)
+
+━━━ CLOSING TECHNIQUES (see Reference Cards for full detail) ━━━
+Assumptive: "Cand va este mai convenabil sa incepem — inceputul sau mijlocul lunii?"
+Summary: "Am convenit: [X workers], [rate], [start date]. Semnam?"
+Trial: "Daca rezolvam [last concern] — sunteti pregatiti sa mergeti mai departe?"
+Escalation: "Lasati-ma sa aduc directorul nostru — are mai multa flexibilitate pe termeni."
+
+━━━ ESCALATION RULES — involve Walery NOW when: ━━━
+— Discount > 5%
+— Non-standard contract terms
+— Order volume > 50 workers
+— Client requests exclusivity
+— Payment terms beyond 30 days
+Escalation is not weakness. It is a strategic move that signals seriousness.`},
+
+    {id:"won",stage:"Closed Won",icon:"✓",title:"Handover & Account Development",target:"Operations briefed within 24h. First check-in call within 1 week of workers starting.",tasks:`SOURCE: High Output Management (Grove) — process discipline at handover
+Congratulations. Now the real work begins. Most client relationships are won or lost in the first 30 days.
+
+━━━ WITHIN 24 HOURS OF SIGNING ━━━
+(Grove: the handover is a production process — it must be standardized)
+
+— Update ALL CRM fields: workers count, rate, service, entity, start date, Won Date
+— Brief Operations team: client specs, location address, shift pattern, special requirements
+— Introduce the dedicated Coordinator to the client by name and phone number
+— Send thank-you + next steps email to client contact
+— Set first check-in call: 3 days after signing
+
+━━━ TIMELINE — what you can promise ━━━
+UA workers: 2–4 weeks from signing to first workers on site
+Asian workers: 4–6 MONTHS minimum
+NEVER promise Asian workers in less than 4 months. Doing so destroys the relationship permanently.
+
+━━━ FIRST 30 DAYS — your responsibility ━━━
+Week 1: Coordinator on site Day 1. Any issue resolved within 24 hours.
+Week 2: Call with client contact — "How are the workers settling in?"
+Month 1: Formal check-in — satisfaction, performance, any upcoming changes.
+Ask directly: "On a scale of 1–10, how satisfied are you? What would make it a 10?"
+
+━━━ ACCOUNT DEVELOPMENT — start Month 2 ━━━
+Watch for upsell signals (see Account Development card in Reference Cards):
+— "We're opening a new line" → new location deal
+— "My colleague at [company] has the same problem" → referral → act immediately
+— "Peak season is coming earlier" → volume increase
+
+━━━ REFERRAL REQUEST — after Month 1 ━━━
+"We're really proud of how this has gone. Do you know other companies — suppliers, partners — who might benefit from the same model?"
+Most satisfied clients will refer. Most salespeople never ask.`},
+
+    {id:"lost",stage:"Closed Lost",icon:"✕",title:"Post-Mortem & Re-entry Plan",target:"Lost Reason filled within 24h. Re-entry date set. Every loss teaches something.",tasks:`SOURCE: High Output Management (Grove) — process failures as learning inputs
+A lost deal is data. It has no value unless it is captured, analyzed, and used to improve the process.
+(Grove: "The output of a post-mortem is a process change. Not regret.")
+
+━━━ IMMEDIATELY AFTER LOSING — required ━━━
+Fill in CRM within 24 hours:
+— Lost Reason (required): Price / Competitor Won / No Budget / No Decision / Legal Concerns / Timing / Other
+— Lost Description: what exactly happened, in your own words
+— What to do differently: one specific thing you would change
+— Lost Date
+— SPIN fields updated with real information (not hypotheses)
+
+If you do not fill these fields: the loss has zero value to the team.
+
+━━━ LOST REASON ANALYSIS — what each reason means ━━━
+
+PRICE → You did not show the Economic Value Calculation (Nagle) convincingly.
+Fix: rehearse the EVC presentation. Make the cost of their alternative visible before price comes up.
+
+COMPETITOR WON → You showed up in Stage 3 (client already shopping). You lost before the meeting.
+Fix: build pipeline earlier. Show up in Stage 1 and 2. (Challenger: insights win before the RFP)
+
+NO BUDGET → Wrong economic buyer. The person you sold to couldn't approve the spend.
+Fix: identify and involve the Economic Buyer earlier. (Challenger: map the organization)
+
+NO DECISION → Pain Score was too low, or urgency was not real.
+Fix: Implication Questions not strong enough. Pain was not made visible. (Rackham: Implication Questions)
+
+TIMING → You rushed. The client was not ready.
+Fix: match your pace to their buying cycle. Do not push to close before the conditions are met.
+
+━━━ RE-ENTRY PLAN ━━━
+Lost to competitor → Check back in 6 months. Competitors fail. Be there when they do.
+→ Set follow-up date in CRM. Send a value email in 6 months. Do not pitch — share an insight.
+
+Lost due to timing → Set follow-up for next season peak.
+→ "Am notat sa revin in [luna] — inainte de sezon. Va fi ok daca va contactez atunci?"
+
+Lost due to price → Note their budget ceiling in Intelligence.
+→ They may become a prospect again when their situation changes or your model evolves.
+
+Lost due to legal concerns → This is a knowledge gap, not a real objection.
+→ Prepare a one-page ITM/compliance FAQ. Send it as a follow-up. Their concern may dissolve.`},
+
+    {id:"noanswer",stage:"No Answer",icon:"—",title:"Re-engagement Protocol",target:"4 attempts across 4 channels before archiving. No more than one attempt per 3–4 days.",tasks:`SOURCE: Never Split the Difference (Voss) — silence is not rejection
+"No Answer" does not mean "not interested." It means they are busy, distracted, or avoiding.
+Your job: give them a frictionless way to re-engage — or to say no clearly.
+(Voss: a clear "no" is more useful than silence. Invite it.)
+
+━━━ THE 4-ATTEMPT PROTOCOL ━━━
+
+ATTEMPT 1 — Day 1: Call, no voicemail
+Call at your normal time. If no answer: hang up. No voicemail.
+Log attempt in Activity.
+
+ATTEMPT 2 — Day 3: Call + LinkedIn message
+Call at a DIFFERENT time than Attempt 1 (if morning before, try afternoon now).
+Same day: LinkedIn message (different angle from any previous contact).
+Use the format: hook (specific observation) + one question. No pitch.
+
+ATTEMPT 3 — Day 7: Call + Email
+Call again. Leave if no answer.
+Same day: follow-up email with a new angle — not a repeat of previous messages.
+Bring a relevant insight or a short case study. Give them a reason to reply.
+
+ATTEMPT 4 — Day 14: Final call + Breakup message
+Last call.
+If no answer: send the Breakup Message (see Scripts → Follow-up category).
+Tone: respectful, professional, leaves the door open.
+→ "Am incercat sa va contactez de cateva ori. Inchid dosarul din sistemul nostru. Daca situatia se schimba — sunt disponibil."
+
+━━━ AFTER 4 ATTEMPTS WITH NO RESPONSE ━━━
+→ Pain Score → 1
+→ Keep in HQ / company record for future reference
+→ Set soft follow-up reminder for 60 days: "Revisit — seasonal peak coming?"
+→ Do NOT delete. Company situations change. Your timing may simply have been wrong.
+
+━━━ VOSS: INVITE THE SAFE 'NO' ━━━
+On Attempt 3 or 4, consider:
+→ "Daca nu mai este relevant pentru dvs. — nici o problema, puteti spune direct."
+Paradoxically, giving them permission to say no often gets a response.
+People are uncomfortable ignoring — but comfortable declining.`},
+  ],  extras:[
+    {id:"discoveryCall",stageGroup:"Interested",title:"Discovery Call Script (Phone)",color:"teal",text:`WHEN TO USE THIS
+After first contact → prospect is 'Interested'. This is a 15–20 min PHONE call.
+NOT the physical meeting. NOT a pitch. A diagnostic conversation.
+Goal: understand their situation deeply, fill SPIN fields, book the next step.
+
+━━━ CHALLENGER SALE: SET THE FRAME FIRST ━━━
+Before asking questions, open with a reframe — teach them something they don't know.
+→ "Most companies I talk to in [industry] think their staffing challenge is about finding workers. What we've found is the real cost is actually in the compliance and turnover management. I want to understand if that's true for you."
+This positions you as an expert, not a vendor. It makes them curious.
+(Dixon & Adamson — The Challenger Sale: Teach before you Ask)
+
+━━━ SPIN DISCOVERY STRUCTURE ━━━
+(Rackham — SPIN Selling: do not pitch until you've completed all four)
+
+[0–3 min] SITUATION — establish facts, use sparingly
+→ "How many production workers do you have currently?"
+→ "Are you working with any staffing agency now?"
+→ "How many open positions are you carrying right now?"
+→ "How long have those roles been open?"
+Write answers in SPIN-S. These are facts, not pain.
+
+[3–8 min] PROBLEM — expose the dissatisfaction
+→ "What's the main challenge when it comes to filling those roles?"
+→ "When a line is understaffed — what does that look like operationally?"
+→ "Have you had situations where a worker leaves in the first 2 weeks?"
+Do NOT answer these. Ask and wait. Write exact words in SPIN-P.
+(Rackham: Problem Questions are where most salespeople stop — that's the mistake)
+
+[8–14 min] IMPLICATION — connect problem to consequences
+This is the engine. Make the cost of inaction visible.
+→ "If that line runs short by 10 workers — what does that cost per shift?"
+→ "Has this affected any delivery commitments to your clients?"
+→ "How much time does your HR team spend on this monthly?"
+→ "What happens to that situation in April when your peak starts?"
+Write the financial and operational impact in SPIN-I.
+(Rackham: Implication Questions are what separates top performers from average ones)
+
+[14–18 min] NEED-PAYOFF — let them articulate the value
+Ask ONE question and wait for the full answer.
+→ "If you had 25 reliable operators starting in 3 weeks — what would that change for you?"
+Write their exact answer in SPIN-N. This becomes your proposal language.
+(Rackham: The client sells themselves. Never say it for them.)
+
+━━━ VOSS: HANDLE THE EMOTIONAL LAYER ━━━
+Before closing for next step — label what you've heard:
+→ "It sounds like this has been a recurring problem, not just a one-off."
+→ "It seems like the agency you're using now isn't giving you the reliability you need."
+Wait. Let them confirm. If they say "that's right" — you understand them.
+(Voss — Never Split the Difference: "That's right" = real alignment. "You're right" = they want to end the call.)
+
+━━━ CLOSE FOR NEXT STEP — be specific ━━━
+Never: "I'll send you something and we'll see."
+Always: specific date, specific action.
+→ "Based on what you've told me — can we do 30 minutes next [day] at [time]? I'll prepare a specific proposal for [X workers] in [county]."
+→ "Would it make sense for me to come to the plant — so I can understand the setup properly?"
+Get a YES with a date. Or find out what's blocking.
+
+AFTER THE CALL — update CRM same day:
+— Fill S, P, I, N with their actual words
+— Update Last Contact and Next Step + Date
+— Activity Log: key quotes and commitments`},
+
+    {id:"dm",stageGroup:"New",title:"Decision Maker Mapping",color:"indigo",text:`DO NOT CONTACT RANDOMLY — map before you call.
+(Challenger Sale: organizations have Mobilizers, Blockers, and Talkers. Most salespeople call the wrong person.)
+
+━━━ THREE TYPES OF CONTACTS ━━━
+
+MOBILIZER — who you want
+Challenges the status quo internally. Can drive a decision through the organization.
+Signs: asks hard questions, challenges your assumptions, engages seriously.
+→ Build your relationship here. This person creates your Champion.
+
+TALKER — waste of time
+Friendly, gives you a lot of information, tells you "this looks interesting."
+Never buys. Never has authority. Makes you feel progress is happening.
+→ Politely extract information, then find the Mobilizer.
+
+BLOCKER — manage carefully
+Has something to lose if you win. Often the current supplier or someone whose process you'd disrupt.
+→ Do not confront. Find who they report to. Build around them.
+
+━━━ DECISION MAKER ROLES — what each person cares about ━━━
+(Challenger Sale: Tailor your message to each stakeholder)
+
+HR DIRECTOR / HR MANAGER
+Pain: recruitment time, ITM compliance exposure, documentation, turnover
+What they fear: a worker without proper papers = ITM fine on their watch
+Your message: "We are the employer of record. If ITM shows up — they come to us, not to you."
+Voss personality type: usually Analytical. Use data and process, not emotion.
+
+PLANT MANAGER / PRODUCTION DIRECTOR
+Pain: line capacity, schedule reliability, speed of replacement
+What they fear: a line stopping because a worker didn't show up
+Your message: "We have a replacement guarantee — if someone doesn't show, we fill within 72h."
+Voss personality type: usually Assertive. Be direct, specific, respect their time.
+
+OPERATIONS DIRECTOR / CFO
+Pain: total cost of workforce, variable vs. fixed cost structure, compliance risk
+What they care about: the all-in cost vs. direct hire with hidden costs
+Your message: build the Economic Value to Customer calculation (Nagle)
+— Direct hire cost: recruitment + turnover + HR admin + overtime + compliance
+— Our cost: one all-inclusive rate per worker per month. No surprises.
+Voss personality type: Analytical. Bring numbers.
+
+OWNER / GENERAL MANAGER
+Pain: business risk, strategic partnership, long-term reliability
+What they fear: being dependent on one supplier who fails in peak season
+Your message: "We work with [X] companies in [industry]. We have never missed a delivery commitment."
+Voss personality type: Assertive. Get to the point. Show track record.
+
+━━━ HOW TO FIND THE RIGHT PERSON ━━━
+1. LinkedIn: search "[Company] + Romania" → filter by HR, Operations, Director
+2. Company website: "Echipa" or "Management" page
+3. Google: "[Company] director HR Romania"
+4. Termene.ro → administrators → often the owner/GM
+5. Cold call gatekeeper: "Am trimis un email dl-ului [NAME] referitor la personal operational. Puteti sa ma transferati?"
+
+━━━ RULE: DO NOT MOVE TO CONTACTED UNTIL ━━━
+You have: a SPECIFIC NAME + ROLE + CONTACT METHOD.
+Company name alone = New stage. Person = Contacted stage.`},
+
+    {id:"daily",stageGroup:"Always",title:"Daily Activity Standard",color:"amber",text:`SOURCE: High Output Management (Andy Grove) + Challenger Sale activity benchmarks
+
+━━━ GROVE'S PRINCIPLE ━━━
+"A manager's output = the output of their organization + the output of neighboring organizations under their influence."
+For a salesperson: YOUR output = number of qualified next steps generated per week.
+Everything else is input. Only closed deals and booked meetings are output.
+
+━━━ LEADING vs. LAGGING INDICATORS ━━━
+(Grove: manage leading indicators — they predict future output)
+
+LAGGING (result — you can't change it):
+— Closed Won deals
+— Revenue placed
+— Workers on site
+
+LEADING (activity — you control it today):
+— Calls made
+— Decision makers reached
+— Meetings booked
+— Proposals sent with a confirmed follow-up call
+
+Manage your leading indicators DAILY. Lagging indicators take care of themselves.
+
+━━━ MINIMUM DAILY TARGETS ━━━
+These are floors, not ceilings:
+— 15 outreach actions (calls + emails + LinkedIn combined)
+— 3 meaningful conversations with decision makers (not gatekeepers)
+— 1 specific next step booked (meeting, call, or proposal with confirmed follow-up)
+
+━━━ WEEKLY PIPELINE HEALTH CHECK ━━━
+Every Friday — 15 minutes:
+— How many leads moved forward this week?
+— Which deals have not moved in 7+ days? → action or drop
+— Am I building pipeline for next month, not just closing this month?
+(Challenger Sale: top performers spend 40% of time on pipeline building, not just current deals)
+
+━━━ THE GROVE RATIO ━━━
+If you are not booking 1 meeting per 5 qualified calls → your pitch or targeting is broken.
+If you are not converting 30%+ of first meetings to proposals → your discovery is broken.
+Fix the ratio before adding volume.
+
+━━━ WHAT NOT TO DO ━━━
+— Spending 3 hours on CRM updates = input theater, not output
+— "Warming up" leads with no next step booked = not sales activity
+— Sending a proposal without a scheduled follow-up call = giving the deal away`},
+
+    {id:"principles",stageGroup:"Always",title:"Core Selling Principles",color:"txt",text:`These are not rules. They are the output of decades of research on what actually works in complex B2B sales.
+
+━━━ FROM SPIN SELLING (Rackham — 35,000 sales calls studied) ━━━
+
+1. FEATURES AND BENEFITS KILL DEALS IN COMPLEX SALES
+In small sales, talking about benefits works. In complex B2B: the more you pitch, the more objections you generate.
+Instead: ask questions until the client articulates the need themselves.
+The client's own words are more persuasive to them than yours.
+
+2. THE IMPLICATION QUESTION IS THE MOST IMPORTANT SKILL
+Most salespeople ask Situation and Problem questions. Only top performers systematically ask Implication questions.
+"What happens to your production schedule when you're 10 workers short?"
+That question is worth more than any brochure.
+
+3. NEVER CLOSE BEFORE THE CLIENT FEELS THE PAIN
+Closing before the pain is visible = pushing. Closing after the pain is visible = helping.
+Pain Score < 3 → do not close. Keep discovering.
+
+━━━ FROM THE CHALLENGER SALE (Dixon & Adamson) ━━━
+
+4. RELATIONSHIP BUILDERS ARE THE WORST PERFORMERS IN DIFFICULT MARKETS
+Counterintuitive but proven: salespeople who focus on relationship-building and avoiding tension underperform Challengers.
+Challengers teach, tailor, and take control. They are comfortable with productive tension.
+
+5. TEACH SOMETHING THEY DON'T KNOW — BEFORE YOU SELL
+Your first job is to change how the client sees their own situation.
+→ "Most production companies think their staffing cost is the hourly rate. The real cost is turnover, admin, and compliance. Here's what that actually looks like..."
+(This is called a Commercial Insight. It should make them think, not just nod.)
+
+6. TAILOR FOR EACH STAKEHOLDER
+The same solution means different things to HR, Operations, and the GM.
+HR wants compliance protection. Operations wants reliability. GM wants cost predictability.
+Never give the same pitch to different roles.
+
+━━━ FROM NEVER SPLIT THE DIFFERENCE (Voss) ━━━
+
+7. NEVER SPLIT THE DIFFERENCE
+Compromise leaves both parties dissatisfied. Instead: understand what they ACTUALLY want underneath their stated position.
+"The rate is too high" → is it the monthly total? The structure? The commitment length? Find out.
+
+8. TACTICAL EMPATHY BEFORE LOGIC
+You cannot persuade someone who feels misunderstood. Label their emotion first.
+"It sounds like you've been let down by agencies before."
+Then they open up. Then you present logic.
+
+9. SILENCE IS THE MOST UNDERUSED TOOL
+After asking an important question: stop talking. Wait.
+Most salespeople are afraid of silence and fill it with their own answers.
+Let the client fill the silence. They always reveal more.
+
+━━━ FROM HIGH OUTPUT MANAGEMENT (Grove) ━━━
+
+10. YOUR JOB IS TO GENERATE OUTPUT, NOT ACTIVITY
+"I called 30 people today" is activity. "I booked 3 meetings" is output.
+Measure output. Manage the inputs that create output. Never confuse the two.
+
+━━━ THE ONE RULE THAT OVERRIDES ALL OTHERS ━━━
+If it is not in the CRM, it did not happen.
+Every call, every meeting, every "they said they'll think about it."
+Log it. Date it. Set a next step. Without this, you are not managing a pipeline — you are managing hope.`},
+
+    {id:"objectionHandler",stageGroup:"Negotiation",title:"Objection Handler",color:"red",text:`SOURCE: Never Split the Difference (Voss) + Challenger Sale (Dixon & Adamson)
+Key principle: An objection is not a "no." It is a signal that they are still thinking — but something is blocking them. Your job is to find and remove that block.
+
+━━━ THE VOSS FRAMEWORK FOR ANY OBJECTION ━━━
+
+Step 1 — LABEL the emotion behind the objection
+Step 2 — ASK a calibrated question to understand the real concern
+Step 3 — PRESENT your response only after they feel understood
+
+NEVER defend immediately. Immediate defense = escalation.
+
+━━━ TOP OBJECTIONS WITH FULL SCRIPTS ━━━
+
+OBJECTION 1: "WE ALREADY HAVE AN AGENCY"
+Wrong response: "We're better than them." (unverifiable, confrontational)
+Right approach:
+→ Label: "It sounds like you have a system that's working — and I respect that."
+→ Calibrated question: "How well is the current agency meeting your needs in terms of volume and reliability?"
+→ Then wait. Let them talk. In 80% of cases, they'll reveal a gap.
+→ If they say "it's fine": "What would need to change for you to consider a second supplier as backup?"
+(Challenger: most clients use multiple agencies — position as complement, not replacement)
+
+OBJECTION 2: "IT'S TOO EXPENSIVE / CHEAPER ELSEWHERE"
+Wrong response: "Let me offer you a discount." (kills your margin and signals weakness)
+Right approach:
+→ Label: "It seems like the investment feels higher than what you expected."
+→ Calibrated question: "What did their quote include exactly? Did it cover ITM documentation, housing coordination, replacement guarantee?"
+→ Then: "Let me show you what happens to that number when you add what we include."
+Build the Nagle Economic Value calculation:
+— Recruitment cost saved: [X RON/hire × turnover rate]
+— HR admin hours freed: [Y hours/month × internal cost]
+— ITM compliance risk avoided: [fine exposure reduced to zero]
+— Overtime eliminated: [Z hours × rate]
+→ "When you add those together — our all-inclusive rate is actually cheaper. Here's the math."
+(Nagle — Pricing: the client compares your price to alternatives, not to value. Your job is to reframe to value.)
+
+OBJECTION 3: "FOREIGN WORKERS ARE TOO COMPLICATED LEGALLY"
+Right approach:
+→ Label: "It sounds like you're worried about the legal complexity — and rightly so."
+→ Then: "That's exactly why our clients choose us instead of handling it themselves. We are the employer of record. Permits, ITM, contracts, housing registration — we manage 100% of it. You don't touch any of it."
+→ Accusation audit (Voss): "You're probably thinking 'what if something goes wrong?' Fair. Here's what our contract says about that: [specific guarantee clause]."
+
+OBJECTION 4: "NOT THE RIGHT SEASON"
+Right approach:
+→ "That's exactly why I'm calling now. Our clients who start the process in [month] get workers on site by [peak month]. The ones who start in [peak month] wait 6 more weeks."
+→ Calibrated question: "When does your production peak start?"
+→ Then show the timeline backward from their answer.
+(Dixit & Nalebuff — Thinking Strategically: first-mover advantage in seasonal markets. The ones who commit early get the best workers.)
+
+OBJECTION 5: "SEND IT BY EMAIL"
+This is the most dangerous objection — it ends the conversation.
+Right approach:
+→ "Of course. Before I do — so I send something specific, not a generic brochure — can I ask two quick questions?"
+→ Ask: volume needed + timeline
+→ Then: "I'll prepare something specific for your situation and send it within [time]. Can we schedule 20 minutes to walk through it together? Otherwise a PDF just sits in your inbox."
+Goal: get a scheduled follow-up call attached to the proposal.
+
+OBJECTION 6: "WE NEED TO THINK ABOUT IT"
+This is a soft "no" — or a sign something is unresolved.
+Right approach:
+→ "Of course. What specifically is giving you pause?"
+→ If they say "nothing specific": "Is it the investment? The process? Or something about the profile of workers?"
+→ If they still deflect: "Is this a bad idea altogether, or just bad timing?" (Voss: invite the safe 'no')
+→ Getting a real "no" is better than a false "maybe" that disappears.`},
+
+    {id:"firstMeetingAgenda",stageGroup:"Meeting Scheduled",title:"First Meeting Agenda (On-Site)",color:"green",text:`SOURCE: The Challenger Sale (Dixon & Adamson) — Teach-Tailor-Take Control structure
+This is the PHYSICAL on-site meeting. You have already done the Discovery Call. You are here to present and advance, not to discover from scratch.
+
+━━━ PRE-MEETING PREPARATION (day before) ━━━
+(Challenger Sale: top performers prepare a Commercial Insight specific to this client's industry and size)
+
+Prepare ONE insight the client doesn't know:
+→ "Companies in [their industry] with [their headcount] that switch to outsourcing reduce their HR overhead by an average of [X%]."
+→ "The average cost of a direct hire in Romania in [their county] including onboarding and first-year turnover is [X RON]. Here's how that compares to our all-inclusive rate."
+This insight should challenge a comfortable assumption they hold.
+
+Also prepare:
+— 3 Implication questions based on what they told you in the Discovery Call
+— Their exact SPIN-P from the CRM (their pain in their own words)
+— Your proposed solution (workers count, type, timeline, entity)
+
+━━━ MEETING STRUCTURE — 30–40 MINUTES ━━━
+
+[0–3 min] ENTRY — rapport, not pitch
+Compliment something specific you noticed: their facility, a news article about their company, something from their LinkedIn.
+DO NOT start with "Let me tell you about Gremi Personal."
+
+[3–6 min] AGENDA — set the frame
+"I'd like to spend about 30 minutes. I want to share a few things we've seen in your industry — then I want to understand your situation better — and if it makes sense, we'll talk about what we could do together. Does that work?"
+(Challenger: setting the agenda signals professionalism and gives you control of the meeting)
+
+[6–12 min] TEACH — the Commercial Insight
+Deliver your prepared insight. Make it specific to their industry and size.
+→ Show data. Show cost comparisons. Show timelines.
+→ "Most companies I work with in [industry] initially think the main problem is finding workers. What we consistently find is that the actual cost driver is..."
+DO NOT present your solution yet. The insight comes first.
+(Challenger: Teach before you Tailor. Insight before offer.)
+
+[12–22 min] TAILOR — deep discovery
+Now ask your prepared Implication questions. Go deeper on what they told you before.
+→ "You mentioned you were short [X workers] last season. What did that cost you operationally?"
+→ "What does your April look like this year?"
+→ "If we could solve this before peak — what would that be worth to you?"
+Listen. Take notes. Update SPIN fields in your head. Write them up immediately after.
+
+[22–30 min] TAKE CONTROL — present and propose
+Now — and only now — present your solution.
+Keep it specific: exactly how many workers, which profile, which entity, which timeline.
+→ "Based on what you've told me, I'd propose [X] Ukrainian operators, outsourcing model via Gremi Personal SRL, delivery by [date]. The all-inclusive rate would be [range] per worker per month."
+(Challenger: take control of the close — do not leave it ambiguous)
+
+[30–33 min] PAIN SUMMARY — verify you understood
+"Let me check I understood correctly. You have [X] open positions, it takes [Y] weeks to fill them, and each week costs roughly [Z RON]. Is that right?"
+If they confirm: you have your proposal language. This is their SPIN-N.
+
+[33–36 min] NEXT STEP — be specific and committal
+Never: "I'll send you something."
+Always: "I'll prepare the specific proposal and send it by [date]. Can we do 20 minutes on [day] at [time] to walk through it?"
+Get a YES with a date. Get their email confirmed. No vague "yes, send it."
+
+[36 min] EXIT
+Leave immediately after the commitment. Do not linger. Professional exit = professional impression.
+
+━━━ AFTER THE MEETING — same day ━━━
+— Update SPIN-S, P, I, N with real answers
+— Set Next Step date in CRM
+— Log Activity with key quotes
+— Send confirmation email with summary of what you heard and confirmed next step`},
+
+    {id:"preDiscoveryPrep",stageGroup:"Contacted",title:"Pre-Call Preparation",color:"blue",text:`SOURCE: SPIN Selling (Rackham) + The Challenger Sale (Dixon & Adamson)
+Do this 15–20 minutes before any call. Not the day before — right before.
+
+━━━ STEP 1: REVIEW INTELLIGENCE ━━━
+Re-read HQ Intelligence. Revenue, dynamics, vacancies, DM LinkedIn.
+If you have not written intelligence — go back and find it first. Do not call blind.
+(Challenger: you must know more about their business than they expect you to)
+
+Check:
+— How many open positions on eJobs/BestJobs right now?
+— Any recent company news? (expansion, new contracts, production changes)
+— What did you discuss last time? What did they say?
+
+━━━ STEP 2: BUILD YOUR PAIN HYPOTHESIS ━━━
+Write one sentence — what is most likely hurting this client right now?
+Write it in SPIN-P BEFORE the call. This is your starting assumption.
+Examples:
+→ "They've been posting 8 vacancies for 10 weeks and can't fill them — peak season is coming."
+→ "Their current agency can't deliver Asian workers fast enough for their expansion."
+→ "They had ITM issues last year and HR is scared of the compliance risk."
+If you cannot write the pain hypothesis — you are not ready to call.
+(Rackham: top performers hypothesize the problem before the call. Average performers discover it reactively.)
+
+━━━ STEP 3: PREPARE 3 IMPLICATION QUESTIONS ━━━
+Write them specifically for this client, this industry, this size.
+Examples for an automotive parts manufacturer:
+→ "If the line is not full in April — what happens to your Q2 delivery plan for Renault?"
+→ "With a 40% annual turnover, how much does your HR team spend on recruitment vs. strategic work?"
+→ "What's the worst-case scenario if your current agency can't scale in peak?"
+(Rackham: Implication Questions must be prepared, not improvised. The difference between average and top performers.)
+
+━━━ STEP 4: SET YOUR CALL GOAL ━━━
+One specific next step you want from this call. Know it before you dial.
+Options:
+— Book a physical meeting at their plant
+— Get intro to the Economic Buyer (the person who signs contracts)
+— Get agreement to receive a specific proposal
+→ Write it down. "After this call I want: [X]."
+
+━━━ STEP 5: PREPARE YOUR COMMERCIAL INSIGHT ━━━
+One fact or reframe they probably don't know about their situation.
+(Challenger: every call should teach something)
+→ "Did you know that companies in your industry that outsource production staff reduce their HR overhead by 30%? I want to show you how that works."
+
+━━━ STEP 6: KNOW YOUR OFFER ━━━
+Which entity: Gremi Personal SRL (outsourcing) or Antforce SRL (leasing)?
+Which worker profile: UA or Asian?
+Realistic delivery timeline: UA = 2–4 weeks. Asian = 4–6 MONTHS. Know this before you promise.
+Do not make commitments you cannot keep. Your reputation is on every promise.`},
+
+    {id:"coldCallOpener",stageGroup:"Contacted",title:"Cold Call Opener",color:"blue",text:`SOURCE: Never Split the Difference (Voss) + The Challenger Sale (Dixon & Adamson)
+The first 20 seconds determine whether they stay on the line. Everything after that is execution.
+
+━━━ WHAT DOES NOT WORK ━━━
+"Buna ziua, suntem o agentie de personal si oferim muncitori pentru productie..."
+Why it fails: starts with "we," pitches before asking, gives them no reason to listen.
+Result: "Trimiteti un email" within 10 seconds.
+
+"Is this a bad time?" (Voss: NEVER say this)
+Why it fails: invites immediate "yes, it's always a bad time."
+Instead: "Did I catch you at a bad time?" — which produces "no, what do you want?"
+
+━━━ THE STRUCTURE THAT WORKS ━━━
+(Challenger: lead with a specific observation about THEM, not about you)
+
+3 sentences:
+1. Who you are + company (5 seconds)
+2. Why you are calling THEM specifically — one concrete fact about their business (5 seconds)
+3. A question that opens the conversation (5 seconds)
+
+EXAMPLE SCRIPTS:
+
+For a company posting vacancies:
+"Buna ziua, ma numesc Walery, sunt Directorul de Dezvoltare la Gremi Personal. Am vazut ca aveti [X] pozitii de operatori deschise pe eJobs de [Y] saptamani — pare ca recrutarea locala e dificila. Voiam sa va intreb — care e principala provocare acum?"
+
+For a company you know from research:
+"Buna ziua, ma numesc Walery de la Gremi Personal. Am vazut ca [COMPANIA] s-a extins semnificativ — felicitari. De obicei expansiunile aduc si provocari cu staffingul. Ati intampinat asta?"
+
+For a referral:
+"Buna ziua, ma numesc Walery de la Gremi Personal. [REFERRAL NAME] mi-a recomandat sa va contactez — a mentionat ca aveti nevoie de personal suplimentar. Ii multumesc pentru recomandare — pot sa va intreb care e situatia?"
+
+━━━ IF THEY SAY "SEND AN EMAIL" ━━━
+(Voss: invite a safe 'no' to stay in the conversation)
+→ "Desigur. Inainte sa fac asta — ca sa trimit ceva relevant, nu un email generic — ar fi o problema sa va pun doua intrebari rapide?"
+Most people say no to "is it a problem?" and then answer your questions.
+
+━━━ IF GATEKEEPER ━━━
+→ "Am trimis un email dl-ului [NAME] referitor la personal operational. Puteti sa ma transferati, va rog?"
+If they don't know the name:
+→ "Cu cine vorbeste directorul de productie / directorul HR de obicei despre furnizori de personal?"
+
+━━━ VOICEMAIL ━━━
+Do NOT leave a voicemail. It gives them a reason not to answer the next call.
+Call again at a different time of day. Different day of week.`},
+
+    {id:"linkedinOutreach",stageGroup:"Contacted",title:"LinkedIn Outreach",color:"blue",text:`SOURCE: The Challenger Sale (Dixon & Adamson) + Never Split the Difference (Voss)
+LinkedIn is not for pitching. It is for opening a conversation with someone who would otherwise never take your call.
+
+━━━ THE CHALLENGER PRINCIPLE ━━━
+Your first message must deliver value or insight — not ask for something.
+"We help companies like yours with staffing" = worthless noise.
+"I noticed something about your hiring pattern that might be relevant" = curiosity.
+
+━━━ MESSAGE STRUCTURE ━━━
+3 elements:
+1. Hook — specific observation about them (their post, company news, something concrete)
+2. Insight — one useful thing they can take away, not about you
+3. One question — not a pitch, not a request for a meeting
+
+RULE: Never mention your company in the first message.
+RULE: Never pitch in the first message.
+RULE: One question only.
+
+━━━ EXAMPLES BY ROLE ━━━
+
+HR DIRECTOR:
+"Am vazut ca recrutati operatori de linie de cateva luni — am urmarit si postarile voastre pe eJobs. Companiile din productie cu care lucrez au redus timpul de recrutare cu 60% trecand la outsourcing — nu prin agentii clasice, ci prin un model diferit. Va intreb direct: cat timp aloca echipa HR lunar pentru aceasta problema?"
+
+PLANT MANAGER / PRODUCTION DIRECTOR:
+"Felicitari pentru extinderea liniei de productie — am vazut anuntul. Din experienta cu producatori similari din [judet] — cel mai mare risc in primele 3 luni este stabilitatea echipei, nu capacitatea. Cum gestionati asta momentan?"
+
+OWNER / GENERAL MANAGER:
+"Am vazut ca [COMPANIA] lucreaza deja cu clienti importanti din [industrie]. La scale-ul la care va aflati, cel mai frecvent punct de tensiune e asigurarea personalului in sezon. V-ati gandit la un model de personal mai predictibil?"
+
+━━━ FOLLOW-UP (if no reply after 7 days) ━━━
+Send one follow-up with a DIFFERENT angle — not the same message again.
+→ New hook (different observation), same structure.
+
+━━━ IF THEY REPLY ━━━
+Move immediately to Discovery Call request. Do not pitch in chat.
+→ "Multumesc pentru raspuns. Ar fi ok sa facem un apel scurt de 15 minute — sa inteleg mai bine situatia dvs. inainte sa spun orice?"
+
+━━━ IF NO REPLY AFTER SECOND MESSAGE ━━━
+Move to Cold Call. LinkedIn silence ≠ rejection. Different channel.`},
+
+    {id:"proposalStructure",stageGroup:"Proposal Sent",title:"Proposal Structure",color:"teal",text:`SOURCE: The Strategy and Tactics of Pricing (Nagle) — Economic Value to Customer framework
+A proposal is not a brochure. It is a structured argument for why investing in your solution creates more value than it costs.
+
+━━━ NAGLE'S CORE PRINCIPLE ━━━
+"Price is what you charge. Value is what the client gets. Your job is to make the gap visible."
+A proposal that lists your services without quantifying the value of solving the problem will always be compared to price, not to value.
+You must show: (Cost of their problem) > (Your price). That's the only argument that works.
+
+━━━ PROPOSAL STRUCTURE — 6 SECTIONS ━━━
+
+1. PAIN SUMMARY — mirror their words back
+This is the most important section. Repeat what they told you in the Discovery Call.
+Use their exact words from SPIN-P and SPIN-I.
+Example:
+"Based on our conversation: your Cluj location needs 15 operators for April peak. You have posted these roles for 10 weeks without success through local agencies. Each week of delay costs approximately [X RON] in overtime and production gaps."
+Effect: they read this and think "he understood me." Trust increases before you've said anything about your solution.
+(Voss: "That's right" moment in written form)
+
+2. ECONOMIC VALUE CALCULATION — Nagle's EVC
+Show the full cost of their alternative, not just your price.
+Build this table:
+— Direct hire cost per worker: recruitment + onboarding + turnover × rate
+— HR admin hours per worker per year × internal cost
+— Overtime cost during vacancy periods
+— ITM compliance risk (fines avoided)
+— Management time spent on staffing vs. operations
+Total cost of NOT using us = [X RON/month for Y workers]
+Our all-inclusive rate = [Z RON/month]
+Delta = [their savings/value gained]
+(Nagle: Economic Value to Customer = (Competitor price) + (value of your differentiation). Show this math.)
+
+3. SOLUTION — specific, not generic
+Not "we provide foreign workers." Specific:
+— [X] operators, [UA/Asian] profile
+— Start date: [DATE]
+— Legal entity: Gremi Personal SRL or Antforce SRL (and why)
+— What's included: permits, ITM documentation, coordinator, replacement guarantee
+
+4. PROCESS — how it works
+Signing → IGI submission → worker selection → onboarding → on-site coordinator
+Timelines: UA = 2–4 weeks. Asian = 4–6 MONTHS (never promise otherwise).
+Replacement guarantee: worker leaves in first [X] weeks → replaced within 72h, no charge.
+
+5. PROOF — one case study, same industry
+Real numbers only. Vague references don't count.
+"Cris-Tim Ilfov: 42 workers placed in 3 weeks, contract extended 6 months later."
+"Dacia Parts Pitești: 35 operators delivered in 18 days, currently in month 4."
+
+6. NEXT STEP — a specific ask
+"I propose a 20-minute call on [DATE] at [TIME] to walk through this together."
+NEVER end a proposal without a booked follow-up. A proposal without a next step is a document that sits in someone's inbox.
+(Challenger: take control of the advance)
+
+━━━ WHAT NOT TO PUT IN A PROPOSAL ━━━
+— Company history and "about us" paragraphs (they don't care)
+— Long lists of services you offer (irrelevant to their situation)
+— Generic guarantees without specifics ("we guarantee quality")
+— Your pricing before you've shown the EVC calculation`},
+
+    {id:"closingTechniques",stageGroup:"Negotiation",title:"Closing Techniques",color:"green",text:`SOURCE: Never Split the Difference (Voss) + The Challenger Sale (Dixon & Adamson)
+
+━━━ WHEN TO CLOSE ━━━
+Close only when all four conditions are true:
+1. Pain Score ≥ 4 — they've confirmed the problem is urgent and costly
+2. Economic Buyer is identified and involved — the person who signs
+3. Proposal has been SENT and DISCUSSED — not just emailed
+4. No unresolved objections — all concerns have been surfaced and addressed
+
+Closing too early = pushback and stalling. Closing after all four = natural progression.
+(Challenger: "The close is the natural end of a well-managed conversation, not a technique applied at the end.")
+
+━━━ THE VOSS PRINCIPLE: SEEK "THAT'S RIGHT" BEFORE CLOSING ━━━
+Before any close attempt, summarize their situation back:
+"So if I understand correctly — you need 25 operators by April 1st, your current agency can't deliver, and each week of delay is costing you roughly [X RON]. Is that right?"
+Wait for "that's right." If you get it — proceed to close.
+If you get "you're right" (different!) — they want to end the conversation. You haven't earned the close yet.
+
+━━━ FOUR CLOSING TECHNIQUES ━━━
+
+1. ASSUMPTIVE CLOSE (use when pain is confirmed and EVC has been shown)
+"Cand va este mai convenabil sa incepem — la inceputul lui aprilie sau la mijlocul lunii?"
+Assumes yes. Asks only about timing. Works when alignment is real.
+(Voss: calibrated question that advances without confrontation)
+
+2. SUMMARY CLOSE (use when all terms have been discussed)
+"Am convenit: 25 de persoane, profil UA, start 1 aprilie, Gremi Personal SRL, pret [X] RON/luna per persoana. Semnam?"
+Removes all ambiguity. Forces a clear yes or no. Respects their time.
+
+3. TRIAL CLOSE (use to test readiness before full commitment)
+"Daca rezolvam problema cu [specific remaining concern] — sunteti pregatiti sa mergem mai departe?"
+Tests whether that concern is the last blocker or not.
+If they say yes → resolve it → close immediately.
+If they reveal another concern → address it → trial close again.
+
+4. ESCALATION CLOSE (use when they want to "think about it")
+"Inteleg. Lasati-ma sa aduc directorul nostru intr-un apel scurt — are mai multa flexibilitate pe termeni decat mine."
+Signals seriousness. Creates scarcity of your attention. Often accelerates decisions.
+(Challenger: take control — escalation is not weakness, it is a strategic move)
+
+━━━ AFTER EVERY CLOSE ATTEMPT ━━━
+They say YES → confirm in writing immediately. Same day.
+They say NOT YET → "Ce anume lipseste pentru a lua decizia?" Find the real blocker.
+They say NO → "Ce s-a schimbat fata de ultima noastra conversatie?" Update Lost Reason in CRM.`},
+
+    {id:"negotiationTechniques",stageGroup:"Negotiation",title:"Negotiation Techniques",color:"orange",text:`SOURCE: Never Split the Difference (Voss) + The Strategy and Tactics of Pricing (Nagle) + Thinking Strategically (Dixit & Nalebuff)
+
+━━━ ENTER NEGOTIATION ONLY AFTER ATTEMPTING TO CLOSE ━━━
+If they said yes → confirm and sign. Do NOT negotiate against yourself.
+If they pushed back → now use what follows.
+(Dixit & Nalebuff: in game theory, first-mover advantage is real. The one who makes the first concession loses leverage.)
+
+━━━ PART 1: MINDSET (Voss) ━━━
+
+NEVER SPLIT THE DIFFERENCE
+Compromise = both sides lose something. Instead: find what they ACTUALLY need beneath their stated position.
+"The rate is too high" → is it the monthly total? The structure? The commitment length?
+Ask before you move.
+
+TACTICAL EMPATHY BEFORE LOGIC
+You cannot persuade someone who feels misunderstood.
+Label their emotion first:
+→ "It seems like the budget pressure is real right now."
+→ "It sounds like you've been disappointed by agencies before."
+Then — and only then — present your argument.
+
+CALIBRATED QUESTIONS (not attacks)
+Instead of defending, ask open questions that make them solve the problem:
+→ "How am I supposed to make this work at that rate?"
+→ "What would make this feel fair to you?"
+→ "If we could solve [specific concern] — would that change things?"
+These shift the dynamic from adversarial to collaborative.
+
+EMBRACE 'NO'
+"No" is not rejection. It means they feel safe enough to be honest.
+Ask questions that invite a safe no:
+→ "Is it a bad idea to explore this together?"
+→ "Would it be ridiculous to do a pilot first?"
+A "no" keeps them in the conversation. A false "yes" disappears.
+
+━━━ PART 2: THE ACKERMAN METHOD (structured price moves) ━━━
+When you must negotiate price — do it with structure, not emotion.
+
+1. Set your walk-away number BEFORE the call. Know it. Do not cross it.
+2. First counter-offer: anchor far from your target (65% of target)
+3. Move in decreasing increments: → 85% → 95% → 100%
+4. Each move SMALLER than the last — signals you're approaching your limit
+5. Final number: use a precise, non-round number (e.g., 5,840 RON not 5,800)
+   → Precise numbers feel calculated, not arbitrary. They signal a real limit.
+6. On your final number: add a small non-monetary item to signal nothing is left
+   → "I can do 5,840 — and I'll throw in the first month of coordinator support at no charge."
+
+━━━ PART 3: NAGLE — DEFEND VALUE, NOT PRICE ━━━
+When they push on price, never defend the number. Defend the value.
+→ "What does their quote include exactly? Does it cover ITM documentation, housing coordination, 72-hour replacement guarantee?"
+→ Build the Economic Value to Customer calculation on the call if needed.
+→ "Let me show you what our all-inclusive rate covers vs. what you'd pay managing it in-house."
+
+NEVER concede without trading:
+→ "I can look at the rate — if we can confirm the volume and contract length."
+→ "I can do the pilot — if we agree now that a successful pilot leads directly to the full contract."
+→ "I can extend payment terms — if you can commit to a 6-month minimum."
+(Nagle: price concessions given freely signal that your price was wrong to begin with)
+
+━━━ PART 4: DIXIT & NALEBUFF — STRATEGIC COMMITMENTS ━━━
+Credible commitments change the negotiation dynamic.
+→ "This rate is valid until [specific date]. After that our capacity for [county] is allocated."
+Not a bluff — only say it if it's true. False urgency is spotted and destroys trust.
+→ "Our team lead has approved this package specifically. Any discount above 5% needs to go to our director."
+Escalation rules as strategic moves — not signs of weakness.
+
+━━━ ESCALATION RULES — involve Walery when: ━━━
+— Discount requested > 5%
+— Non-standard contract terms
+— Order volume > 50 workers
+— Client requests exclusivity
+— Payment terms beyond 30 days
+Escalation is a closing tool: "Let me bring in our director — he can authorize what I cannot."`},
+
+    {id:"competitorComparison",stageGroup:"Negotiation",title:"Competitive Positioning",color:"purple",text:`SOURCE: Competitive Strategy (Porter) + The Challenger Sale (Dixon & Adamson)
+Porter: sustainable competitive advantage comes from either lower cost OR differentiation. Not both. Not neither.
+Gremi/Antforce: we do not compete on price. We compete on differentiation — specialization, speed, legal expertise.
+
+━━━ PORTER'S FIVE FORCES — how this market looks ━━━
+
+Threat of new entrants: HIGH — low capital requirements, many small agencies.
+Buyer power: MODERATE — large manufacturers have multiple options.
+Supplier power: MODERATE — worker supply from UA/Asia is not infinite.
+Substitutes: HIGH — direct hiring is always an option (but expensive).
+Rivalry: HIGH — Adecco, Manpower, Lugera, Trenkwalder, dozens of local agencies.
+
+Strategic conclusion: Do NOT try to compete across all segments. Choose a niche and dominate it.
+Our niche: FOREIGN WORKERS FOR MANUFACTURING. No one else does this with our speed and legal depth.
+
+━━━ YOUR DIFFERENTIATION vs. LARGE AGENCIES ━━━
+(Challenger: teach the client how to evaluate suppliers on criteria where you win)
+
+SPECIALIZATION
+Large agencies: white collar + blue collar + all industries. General practitioners.
+Gremi/Antforce: one thing — foreign workers for manufacturing.
+→ "They handle everything. We handle foreign workers for production better than anyone."
+→ Reframe the evaluation: "Who has placed more UA workers in Romanian automotive in the last 12 months?"
+
+SPEED — this is your strongest differentiator
+Large agencies: internal process, multiple approval layers, 4–8 week timelines typical.
+Gremi/Antforce: direct recruitment channels, 2–4 weeks UA (documented track record).
+→ "We delivered 35 workers to [client name] in 18 days. Show me another agency in Romania that can document that."
+
+LEGAL EXPERTISE — unique value in this market
+Large agencies: standard HR compliance. Not specialists in foreign worker documentation.
+Gremi/Antforce: full IGI support, work permits, ITM documentation for foreign workers. We are the employer of record.
+→ "ITM comes to us. Not to you. That is a structural protection for your company."
+
+FLEXIBILITY — important for first-time clients
+Large agencies: minimum volumes, long-term contracts, standard packages.
+Gremi/Antforce: pilot batches possible, no minimum commitment on first engagement.
+→ "Start with 5 workers. Prove the model. Scale when it works for you."
+
+━━━ WHEN CLIENT SAYS "WE ALREADY WORK WITH ADECCO/MANPOWER/LUGERA" ━━━
+Wrong response: attack the competitor. (creates defensiveness, damages trust)
+Right approach (Challenger: reframe the evaluation):
+→ "I understand — they're a solid agency for local staff."
+→ "Our niche is foreign workers for production. That's all we do. They can't match our speed or legal expertise in this specific area."
+→ "Many of our best clients use both — them for local roles, us for foreign worker programs. No conflict. Do you have a foreign worker program currently?"
+Reframe from replacement to complement.
+
+━━━ THE CHALLENGER REFRAME ON COMPETITION ━━━
+Don't ask "why are we better than Lugera?"
+Ask: "What criteria matter most to you in choosing a foreign worker supplier?"
+Then show how those criteria favor you — specifics, not generalities.
+(If they say price: go to Nagle's EVC. If they say reliability: go to your track record.)`},
+
+    {id:"postDealOnboarding",stageGroup:"Closed Won",title:"Post-Deal Onboarding",color:"green",text:`SOURCE: High Output Management (Grove) — process standardization as a management tool
+"A well-defined process is the foundation of consistent output." — Grove
+
+━━━ THE FIRST 48 HOURS ━━━
+This is when trust is won or lost. The client has just signed. They are nervous.
+Your job: eliminate uncertainty immediately.
+
+— Send confirmation email with summary of what was agreed (workers, timeline, contact)
+— Introduce the Operations contact and Coordinator by name and phone number
+— Send the onboarding checklist to the client contact
+— Brief Ops team: client specs, location, shift pattern, specific requirements
+— Set first check-in call: 3 days after signing
+
+━━━ TIMELINE — what you can promise and when ━━━
+(Never deviate from these. Your reputation is built on predictability.)
+
+UA WORKERS: 2–4 weeks from signing to first workers on site
+Asian workers: 4–6 MONTHS minimum from signing
+Mixed UA+Asian programs: UA starts fast, Asian pipeline runs parallel
+
+NEVER promise Asian workers in under 4 weeks. Not possible. Saying so destroys trust permanently.
+
+━━━ STANDARD PROCESS — DAY BY DAY ━━━
+(Grove: process must be documented and followed consistently to scale)
+
+DAY 1–3: Signing + Handover
+Who: Salesperson + Operations
+— Signed contract, all client specs collected
+— Client introduced to dedicated coordinator (by name, by phone)
+— Internal briefing complete
+
+DAY 3–7: IGI Submission + Recruitment
+Who: Operations
+— Worker documentation submitted to IGI (for non-UA profiles)
+— Worker selection started from existing database OR recruitment launched
+— Start date confirmed with client in writing
+
+DAY 7–21: Worker Processing
+Who: Operations + Coordinator
+— Medical checks, contract signing with workers, safety briefing
+— Housing and transport arranged (if part of scope)
+— Client receives worker profiles for review/approval
+
+DAY 21–30: First Workers On Site
+Who: Coordinator
+— Coordinator present on Day 1 at the client site
+— Onboarding checklist completed with client
+— Any Day-1 issues resolved within 24 hours
+
+DAY 30+: Account Management Begins
+Who: Salesperson
+— Formal check-in call: satisfaction, performance, any issues
+— Update CRM: Last Contact, next check-in date
+— Begin looking for expansion signals
+
+━━━ GROVE'S PRINCIPLE: LEVERAGE THROUGH PROCESS ━━━
+Document what works on each client. Every successful onboarding teaches you something.
+The goal: make the 10th onboarding as smooth as the 1st — through process, not heroics.`},
+
+    {id:"accountManagementUpsell",stageGroup:"Closed Won",title:"Account Development & Upsell",color:"green",text:`SOURCE: The Challenger Sale (Dixon & Adamson) + High Output Management (Grove)
+"The relationship starts at signing — it does not end there." (Challenger Sale)
+
+━━━ WHY THIS MATTERS — THE ECONOMICS ━━━
+(Nagle — Pricing: acquiring a new customer costs 5–7x more than expanding an existing one)
+Every Closed Won client is your highest-value asset. They already trust you. The cost of expansion is minimal.
+A client with 25 workers who becomes a client with 50 workers = doubled revenue, near-zero sales cost.
+
+━━━ CHECK-IN SCHEDULE ━━━
+(Grove: consistent contact is a management discipline, not a social nicety)
+
+Week 1: Coordinator on site Day 1. Any issue resolved within 24 hours.
+Week 2: Call with client contact — "How are the workers settling in?"
+Month 1: Formal check-in — satisfaction, performance, any upcoming changes
+Month 3: Strategic review — what's working, what can improve, what's coming
+Ongoing: minimum monthly contact. No exceptions.
+
+━━━ WHAT TO TRACK PER CLIENT ━━━
+— Worker retention rate on their site (benchmark: >80% past 3 months)
+— Number of client complaints (and speed of resolution — this builds trust)
+— Client satisfaction score: ask directly: "On a scale of 1–10, how satisfied are you? What would make it a 10?"
+— Open positions not yet filled by us (expansion opportunity)
+
+━━━ CHALLENGER: BRING INSIGHTS TO ONGOING CLIENTS ━━━
+Don't just check in — bring something valuable.
+→ "I wanted to share something we're seeing in other automotive suppliers in your region — there's a spike in demand for Asian workers coming. You might want to start the pipeline now before capacity tightens."
+→ "We just completed a compliance review for 3 clients in Prahova — I noticed [specific pattern]. Relevant for you?"
+(Challenger: keep teaching even after the deal. That's what builds loyalty and expansion.)
+
+━━━ UPSELL TRIGGERS — listen for these ━━━
+→ "We are opening a new production line" → new location deal
+→ "We are adding a night shift" → more workers, same location
+→ "Peak season is coming earlier this year" → volume increase
+→ "Our [other plant] has the same problem" → new HQ + location
+→ "My colleague at [Company X] asked me about this" → referral lead (act immediately)
+
+━━━ HOW TO ASK FOR A REFERRAL ━━━
+Timing: after Month 1, when you have delivered results.
+Script:
+"We're really proud of how this has gone. Do you know other companies — suppliers, partners, or industry contacts — who might benefit from the same model?"
+Most satisfied clients are happy to refer. Most salespeople never ask.
+
+━━━ GROVE: THE OUTPUT OF ACCOUNT MANAGEMENT ━━━
+Your account management output = retention rate + expansion revenue + referrals generated.
+Measure it. If retention is below 90% — something in your onboarding or quality is broken. Fix the process, not the symptom.`},
+
+    {id:"meetingConfirmation",stageGroup:"Meeting Scheduled",title:"Meeting Confirmation",color:"green",text:`SOURCE: High Output Management (Grove) — confirmed next steps as process discipline
+Rule: an unconfirmed meeting is a coin flip. A confirmed meeting is a commitment.
+
+━━━ WHEN TO SEND ━━━
+24 hours before — not 5 minutes before, not 48 hours before.
+24 hours = enough time for them to reschedule if needed, close enough that they've committed mentally.
+
+━━━ EMAIL TEMPLATE ━━━
+
+Subject: Confirmare intalnire maine — [ORA] — Walery / Gremi Personal
+
+"Buna ziua [PRENUME],
+
+Confirm intalnirea noastra de maine, [DATA] la ora [ORA] la sediul dvs. din [ADRESA].
+
+Agenda propusa — ~30 minute:
+— [5 min] Cateva observatii despre tendintele de staffing in [industria lor]
+— [15 min] Sa inteleg mai bine situatia dvs. si provocarile cu personalul
+— [10 min] Daca are sens, sa discutam ce am putea face impreuna
+
+Daca apare ceva neprevazut, va rog sa ma anuntati la [TELEFON]. Va multumesc pentru timp.
+
+Ne vedem maine.
+Cu stima, Walery"
+
+━━━ RULES ━━━
+— No pitch in the confirmation. Just the agenda.
+— State the duration — they plan their day around it.
+— Include your phone number — makes rescheduling easy for them (and keeps the relationship alive if they need to change)
+— For online meeting: include Zoom/Teams link directly. Do not make them ask.
+— If no reply by that evening: call to confirm. Do not assume.
+
+━━━ IF THEY NEED TO RESCHEDULE ━━━
+→ "Of course — when works for you?"
+→ Propose two specific alternatives immediately: "Tuesday at 10 or Wednesday at 14?"
+→ Never: "Whenever you're free." You are a professional with a schedule. Act like one.
+
+━━━ GROVE: WHY THIS MATTERS ━━━
+A confirmed meeting is 3x less likely to be cancelled.
+Your calendar is your production schedule. Every no-show = lost output.
+Confirmation is not bureaucracy. It is the last step of the booking process.`},
   ],
 };
 
@@ -306,31 +1623,88 @@ function LoginScreen({onLogin}) {
   const go=async()=>{
     setLoading(true);setErr("");
     try{
-      const rows=await dbGet("crm_users",`username=eq.${encodeURIComponent(u.toLowerCase().trim())}&limit=1`);
-      const user=rows[0];
+      let user=null;
+      try{
+        const rows=await dbGet("crm_users",`username=eq.${encodeURIComponent(u.toLowerCase().trim())}&limit=1`);
+        if(rows.length>0) user=rows[0];
+      }catch(dbErr){}
+      // Fallback to built-in users if DB empty or unreachable
+      if(!user){
+        user=INIT_USERS.find(x=>x.username===u.toLowerCase().trim());
+      }
       if(!user||user.password!==p){setErr("Incorrect username or password.");setLoading(false);return;}
       if(!user.active){setErr("Account blocked. Contact your administrator.");setLoading(false);return;}
       onLogin(user);
     }catch(e){setErr("Connection error — check internet.");}
     setLoading(false);
   };
+  const navy = THEMES.navy;
   return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${C.bg0} 0%,${C.bg1} 60%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{width:"100%",maxWidth:380}}>
-        <div style={{textAlign:"center",marginBottom:40}}>
-          <div style={{display:"inline-flex",alignItems:"center",gap:12,marginBottom:8}}>
-            <div style={{width:44,height:44,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:20,color:"#fff",boxShadow:`0 4px 20px ${C.blue}44`}}>G</div>
-            <div><div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:22,color:C.txt}}>Sales Team CRM</div><div style={{fontSize:10,color:C.txt3,letterSpacing:"0.12em"}}>GREMI · ROMANIA</div></div>
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${navy.bg0} 0%,#0a1628 40%,${navy.bg1} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden"}}>
+      {/* Decorative blobs */}
+      <div style={{position:"absolute",top:"10%",left:"5%",width:300,height:300,borderRadius:"50%",background:`${navy.blue}10`,filter:"blur(80px)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:"10%",right:"5%",width:400,height:400,borderRadius:"50%",background:`${navy.indigo}10`,filter:"blur(100px)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:600,height:600,borderRadius:"50%",background:`${navy.teal}06`,filter:"blur(120px)",pointerEvents:"none"}}/>
+
+      <div style={{width:"100%",maxWidth:420,position:"relative",zIndex:1}}>
+        {/* Logo + branding */}
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:14}}>
+            <div style={{width:64,height:64,background:`linear-gradient(135deg,${navy.blue},${navy.indigo})`,borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:28,color:"#fff",boxShadow:`0 8px 32px ${navy.blue}50,0 0 0 1px ${navy.blue}30`}}>G</div>
+            <div>
+              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:26,color:"#fff",letterSpacing:"-0.02em",lineHeight:1}}>Sales Team CRM</div>
+              <div style={{fontSize:11,color:navy.txt3,letterSpacing:"0.16em",marginTop:5,textTransform:"uppercase"}}>Gremi Personal · Romania</div>
+            </div>
           </div>
         </div>
-        <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:16,padding:28,display:"flex",flexDirection:"column",gap:16,boxShadow:`0 8px 40px ${C.bg0}`}}>
-          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:20,color:C.txt}}>Welcome back</div>
-          <div><div className="lbl">USERNAME</div><input className="fi" type="text" value={u} onChange={e=>setU(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="username" autoCapitalize="none"/></div>
-          <div><div className="lbl">PASSWORD</div><input className="fi" type="password" value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="••••••••"/></div>
-          {err&&<div style={{background:`${C.red}18`,border:`1px solid ${C.red}44`,color:C.red,padding:"10px 12px",borderRadius:8,fontSize:12}}>{err}</div>}
-          <button className="btn" onClick={go} disabled={loading} style={{background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"13px",fontSize:15,borderRadius:10,boxShadow:`0 4px 16px ${C.blue}44`,opacity:loading?0.7:1}}>{loading?"Signing in...":"Sign In →"}</button>
+
+        {/* Glass card */}
+        <div style={{background:"rgba(11,21,37,0.7)",border:`1px solid ${navy.border}`,borderRadius:20,padding:32,backdropFilter:"blur(20px)",boxShadow:`0 24px 64px rgba(0,0,0,0.5),0 0 0 1px ${navy.border}`}}>
+          <div style={{marginBottom:24}}>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:22,color:"#fff",marginBottom:4}}>Welcome back</div>
+            <div style={{fontSize:13,color:navy.txt3}}>Sign in to your pipeline</div>
+          </div>
+
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div>
+              <div style={{fontSize:10,color:navy.txt3,letterSpacing:"0.12em",fontWeight:700,marginBottom:6,textTransform:"uppercase"}}>Username</div>
+              <input type="text" value={u} onChange={e=>setU(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()}
+                placeholder="username" autoCapitalize="none" autoCorrect="off"
+                style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1.5px solid ${u?navy.blue:navy.border}`,color:"#fff",padding:"12px 14px",fontSize:14,outline:"none",borderRadius:10,fontFamily:"'Inter',sans-serif",transition:"border 0.2s"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:10,color:navy.txt3,letterSpacing:"0.12em",fontWeight:700,marginBottom:6,textTransform:"uppercase"}}>Password</div>
+              <input type="password" value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()}
+                placeholder="••••••••"
+                style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1.5px solid ${p?navy.blue:navy.border}`,color:"#fff",padding:"12px 14px",fontSize:14,outline:"none",borderRadius:10,fontFamily:"'Inter',sans-serif",transition:"border 0.2s"}}/>
+            </div>
+
+            {err&&(
+              <div style={{background:"rgba(224,60,60,0.12)",border:"1px solid rgba(224,60,60,0.3)",color:"#ff6b6b",padding:"11px 14px",borderRadius:9,fontSize:13,display:"flex",alignItems:"center",gap:8}}>
+                <span>⚠</span>{err}
+              </div>
+            )}
+
+            <button className="btn" onClick={go} disabled={loading}
+              style={{width:"100%",background:loading?`${navy.border}`:`linear-gradient(135deg,${navy.blue},${navy.indigo})`,color:"#fff",padding:"14px",fontSize:15,borderRadius:11,fontWeight:600,marginTop:4,boxShadow:loading?"":`0 4px 20px ${navy.blue}40`,transition:"all 0.2s",opacity:loading?0.7:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              {loading?(
+                <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/><span>Signing in...</span></>
+              ):(
+                <span>Sign In →</span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{textAlign:"center",marginTop:20,fontSize:11,color:navy.txt3}}>
+          Gremi Personal SRL · Antforce SRL · Romania
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
@@ -579,12 +1953,11 @@ Top deals by workers: ${active.filter(l=>parseInt(l.workers)>0).sort((a,b)=>(par
 
 
 // ─── CONVERSATIONAL LEAD INPUT ───────────────────────────────────
-function ConversationalLeadInput({hqs, locs, users, curId, services, entities, onCreated}) {
-  const [open, setOpen] = useState(false);
+function ConversationalLeadInput({hqs, locs, users, curId, services, entities, onCreated, forceOpen=false}) {
+  const [open, setOpen] = useState(forceOpen);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState(null); // {hq:{...}, loc:{...}}
-  const [editMode, setEditMode] = useState(false);
+  const [preview, setPreview] = useState(null);
   const taRef = useRef(null);
 
   const parse = async () => {
@@ -672,15 +2045,7 @@ Return ONLY valid JSON, no explanation.`;
     if(preview && !preview.error) onCreated(preview);
   };
 
-  if(!open) return (
-    <div style={{padding:"10px 12px",borderBottom:`1px solid ${C.border}`,background:C.bg0}}>
-      <button className="btn" onClick={()=>{setOpen(true);setTimeout(()=>taRef.current?.focus(),50);}}
-        style={{width:"100%",background:`${C.teal}12`,border:`1.5px dashed ${C.teal}44`,color:C.teal,padding:"11px 14px",fontSize:12,borderRadius:9,textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:16}}>🤖</span>
-        <span>Paste company data or describe a new lead in any language...</span>
-      </button>
-    </div>
-  );
+  if(!open) return null; // rendered as button in leads header instead
 
   return (
     <div style={{borderBottom:`2px solid ${C.teal}`,background:C.bg0,flexShrink:0}}>
@@ -1320,8 +2685,11 @@ function InlineAI({loc,hq,onUpdate,onUpdateHQ}) {
     const locFields=Object.keys(fields).filter(k=>!k.startsWith("HQ_"));
     if(locFields.length>0){const act={id:Date.now(),type:"Note",note:"[AI] Fields updated: "+locFields.join(", "),date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};locPatch.activities=[act,...(loc.activities||[])];locPatch.lastContact=act.date;onUpdate(loc.id,locPatch);}
     const hqFields=Object.keys(fields).filter(k=>k.startsWith("HQ_"));
-    if(hqFields.length>0&&hq&&onUpdateHQ){const hqPatch={};if(fields.HQ_INTELLIGENCE)hqPatch.intelligence=(hq.intelligence?hq.intelligence+"\n\n":"")+"[AI] "+fields.HQ_INTELLIGENCE;if(fields.HQ_ANNUAL_TURNOVER)hqPatch.annualTurnover=fields.HQ_ANNUAL_TURNOVER;if(fields.HQ_EMPLOYEES)hqPatch.employees=fields.HQ_EMPLOYEES;if(fields.HQ_SEASONALITY)hqPatch.seasonality=fields.HQ_SEASONALITY;onUpdateHQ(hq.id,hqPatch);}
-    setPending(null);setMsgs(prev=>[...prev,{role:"system",content:"✅ Fields applied to CRM."}]);
+    let hqSaved=false;
+    if(hqFields.length>0&&hq&&onUpdateHQ){const hqPatch={};if(fields.HQ_INTELLIGENCE)hqPatch.intelligence=(hq.intelligence?hq.intelligence+"\n\n":"")+"[AI] "+fields.HQ_INTELLIGENCE;if(fields.HQ_ANNUAL_TURNOVER)hqPatch.annualTurnover=fields.HQ_ANNUAL_TURNOVER;if(fields.HQ_EMPLOYEES)hqPatch.employees=fields.HQ_EMPLOYEES;if(fields.HQ_SEASONALITY)hqPatch.seasonality=fields.HQ_SEASONALITY;if(Object.keys(hqPatch).length>0){onUpdateHQ(hq.id,hqPatch);hqSaved=true;}}
+    setPending(null);
+    const msg="✅ Applied to CRM."+(hqSaved?" HQ fields (Intelligence, Turnover etc.) saved to company record.":"")+(locFields.length===0&&!hqSaved?" (no actionable fields found)":"");
+    setMsgs(prev=>[...prev,{role:"system",content:msg}]);
   };
 
   const send=async()=>{
@@ -1486,6 +2854,56 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
 }
 
 
+// ─── INLINE EDIT FIELD ───────────────────────────────────────────
+function InlineEditField({label, value, onSave, color, multiline=false, placeholder=""}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const taRef = useRef(null);
+
+  useEffect(()=>{ setDraft(value); },[value]);
+  useEffect(()=>{ if(editing && taRef.current) taRef.current.focus(); },[editing]);
+
+  const save = () => { onSave(draft); setEditing(false); };
+  const cancel = () => { setDraft(value); setEditing(false); };
+
+  return(
+    <div style={{marginBottom:10}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <div className="lbl" style={{marginBottom:0,color:color||C.txt3}}>{label}</div>
+        {!editing && (
+          <button className="btn" onClick={()=>setEditing(true)}
+            style={{background:`${C.blue}18`,color:C.blue2,padding:"2px 8px",fontSize:10,borderRadius:5,border:`1px solid ${C.blue}33`}}>
+            ✎ Edit
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <div>
+          {multiline ? (
+            <textarea ref={taRef} value={draft} onChange={e=>setDraft(e.target.value)} rows={5}
+              style={{width:"100%",background:C.bg4,border:`1.5px solid ${C.blue}`,color:C.txt,borderRadius:8,padding:"10px 12px",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.7,outline:"none"}}
+              placeholder={placeholder}/>
+          ) : (
+            <input ref={taRef} type="text" value={draft} onChange={e=>setDraft(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter")save();if(e.key==="Escape")cancel();}}
+              style={{width:"100%",background:C.bg4,border:`1.5px solid ${C.blue}`,color:C.txt,borderRadius:8,padding:"9px 12px",fontSize:13,fontFamily:"'Inter',sans-serif",outline:"none"}}/>
+          )}
+          <div style={{display:"flex",gap:6,marginTop:6}}>
+            <button className="btn" onClick={save}
+              style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"8px",fontSize:12,borderRadius:7}}>✓ Save</button>
+            <button className="btn" onClick={cancel}
+              style={{flex:1,background:C.bg4,color:C.txt3,padding:"8px",fontSize:12,borderRadius:7,border:`1px solid ${C.border}`}}>✕ Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div onClick={()=>setEditing(true)} style={{cursor:"text",fontSize:13,color:value?C.txt2:C.txt3,lineHeight:1.7,padding:"6px 8px",background:C.bg4,borderRadius:7,border:`1px solid ${C.border}`,minHeight:36,fontStyle:value?"normal":"italic"}}>
+          {value || (placeholder || "Click to edit...")}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── LOCATION DETAIL MODAL ───────────────────────────────────────
 function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate,onUpdateHQ}) {
   const hq=hqs.find(h=>h.id===loc.parentId);
@@ -1495,26 +2913,29 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
   const [showAI,setShowAI]=useState(false);
   const [showDebrief,setShowDebrief]=useState(false);
   const [showEmail,setShowEmail]=useState(false);
+  const [showStageGuide,setShowStageGuide]=useState(false);
   const [pendingStage,setPendingStage]=useState(null);
   const [stagePrompt,setStagePrompt]=useState("");
 
   const handleStageChange = (newStage) => {
     if(newStage===loc.stage) return;
-    // Smart stage transition logic
+    const logStageChange = (extraPatch={}) => {
+      const act = {id:Date.now(),type:"Note",note:`Stage → ${newStage}`,date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};
+      onUpdate(loc.id,{stage:newStage,activities:[act,...(loc.activities||[])],...extraPatch});
+    };
     if(newStage==="Meeting Done") {
+      logStageChange();
       setShowDebrief(true);
     } else if(newStage==="Closed Lost") {
       if(confirm("Mark as Closed Lost?\n\nWe'll open Edit so you can fill Lost Reason — this data helps the team.")) {
-        onUpdate(loc.id,{stage:newStage});
+        logStageChange();
         onEdit();
       }
-    } else if(newStage==="Closed Won") {
-      onUpdate(loc.id,{stage:newStage});
     } else if(newStage==="Proposal Sent") {
       const d3 = new Date(); d3.setDate(d3.getDate()+3);
-      onUpdate(loc.id,{stage:newStage,nextStep:"Follow-up on proposal",nextStepDate:d3.toISOString().slice(0,10)});
+      logStageChange({nextStep:"Follow-up on proposal",nextStepDate:d3.toISOString().slice(0,10)});
     } else {
-      onUpdate(loc.id,{stage:newStage});
+      logStageChange();
     }
   };
 
@@ -1534,8 +2955,31 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
         {/* Stage + Temp selectors */}
         <div style={{display:"flex",gap:8}}>
           <select value={loc.stage} onChange={e=>handleStageChange(e.target.value)} className="fi" style={{flex:1,fontSize:13}}>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
-          <select value={loc.temp} onChange={e=>onUpdate(loc.id,{temp:e.target.value})} className="fi" style={{width:105,fontSize:13}}>{TEMPS.map(t=><option key={t}>{t}</option>)}</select>
+          <select value={loc.temp} onChange={e=>{const act={id:Date.now(),type:"Note",note:`Temperature → ${e.target.value}`,date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};onUpdate(loc.id,{temp:e.target.value,activities:[act,...(loc.activities||[])]});}} className="fi" style={{width:105,fontSize:13}}>{TEMPS.map(t=><option key={t}>{t}</option>)}</select>
+          <button className="btn" title={`Stage guide: ${loc.stage}`} onClick={()=>setShowStageGuide(true)}
+            style={{background:`${C.indigo}18`,color:C.indigo,padding:"8px 10px",fontSize:13,borderRadius:8,border:`1px solid ${C.indigo}33`,flexShrink:0}}>📖</button>
         </div>
+
+        {/* PRE-CALL BRIEF — instant context before dialing */}
+        {(loc.phone||loc.email)&&!["Closed Won","Closed Lost"].includes(loc.stage)&&(
+          <div style={{background:`linear-gradient(135deg,${C.bg3},${C.bg2})`,border:`1px solid ${C.border2}`,borderLeft:`3px solid ${C.blue}`,borderRadius:10,padding:"11px 14px"}}>
+            <div style={{fontSize:9,fontWeight:700,color:C.txt3,letterSpacing:"0.1em",marginBottom:8}}>📞 PRE-CALL BRIEF</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:loc.spin?.p?8:0}}>
+              {loc.lastContact&&<div style={{fontSize:11}}><span style={{color:C.txt3}}>Last contact: </span><span style={{color:C.txt2,fontWeight:500}}>{fmtDate(loc.lastContact)}</span></div>}
+              {loc.painScore&&<div style={{fontSize:11}}><span style={{color:C.txt3}}>Pain: </span><span style={{color:loc.painScore>=4?C.red:loc.painScore>=3?C.amber:C.green,fontWeight:700}}>{loc.painScore}/5 {["","❄️","🟡","🟠","🔥","💥"][loc.painScore]||""}</span></div>}
+              {loc.workers&&<div style={{fontSize:11}}><span style={{color:C.txt3}}>Workers: </span><span style={{color:C.amber,fontWeight:600}}>{loc.workers} {loc.workerType||""}</span></div>}
+              {loc.currentSupplier&&<div style={{fontSize:11}}><span style={{color:C.txt3}}>Current supplier: </span><span style={{color:C.orange,fontWeight:500}}>{loc.currentSupplier}</span></div>}
+            </div>
+            {loc.spin?.p&&<div style={{fontSize:12,color:C.indigo,lineHeight:1.5,background:`${C.indigo}10`,borderRadius:6,padding:"6px 10px"}}><span style={{fontWeight:700,fontSize:10}}>PAIN: </span>{loc.spin.p.substring(0,140)}{loc.spin.p.length>140?"...":""}</div>}
+            {(loc.activities||[]).length>0&&(
+              <div style={{fontSize:11,color:C.txt3,marginTop:6,borderTop:`1px solid ${C.border}`,paddingTop:6}}>
+                <span style={{color:C.blue2,fontWeight:600}}>{(loc.activities||[])[0]?.type}: </span>
+                {(loc.activities||[])[0]?.note?.substring(0,80)}{((loc.activities||[])[0]?.note?.length||0)>80?"...":""}
+                <span style={{color:C.txt3,marginLeft:6}}>{(loc.activities||[])[0]?.date?.slice(5)}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Contextual AI hint (automatic) */}
         <ContextualHint loc={loc} hq={hq}/>
@@ -1648,9 +3092,27 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
           </div>
         )}
 
-        {loc.notes&&<div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}><div className="lbl">NOTES</div><div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{loc.notes}</div></div>}
+        {/* Inline editable NOTES */}
+        <InlineEditField label="NOTES" value={loc.notes||""} color={C.txt3}
+          onSave={v=>onUpdate(loc.id,{notes:v})}/>
+
         <ActivityLog loc={loc} onUpdate={onUpdate}/>
-        {hq&&<div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12,cursor:"pointer"}} onClick={onClose}><div className="lbl">PARENT COMPANY</div><div style={{fontWeight:600,fontSize:13,color:C.indigo}}>🏢 {hq.company}</div><div style={{fontSize:11,color:C.txt3,marginTop:2}}>{hq.centralContact} · {hq.industry}</div></div>}
+
+        {/* Inline editable HQ intelligence + notes from location view */}
+        {hq&&(
+          <div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div className="lbl" style={{color:C.indigo,marginBottom:0}}>🏢 {hq.company}</div>
+              <span style={{fontSize:10,color:C.txt3}}>{hq.centralContact} · {hq.industry}</span>
+            </div>
+            <InlineEditField label="HQ INTELLIGENCE" value={hq.intelligence||""} color={C.indigo} multiline
+              onSave={v=>onUpdateHQ&&onUpdateHQ(hq.id,{intelligence:v})}
+              placeholder="Research, financials, DM LinkedIn, seasonality..."/>
+            <InlineEditField label="HQ NOTES" value={hq.notes||""} color={C.txt3} multiline
+              onSave={v=>onUpdateHQ&&onUpdateHQ(hq.id,{notes:v})}
+              placeholder="Internal notes about this company..."/>
+          </div>
+        )}
         {canArchive&&(
           <div>
             <button className="btn" onClick={()=>setShowDanger(!showDanger)} style={{width:"100%",background:"transparent",color:C.txt3,padding:"8px",fontSize:10,borderRadius:7,border:`1px dashed ${C.border2}`}}>{showDanger?"▲ Hide":"▼ More actions..."}</button>
@@ -1668,6 +3130,38 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
       {showAI&&<InlineAI loc={loc} hq={hq} onUpdate={onUpdate} onUpdateHQ={onUpdateHQ}/>}
       {showDebrief&&<PostCallDebrief loc={loc} hq={hq} onClose={()=>setShowDebrief(false)} onApply={onUpdate}/>}
       {showEmail&&<EmailDraftModal loc={loc} hq={hq} onClose={()=>setShowEmail(false)}/>}
+      {showStageGuide&&(()=>{
+        const pb = INIT_PLAYBOOK;
+        const stageMap = {"New":"new","Contacted":"contacted","Interested":"interested","Meeting Scheduled":"meeting","Meeting Done":"done","Proposal Sent":"proposal","Negotiation":"negotiation","Closed Won":"won","Closed Lost":"lost","No Answer":"noanswer"};
+        const card = pb.stages.find(s=>s.id===stageMap[loc.stage]);
+        return(
+          <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)setShowStageGuide(false);}}>
+            <div className="sheet" style={{maxHeight:"85vh"}}>
+              <div style={{padding:"13px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                <div style={{width:26,height:26,borderRadius:7,background:`${C.indigo}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>📖</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:14,color:C.txt}}>Stage Guide: {loc.stage}</div>
+                  {card&&<div style={{fontSize:11,color:C.txt3}}>{card.title}</div>}
+                </div>
+                <button className="xb" onClick={()=>setShowStageGuide(false)}>×</button>
+              </div>
+              <div style={{flex:1,overflowY:"auto",padding:14}}>
+                {card?(
+                  <>
+                    <div style={{background:`${C.amber}12`,border:`1px solid ${C.amber}33`,borderRadius:8,padding:"9px 12px",fontSize:12,color:C.amber,marginBottom:12}}>🎯 {card.target}</div>
+                    <pre style={{fontFamily:"'Inter',sans-serif",fontSize:13,color:C.txt2,lineHeight:1.9,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{card.tasks}</pre>
+                  </>
+                ):(
+                  <div style={{color:C.txt3,fontSize:13,padding:20,textAlign:"center"}}>No guide for this stage.</div>
+                )}
+              </div>
+              <div style={{padding:"12px 14px",borderTop:`1px solid ${C.border}`,flexShrink:0}}>
+                <button className="btn" onClick={()=>setShowStageGuide(false)} style={{width:"100%",background:C.bg3,color:C.txt2,padding:"11px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>Close</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1805,7 +3299,7 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
             <div className="lbl">COMPANY</div>
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               <button className="btn" onClick={()=>setNewCo(false)} style={{flex:1,padding:"8px",fontSize:12,borderRadius:7,background:!newCo?`${C.blue}22`:C.bg4,color:!newCo?C.blue2:C.txt3,border:`1.5px solid ${!newCo?C.blue:C.border}`}}>Existing Company</button>
-              <button className="btn" onClick={()=>{setNewCo(true);setForm({...form,parentId:null,company:""})} } style={{flex:1,padding:"8px",fontSize:12,borderRadius:7,background:newCo?`${C.green}22`:C.bg4,color:newCo?C.green:C.txt3,border:`1.5px solid ${newCo?C.green:C.border}`}}>+ New Company</button>
+              <button className="btn" onClick={()=>{setNewCo(true);setForm({...form,parentId:null,company:""})}} style={{flex:1,padding:"8px",fontSize:12,borderRadius:7,background:newCo?`${C.green}22`:C.bg4,color:newCo?C.green:C.txt3,border:`1.5px solid ${newCo?C.green:C.border}`}}>+ New Company</button>
             </div>
             {!newCo?(
               <select value={form.parentId||""} onChange={e=>{const id=Number(e.target.value);const h=hqs.find(x=>x.id===id);setForm({...form,parentId:id||null,company:h?.company||form.company,industry:h?.industry||form.industry});}} className="fi">
@@ -1816,7 +3310,14 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 <div><div className="lbl">COMPANY NAME *</div><input type="text" value={newHQ.company} onChange={e=>{setNewHQ({...newHQ,company:e.target.value});setForm({...form,company:e.target.value});}} className="fi" placeholder="e.g. Autoliv Romania"/></div>
                 <div><div className="lbl">INDUSTRY</div><select value={newHQ.industry} onChange={e=>setNewHQ({...newHQ,industry:e.target.value})} className="fi"><option value="">— select —</option>{INDUSTRIES.map(i=><option key={i}>{i}</option>)}</select></div>
-                <div><div className="lbl">CENTRAL CONTACT</div><input type="text" value={newHQ.centralContact} onChange={e=>setNewHQ({...newHQ,centralContact:e.target.value})} className="fi" placeholder="Main decision maker"/></div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  <div><div className="lbl">CENTRAL CONTACT (HQ)</div><input type="text" value={newHQ.centralContact} onChange={e=>setNewHQ({...newHQ,centralContact:e.target.value})} className="fi" placeholder="HR Director name"/></div>
+                  <div><div className="lbl">CENTRAL ROLE</div><input type="text" value={newHQ.centralRole} onChange={e=>setNewHQ({...newHQ,centralRole:e.target.value})} className="fi" placeholder="e.g. HR Director"/></div>
+                  <div><div className="lbl">HQ PHONE</div><input type="tel" value={newHQ.centralPhone} onChange={e=>setNewHQ({...newHQ,centralPhone:e.target.value})} className="fi"/></div>
+                  <div><div className="lbl">HQ EMAIL</div><input type="email" value={newHQ.centralEmail} onChange={e=>setNewHQ({...newHQ,centralEmail:e.target.value})} className="fi"/></div>
+                  <div><div className="lbl">HQ ADDRESS</div><input type="text" value={newHQ.address} onChange={e=>setNewHQ({...newHQ,address:e.target.value})} className="fi"/></div>
+                  <div><div className="lbl">WEBSITE</div><input type="text" value={newHQ.website} onChange={e=>setNewHQ({...newHQ,website:e.target.value})} className="fi" placeholder="www.company.ro"/></div>
+                </div>
               </div>
             )}
           </div>
@@ -1824,15 +3325,14 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div style={{gridColumn:"1/-1"}}><div className="lbl">LOCATION NAME *</div><input type="text" value={form.location} onChange={e=>setForm({...form,location:e.target.value})} className="fi" placeholder="e.g. Factory Timișoara"/></div>
           <div><div className="lbl">COUNTY</div><select value={form.county} onChange={e=>setForm({...form,county:e.target.value})} className="fi"><option value="">— select —</option>{COUNTIES.map(c=><option key={c}>{c}</option>)}</select></div>
+          <div><div className="lbl">EMPLOYEES (at location)</div><input type="number" value={form.employees||""} onChange={e=>setForm({...form,employees:e.target.value})} className="fi"/></div>
+          <div style={{gridColumn:"1/-1"}}><div className="lbl">ADDRESS</div><input type="text" value={form.address||""} onChange={e=>setForm({...form,address:e.target.value})} className="fi"/></div>
           <div><div className="lbl">INDUSTRY</div><select value={form.industry||""} onChange={e=>setForm({...form,industry:e.target.value})} className="fi"><option value="">— select —</option>{INDUSTRIES.map(i=><option key={i}>{i}</option>)}</select></div>
-        </div>
-        <div><div className="lbl">ADDRESS</div><input type="text" value={form.address||""} onChange={e=>setForm({...form,address:e.target.value})} className="fi"/></div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <div><div className="lbl">CONTACT NAME</div><input type="text" value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})} className="fi"/></div>
+          <div><div className="lbl">LOCAL CONTACT</div><input type="text" value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})} className="fi"/></div>
           <div>
             <div className="lbl">CONTACT ROLE</div>
             <div style={{display:"flex",gap:6}}>
-              <select value={["HR Director","HR Manager","Plant Manager","Production Manager","Operations Director","General Manager","Owner","CEO"].includes(form.role)?form.role:"__custom"} onChange={e=>{if(e.target.value!=="__custom")setForm({...form,role:e.target.value});else setForm({...form,role:""}); }} className="fi" style={{flex:"0 0 auto",width:"50%"}}>
+              <select value={["HR Director","HR Manager","Plant Manager","Production Manager","Operations Director","General Manager","Owner","CEO"].includes(form.role)?form.role:"__custom"} onChange={e=>{if(e.target.value!=="__custom")setForm({...form,role:e.target.value});else setForm({...form,role:""}); }} className="fi" style={{flex:"0 0 auto",width:"55%"}}>
                 <option value="">— select —</option>
                 {["HR Director","HR Manager","Plant Manager","Production Manager","Operations Director","General Manager","Owner","CEO"].map(r=><option key={r}>{r}</option>)}
                 <option value="__custom">✏ Custom...</option>
@@ -1846,27 +3346,50 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div><div className="lbl">STAGE</div><select value={form.stage} onChange={e=>setForm({...form,stage:e.target.value})} className="fi">{STAGES.map(s=><option key={s}>{s}</option>)}</select></div>
           <div><div className="lbl">TEMPERATURE</div><select value={form.temp} onChange={e=>setForm({...form,temp:e.target.value})} className="fi">{TEMPS.map(t=><option key={t}>{t}</option>)}</select></div>
+          {[["SERVICE","service",services],["GREMI ENTITY","companyName",entities]].map(([l,k,opts])=>(
+            <div key={k}><div className="lbl">{l}</div><select value={form[k]||""} onChange={e=>setForm({...form,[k]:e.target.value})} className="fi"><option value="">— select —</option>{opts.map(o=><option key={o}>{o}</option>)}</select></div>
+          ))}
+          <div><div className="lbl">WORKERS NEEDED</div><input type="number" value={form.workers||""} onChange={e=>setForm({...form,workers:e.target.value})} className="fi"/></div>
+          <div><div className="lbl">LEAD SOURCE</div><select value={form.source||""} onChange={e=>setForm({...form,source:e.target.value})} className="fi"><option value="">— select —</option>{LEAD_SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <div><div className="lbl">SERVICE</div><select value={form.service||""} onChange={e=>setForm({...form,service:e.target.value})} className="fi"><option value="">— select —</option>{services.map(s=><option key={s}>{s}</option>)}</select></div>
-          <div><div className="lbl">LEGAL ENTITY</div><select value={form.companyName||""} onChange={e=>setForm({...form,companyName:e.target.value})} className="fi"><option value="">— select —</option>{entities.map(e=><option key={e}>{e}</option>)}</select></div>
-        </div>
-        <div><div className="lbl">WORKERS NEEDED</div><input type="text" value={form.workers||""} onChange={e=>setForm({...form,workers:e.target.value})} className="fi" placeholder="e.g. 25"/></div>
         <div><div className="lbl">WORKER TYPE</div><WorkerTypeSelect value={form.workerType||""} onChange={v=>setForm({...form,workerType:v})}/></div>
-        <div><div className="lbl">LEAD SOURCE</div><select value={form.source||""} onChange={e=>setForm({...form,source:e.target.value})} className="fi"><option value="">— select —</option>{LEAD_SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
         {isAdmin&&<div><div className="lbl">SALESPERSON</div><select value={form.salesId||""} onChange={e=>setForm({...form,salesId:Number(e.target.value)||null})} className="fi"><option value="">— select —</option>{users.filter(u=>u.active).map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></div>}
+        {/* SPIN — two-column PRE + POST */}
+        <div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12}}>
+          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:10,fontWeight:600,color:C.indigo,letterSpacing:"0.08em",marginBottom:10}}>SPIN DISCOVERY NOTES</div>
+          <div style={{display:"flex",gap:5,marginBottom:6,flexWrap:"wrap"}}>
+            <span style={{fontSize:10,color:C.txt3,alignSelf:"center",marginRight:4}}>PRE:</span>
+            {["s","p","i","n"].map(k=>(<span key={k} className="pill" style={{background:form.spin?.[k]?`${C.indigo}22`:C.bg2,color:form.spin?.[k]?C.indigo:C.txt3,border:`1px solid ${form.spin?.[k]?C.indigo+"44":C.border}`}}>{k.toUpperCase()}{form.spin?.[k]?" ✅":" ⬜"}</span>))}
+            <span style={{fontSize:10,color:C.txt3,alignSelf:"center",marginLeft:8,marginRight:4}}>POST:</span>
+            {["s","p","i","n"].map(k=>(<span key={"r"+k} className="pill" style={{background:form.spinReal?.[k]?`${C.green}22`:C.bg2,color:form.spinReal?.[k]?C.green:C.txt3,border:`1px solid ${form.spinReal?.[k]?C.green+"44":C.border}`}}>{k.toUpperCase()}{form.spinReal?.[k]?" ✅":" ⬜"}</span>))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{background:`${C.indigo}08`,border:`1px solid ${C.indigo}22`,borderRadius:8,padding:"10px 12px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.indigo,letterSpacing:"0.08em",marginBottom:8}}>📋 PRE-MEETING — Hipotezy</div>
+              <div style={{fontSize:10,color:C.txt3,marginBottom:8,lineHeight:1.4}}>Wypełnij PRZED spotkaniem. Co zakładasz o kliencie?</div>
+              <SpinField label="S — SITUATION" hint={["What do you think their workforce setup looks like?","Who handles their staffing — is it working?","How many open roles have they been posting?"]} value={form.spin?.s||""} onChange={v=>setForm({...form,spin:{...form.spin,s:v}})}/>
+              <SpinField label="P — PROBLEM" hint={["How long to fill a vacancy?","What happens when understaffed?","Compliance issues?"]} value={form.spin?.p||""} onChange={v=>setForm({...form,spin:{...form.spin,p:v}})}/>
+              <SpinField label="I — IMPLICATION" hint={["If that problem exists — what is the likely business impact?","What does one week of this cost them?","How does it affect production commitments?"]} value={form.spin?.i||""} onChange={v=>setForm({...form,spin:{...form.spin,i:v}})}/>
+              <SpinField label="N — NEED-PAYOFF" hint={["What outcome would solve their problem?","What would consistent staffing allow them to deliver?","What would one partner handling everything be worth?"]} value={form.spin?.n||""} onChange={v=>setForm({...form,spin:{...form.spin,n:v}})}/>
+              <div style={{marginTop:8}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><div className="lbl" style={{marginBottom:0,color:C.indigo}}>🔍 PAIN HYPOTHESIS</div><span style={{fontSize:10,color:C.txt3}}>(PRE — your assumption)</span></div><textarea value={form.spin?.painHypothesis||""} onChange={e=>setForm({...form,spin:{...form.spin,painHypothesis:e.target.value}})} rows={3} className="fi" style={{resize:"vertical",fontSize:12}} placeholder='e.g. "They struggle to fill night shift — posting on eJobs 3 months. Cost: delayed production."'/></div>
+            </div>
+            <div style={{background:`${C.green}08`,border:`1px solid ${C.green}22`,borderRadius:8,padding:"10px 12px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.green,letterSpacing:"0.08em",marginBottom:8}}>✅ POST-MEETING — Realne odpowiedzi</div>
+              <div style={{fontSize:10,color:C.txt3,marginBottom:8,lineHeight:1.4}}>Wypełnij PO spotkaniu. Zastąp hipotezy tym co klient powiedział.</div>
+              <SpinField label="S — SITUATION" hint={["Write exact numbers: workers, shifts, locations, since when","Name the current supplier — contract, how long, what works / doesn't","How many open roles, which profile, since when — their exact answer"]} value={form.spinReal?.s||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,s:v}})}/>
+              <SpinField label="P — PROBLEM" hint={["Use their exact words — do not paraphrase","How long has this been a problem? What have they tried?","What specifically is not working — their words, not your analysis"]} value={form.spinReal?.p||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,p:v}})}/>
+              <SpinField label="I — IMPLICATION" hint={["What financial/operational impact did they confirm — with numbers","What internal pressure did they mention: management, deadlines, clients?","Urgency signals: what happens if not solved by [date]?"]} value={form.spinReal?.i||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,i:v}})}/>
+              <SpinField label="N — NEED-PAYOFF" hint={["What outcome did the client say they want — their exact words","What would solving this create for the business — their answer","What does good look like for them — their definition of success"]} value={form.spinReal?.n||""} onChange={v=>setForm({...form,spinReal:{...form.spinReal,n:v}})}/>
+              <div style={{marginTop:8}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><div className="lbl" style={{marginBottom:0,color:C.red}}>💥 PAIN SUMMARY</div><span style={{fontSize:10,color:C.txt3}}>(POST — client's words → proposal)</span></div><textarea value={form.spin?.painSummary||""} onChange={e=>setForm({...form,spin:{...form.spin,painSummary:e.target.value}})} rows={3} className="fi" style={{resize:"vertical",fontSize:12}} placeholder='e.g. "Night shift in Cluj unstaffed 8 weeks, 15 operators missing, Bosch contract at risk Apr 1."'/></div>
+            </div>
+          </div>
+        </div>
+        <div style={{height:1,background:C.border}}/>
+        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:600,color:C.txt3,letterSpacing:"0.08em"}}>DEAL INTELLIGENCE</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <div style={{gridColumn:"1/-1"}}><div className="lbl">NEXT STEP</div><input type="text" value={form.nextStep||""} onChange={e=>setForm({...form,nextStep:e.target.value})} className="fi" placeholder="Specific action..."/></div>
+          <div style={{gridColumn:"1/-1"}}><div className="lbl">NEXT STEP</div><input type="text" value={form.nextStep||""} onChange={e=>setForm({...form,nextStep:e.target.value})} className="fi" placeholder='e.g. "Send calculation for 50 people"'/></div>
           <div><div className="lbl">NEXT STEP DATE</div><input type="date" value={form.nextStepDate||""} onChange={e=>setForm({...form,nextStepDate:e.target.value})} className="fi"/></div>
           <div><div className="lbl">LAST CONTACT</div><input type="date" value={form.lastContact||""} onChange={e=>setForm({...form,lastContact:e.target.value})} className="fi"/></div>
-        </div>
-        <div style={{background:C.bg3,border:`1px solid ${C.indigo}33`,borderRadius:10,padding:12,display:"flex",flexDirection:"column",gap:10}}>
-          <div style={{fontSize:10,color:C.indigo,fontWeight:600,letterSpacing:"0.08em"}}>SPIN — DISCOVERY</div>
-          <SpinField label="S — SITUATION" hint={["Current headcount and shifts","Do they work with a staffing agency?","Number of open positions"]} value={form.spin?.s||""} onChange={v=>setForm({...form,spin:{...form.spin,s:v}})}/>
-          <SpinField id="location-spin-p" label="P — PROBLEM" hint={["How long does it take to fill a vacancy?","What is the turnover rate?","Any ITM/compliance issues?"]} value={form.spin?.p||""} onChange={v=>setForm({...form,spin:{...form.spin,p:v}})}/>
-          <SpinField label="I — IMPLICATION" hint={["What happens to orders when understaffed?","Estimated cost of one day production loss?","What if this continues next quarter?"]} value={form.spin?.i||""} onChange={v=>setForm({...form,spin:{...form.spin,i:v}})}/>
-          <SpinField label="N — NEED-PAYOFF" hint={["If we deliver X workers in 3 weeks — how does that change things?","What would stable staffing mean for you?","Would outsourcing the HR admin help?"]} value={form.spin?.n||""} onChange={v=>setForm({...form,spin:{...form.spin,n:v}})}/>
-          <div><div className="lbl">PAIN SUMMARY (for proposal)</div><textarea value={form.spin?.painSummary||""} onChange={e=>setForm({...form,spin:{...form.spin,painSummary:e.target.value}})} rows={2} className="fi" style={{fontSize:12}} placeholder='e.g. "Need 20 operators by April, posted for 10 weeks, no success via local agencies."'/></div>
         </div>
         <div><div className="lbl">PAIN SCORE (1–5)</div>
           <div style={{display:"flex",gap:8,marginTop:4}}>
@@ -1883,7 +3406,7 @@ function LocFormModal({form,setForm,onSave,onClose,editMode,users,isAdmin,hqs,se
             <div><div className="lbl">LOST DATE</div><input type="date" value={form.lostDate||""} onChange={e=>setForm({...form,lostDate:e.target.value})} className="fi"/></div>
             <div><div className="lbl">DESCRIBE WHAT HAPPENED</div><textarea value={form.lostDescription||""} onChange={e=>setForm({...form,lostDescription:e.target.value})} rows={3} className="fi" style={{resize:"vertical",fontSize:12}}/></div>
             <div><div className="lbl">WHAT TO DO DIFFERENTLY NEXT TIME</div><textarea value={form.lostLesson||""} onChange={e=>setForm({...form,lostLesson:e.target.value})} rows={2} className="fi" style={{resize:"vertical",fontSize:12}}/></div>
-            <div><div className="lbl">RECHECK DATE</div><input type="date" value={form.nextStepDate||""} onChange={e=>setForm({...form,nextStepDate:e.target.value})} className="fi"/></div>
+            <div><div className="lbl">RECHECK DATE (Next Step)</div><input type="date" value={form.nextStepDate||""} onChange={e=>setForm({...form,nextStepDate:e.target.value})} className="fi"/></div>
           </div>
         )}
         {(form.stage==="Closed Won")&&(
@@ -2056,45 +3579,80 @@ Nu vă propun nimic acum — doar o întrebare: este problema de personal ceva a
 Cu respect, Walery`},
 ];
 
-function TemplatesTab() {
-  const cats=[...new Set(TPL_DATA.map(t=>t.category))];
-  const [selCat,setSelCat]=useState(cats[0]);
+function TemplatesTab({isAdmin, templates, setTemplates}) {
+  const tplData = templates||TPL_DATA;
+  const allCats=[...new Set(tplData.map(t=>t.category))];
+  const [selCat,setSelCat]=useState(allCats[0]||"Cold Call");
   const [selTpl,setSelTpl]=useState(null);
   const [editText,setEditText]=useState("");
+  const [editTitle,setEditTitle]=useState("");
+  const [editMode,setEditMode]=useState(false);
   const [copied,setCopied]=useState(false);
-  const filtered=TPL_DATA.filter(t=>t.category===selCat);
-  const select=(tpl)=>{setSelTpl(tpl);setEditText(tpl.text);setCopied(false);};
+  const [addingNew,setAddingNew]=useState(false);
+  const [newTpl,setNewTpl]=useState({category:"Cold Call",title:"",text:""});
+
+  const filtered=tplData.filter(t=>t.category===selCat);
+  const select=(tpl)=>{setSelTpl(tpl);setEditText(tpl.text);setEditTitle(tpl.title);setCopied(false);setEditMode(false);};
   const copy=()=>{navigator.clipboard.writeText(editText).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});};
+  const saveTpl=()=>{setTemplates(tplData.map(t=>t.id===selTpl.id?{...t,title:editTitle,text:editText}:t));setSelTpl({...selTpl,title:editTitle,text:editText});setEditMode(false);};
+  const deleteTpl=(id)=>{setTemplates(tplData.filter(t=>t.id!==id));setSelTpl(null);};
+  const addTpl=()=>{if(!newTpl.title||!newTpl.text)return;setTemplates([...tplData,{...newTpl,id:"custom_"+Date.now()}]);setAddingNew(false);setNewTpl({category:selCat,title:"",text:""});};
+
   return(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      <div style={{display:"flex",gap:6,padding:"10px 12px",borderBottom:`1px solid ${C.border}`,overflowX:"auto",flexShrink:0}}>
-        {cats.map(c=>(
-          <button key={c} className="btn" onClick={()=>{setSelCat(c);setSelTpl(null);}}
-            style={{padding:"6px 14px",fontSize:12,borderRadius:7,background:selCat===c?`${C.blue}22`:C.bg3,color:selCat===c?C.blue2:C.txt3,border:`1.5px solid ${selCat===c?C.blue:C.border}`,flexShrink:0}}>
-            {c}
-          </button>
+      <div style={{display:"flex",gap:6,padding:"10px 12px",borderBottom:`1px solid ${C.border}`,overflowX:"auto",flexShrink:0,alignItems:"center"}}>
+        {allCats.map(c=>(
+          <button key={c} className="btn" onClick={()=>{setSelCat(c);setSelTpl(null);setAddingNew(false);}}
+            style={{padding:"6px 14px",fontSize:12,borderRadius:7,background:selCat===c?`${C.blue}22`:C.bg3,color:selCat===c?C.blue2:C.txt3,border:`1.5px solid ${selCat===c?C.blue:C.border}`,flexShrink:0}}>{c}</button>
         ))}
+        {isAdmin&&<button className="btn" onClick={()=>{setAddingNew(true);setSelTpl(null);setNewTpl({category:selCat,title:"",text:"..."});}}
+          style={{marginLeft:"auto",background:`${C.green}18`,color:C.green,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.green}44`,flexShrink:0}}>+ Add</button>}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:8}}>
-        {!selTpl&&filtered.map(t=>(
-          <div key={t.id} className="card" style={{padding:"12px 14px",cursor:"pointer"}} onClick={()=>select(t)}>
-            <div style={{fontWeight:600,fontSize:13,color:C.txt,marginBottom:3}}>{t.title}</div>
-            <div style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.text.substring(0,80)}...</div>
+        {!selTpl&&!addingNew&&filtered.map(t=>(
+          <div key={t.id} className="card" style={{padding:"12px 14px",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>select(t)}>
+              <div style={{fontWeight:600,fontSize:13,color:C.txt,marginBottom:3}}>{t.title}</div>
+              <div style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.text.substring(0,80)}...</div>
+            </div>
+            {isAdmin&&<button className="btn" onClick={e=>{e.stopPropagation();select(t);setEditMode(true);}} style={{background:`${C.blue}18`,color:C.blue2,padding:"4px 9px",fontSize:11,borderRadius:6,border:`1px solid ${C.blue}33`,marginLeft:8,flexShrink:0}}>✎</button>}
           </div>
         ))}
+        {!selTpl&&!addingNew&&filtered.length===0&&<div style={{textAlign:"center",padding:32,color:C.txt3,fontSize:13}}>No templates in this category.</div>}
+        {addingNew&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <button className="btn" onClick={()=>setAddingNew(false)} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Cancel</button>
+              <div style={{fontWeight:700,fontSize:14,color:C.green}}>New Template</div>
+            </div>
+            <div><div className="lbl">CATEGORY</div><input type="text" value={newTpl.category} onChange={e=>setNewTpl({...newTpl,category:e.target.value})} className="fi" placeholder="e.g. Cold Call"/></div>
+            <div><div className="lbl">TITLE</div><input type="text" value={newTpl.title} onChange={e=>setNewTpl({...newTpl,title:e.target.value})} className="fi" placeholder="Template name"/></div>
+            <div><div className="lbl">CONTENT</div><textarea value={newTpl.text} onChange={e=>setNewTpl({...newTpl,text:e.target.value})} rows={14} className="fi" style={{resize:"vertical",fontSize:12,lineHeight:1.8}}/></div>
+            <button className="btn" onClick={addTpl} disabled={!newTpl.title||!newTpl.text} style={{width:"100%",background:!newTpl.title||!newTpl.text?C.bg4:`linear-gradient(135deg,${C.green},${C.teal})`,color:!newTpl.title||!newTpl.text?C.txt3:"#fff",padding:"12px",fontSize:13,borderRadius:9}}>✓ Add Template</button>
+          </div>
+        )}
         {selTpl&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <button className="btn" onClick={()=>setSelTpl(null)} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Back</button>
-              <div style={{fontWeight:700,fontSize:14,color:C.txt}}>{selTpl.title}</div>
+              <button className="btn" onClick={()=>{setSelTpl(null);setEditMode(false);}} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Back</button>
+              {editMode?<input type="text" value={editTitle} onChange={e=>setEditTitle(e.target.value)} className="fi" style={{flex:1,fontSize:14,fontWeight:700}}/>
+              :<div style={{fontWeight:700,fontSize:14,color:C.txt,flex:1}}>{selTpl.title}</div>}
+              {isAdmin&&!editMode&&<button className="btn" onClick={()=>setEditMode(true)} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>✎</button>}
+              {isAdmin&&<ConfirmDelete label="Delete" onConfirm={()=>deleteTpl(selTpl.id)}/>}
             </div>
-            <textarea value={editText} onChange={e=>setEditText(e.target.value)} rows={16}
-              style={{width:"100%",background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:10,padding:"12px",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.8,outline:"none"}}/>
-            <button className="btn" onClick={copy}
-              style={{width:"100%",background:copied?`${C.green}22`:`linear-gradient(135deg,${C.teal},${C.blue})`,color:copied?C.green:"#fff",padding:"12px",fontSize:14,borderRadius:9,border:copied?`1px solid ${C.green}44`:"none"}}>
-              {copied?"✓ Copied!":"📋 Copy Template"}
-            </button>
-            <div style={{fontSize:10,color:C.txt3,fontStyle:"italic",textAlign:"center"}}>Customize the [VARIABLES] before sending</div>
+            <textarea value={editText} onChange={e=>setEditText(e.target.value)} readOnly={!editMode} rows={16}
+              style={{width:"100%",background:editMode?C.bg4:C.bg3,border:`1px solid ${editMode?C.blue:C.border}`,color:C.txt,borderRadius:10,padding:"12px",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.8,outline:"none"}}/>
+            {editMode?(
+              <div style={{display:"flex",gap:8}}>
+                <button className="btn" onClick={saveTpl} style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"12px",fontSize:13,borderRadius:9}}>✓ Save</button>
+                <button className="btn" onClick={()=>{setEditText(selTpl.text);setEditTitle(selTpl.title);setEditMode(false);}} style={{background:C.bg3,color:C.txt3,padding:"12px 16px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>Cancel</button>
+              </div>
+            ):(
+              <>
+                <button className="btn" onClick={copy} style={{width:"100%",background:copied?`${C.green}22`:`linear-gradient(135deg,${C.teal},${C.blue})`,color:copied?C.green:"#fff",padding:"12px",fontSize:14,borderRadius:9,border:copied?`1px solid ${C.green}44`:"none"}}>{copied?"✓ Copied!":"📋 Copy Template"}</button>
+                <div style={{fontSize:10,color:C.txt3,fontStyle:"italic",textAlign:"center"}}>Customize the [VARIABLES] before sending</div>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -2102,44 +3660,135 @@ function TemplatesTab() {
   );
 }
 
+// ─── CONFIRM DELETE (two-step protection) ────────────────────────
+function ConfirmDelete({label, onConfirm}) {
+  const [step, setStep] = useState(0);
+  if(step===0) return(
+    <button className="btn" onClick={()=>setStep(1)}
+      style={{background:`${C.red}12`,color:C.red,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.red}33`}}>
+      🗑 {label}
+    </button>
+  );
+  return(
+    <div style={{display:"flex",gap:6,alignItems:"center",background:`${C.red}10`,border:`1px solid ${C.red}44`,borderRadius:8,padding:"6px 10px"}}>
+      <span style={{fontSize:11,color:C.red,fontWeight:600}}>Sure? This cannot be undone.</span>
+      <button className="btn" onClick={onConfirm} style={{background:C.red,color:"#fff",padding:"5px 12px",fontSize:11,borderRadius:6,fontWeight:700}}>Yes, delete</button>
+      <button className="btn" onClick={()=>setStep(0)} style={{background:C.bg3,color:C.txt3,padding:"5px 10px",fontSize:11,borderRadius:6,border:`1px solid ${C.border}`}}>Cancel</button>
+    </div>
+  );
+}
 
 // ─── PLAYBOOK TAB ─────────────────────────────────────────────────
 function PlaybookTab({playbook,setPlaybook,isAdmin}) {
   const [tab,setTab]=useState("stages");
-  const [selStage,setSelStage]=useState(null);
-  const [selExtra,setSelExtra]=useState(null);
-  const [editStage,setEditStage]=useState(null);
+  const [selId,setSelId]=useState(null);
+  const [editing,setEditing]=useState(null); // {mode:"stage"|"extra", item}
+  const [newExtra,setNewExtra]=useState(false);
   const stages=playbook.stages||INIT_PLAYBOOK.stages;
   const extras=playbook.extras||INIT_PLAYBOOK.extras;
-  const getStageDot=(s)=>{const c=getSC()[s.stage]||C.txt3;return c;};
+
+  const updateStage=(id,patch)=>setPlaybook({...playbook,stages:stages.map(s=>s.id===id?{...s,...patch}:s)});
+  const updateExtra=(id,patch)=>setPlaybook({...playbook,extras:extras.map(e=>e.id===id?{...e,...patch}:e)});
+  const deleteExtra=(id)=>{if(confirm("Delete this card?"))setPlaybook({...playbook,extras:extras.filter(e=>e.id!==id)});};
+  const addExtra=()=>{
+    const id="custom_"+Date.now();
+    setPlaybook({...playbook,extras:[...extras,{id,title:"New Card",color:"blue",text:""}]});
+    setEditing({mode:"extra",item:{id,title:"New Card",color:"blue",text:""}});
+    setTab("extras");
+  };
+
+  const COLORS=["blue","teal","green","amber","orange","red","indigo","purple"];
+
+  // Edit modal
+  if(editing) {
+    const save=()=>{
+      if(editing.mode==="stage") updateStage(editing.item.id,editing.item);
+      else updateExtra(editing.item.id,editing.item);
+      setEditing(null);
+    };
+    return(
+      <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{padding:"12px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+          <button className="btn" onClick={()=>setEditing(null)} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Cancel</button>
+          <div style={{fontWeight:700,fontSize:14,color:C.txt,flex:1}}>Editing: {editing.item.title||editing.item.stage}</div>
+          <button className="btn" onClick={save} style={{background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"7px 14px",fontSize:12,borderRadius:8}}>✓ Save</button>
+          {editing.mode==="extra"&&(
+            <ConfirmDelete label="Delete Card" onConfirm={()=>{deleteExtra(editing.item.id);setEditing(null);}}/>
+          )}
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:10}}>
+          {editing.mode==="stage"?(
+            <>
+              <div><div className="lbl">TITLE</div><input type="text" value={editing.item.title} onChange={e=>setEditing({...editing,item:{...editing.item,title:e.target.value}})} className="fi"/></div>
+              <div><div className="lbl">TARGET (one sentence goal)</div><input type="text" value={editing.item.target} onChange={e=>setEditing({...editing,item:{...editing.item,target:e.target.value}})} className="fi"/></div>
+              <div><div className="lbl">TASKS & PROCEDURES</div><textarea value={editing.item.tasks} onChange={e=>setEditing({...editing,item:{...editing.item,tasks:e.target.value}})} rows={20} className="fi" style={{resize:"vertical",fontSize:12,lineHeight:1.8,minHeight:300}}/></div>
+            </>
+          ):(
+            <>
+              <div><div className="lbl">TITLE</div><input type="text" value={editing.item.title} onChange={e=>setEditing({...editing,item:{...editing.item,title:e.target.value}})} className="fi"/></div>
+              <div>
+                <div className="lbl">COLOR</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {COLORS.map(c=>(
+                    <div key={c} onClick={()=>setEditing({...editing,item:{...editing.item,color:c}})}
+                      style={{width:28,height:28,borderRadius:7,background:C[c]||C.blue,border:`3px solid ${editing.item.color===c?"#fff":"transparent"}`,cursor:"pointer"}}/>
+                  ))}
+                </div>
+              </div>
+              <div><div className="lbl">CONTENT</div><textarea value={editing.item.text} onChange={e=>setEditing({...editing,item:{...editing.item,text:e.target.value}})} rows={24} className="fi" style={{resize:"vertical",fontSize:12,lineHeight:1.8,minHeight:400}}/></div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const selStage = selId && tab==="stages" ? stages.find(s=>s.id===selId) : null;
+  const selExtra = selId && tab==="extras" ? extras.find(e=>e.id===selId) : null;
+
   return(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
-        {["stages","extras"].map(t=>(
-          <button key={t} className="tab" onClick={()=>setTab(t)} style={{background:tab===t?C.bg2:C.bg0,color:tab===t?C.txt:C.txt3,borderBottomColor:tab===t?C.blue:"transparent",flex:"unset",padding:"10px 20px"}}>
-            {t==="stages"?"Pipeline Stages":"Reference Cards"}
+      <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,flexShrink:0,alignItems:"center"}}>
+        {[["stages","Pipeline Stages"],["extras","Reference Cards"]].map(([id,label])=>(
+          <button key={id} className="tab" onClick={()=>{setTab(id);setSelId(null);}}
+            style={{background:tab===id?C.bg2:C.bg0,color:tab===id?C.txt:C.txt3,borderBottomColor:tab===id?C.blue:"transparent",padding:"10px 18px"}}>
+            {label}
           </button>
         ))}
+        {isAdmin&&tab==="extras"&&(
+          <button className="btn" onClick={addExtra}
+            style={{marginLeft:"auto",marginRight:10,background:`${C.green}18`,color:C.green,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.green}44`}}>
+            + Add Card
+          </button>
+        )}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:8}}>
-        {tab==="stages"&&!selStage&&stages.map(s=>{
-          const c=getStageDot(s);
+        {/* STAGES LIST */}
+        {tab==="stages"&&!selId&&stages.map(s=>{
+          const c=getSC()[s.stage]||C.txt3;
           return(
-            <div key={s.id} className="card" style={{padding:"12px 14px",cursor:"pointer",borderLeft:`3px solid ${c}`}} onClick={()=>setSelStage(s)}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                <div style={{fontWeight:600,fontSize:13,color:C.txt}}>{s.stage}</div>
-                <span style={{background:c+"22",color:c,border:`1px solid ${c}44`,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{s.icon}</span>
+            <div key={s.id} className="card" style={{padding:"12px 14px",borderLeft:`3px solid ${c}`,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div style={{flex:1,cursor:"pointer"}} onClick={()=>setSelId(s.id)}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                  <div style={{fontWeight:600,fontSize:13,color:C.txt}}>{s.stage}</div>
+                  <span style={{background:c+"22",color:c,border:`1px solid ${c}44`,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{s.icon}</span>
+                </div>
+                <div style={{fontWeight:500,fontSize:12,color:C.txt2,marginBottom:2}}>{s.title}</div>
+                <div style={{fontSize:11,color:C.txt3,fontStyle:"italic"}}>{s.target}</div>
               </div>
-              <div style={{fontWeight:500,fontSize:12,color:C.txt2,marginBottom:3}}>{s.title}</div>
-              <div style={{fontSize:11,color:C.txt3,fontStyle:"italic"}}>{s.target}</div>
+              {isAdmin&&(
+                <button className="btn" onClick={e=>{e.stopPropagation();setEditing({mode:"stage",item:{...s}});}}
+                  style={{background:`${C.blue}18`,color:C.blue2,padding:"4px 9px",fontSize:11,borderRadius:6,border:`1px solid ${C.blue}33`,marginLeft:8,flexShrink:0}}>✎</button>
+              )}
             </div>
           );
         })}
-        {tab==="stages"&&selStage&&(
+        {tab==="stages"&&selId&&selStage&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <button className="btn" onClick={()=>setSelStage(null)} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Back</button>
-              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt}}>{selStage.stage}</div>
+              <button className="btn" onClick={()=>setSelId(null)} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Back</button>
+              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt,flex:1}}>{selStage.stage}</div>
+              {isAdmin&&<button className="btn" onClick={()=>setEditing({mode:"stage",item:{...selStage}})} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>✎ Edit</button>}
             </div>
             <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
               <div style={{fontWeight:600,fontSize:13,color:C.txt,marginBottom:4}}>{selStage.title}</div>
@@ -2148,16 +3797,61 @@ function PlaybookTab({playbook,setPlaybook,isAdmin}) {
             </div>
           </div>
         )}
-        {tab==="extras"&&!selExtra&&extras.map(e=>(
-          <div key={e.id} className="card" style={{padding:"12px 14px",cursor:"pointer",borderLeft:`3px solid ${C[e.color]||C.txt3}`}} onClick={()=>setSelExtra(e)}>
-            <div style={{fontWeight:600,fontSize:13,color:C.txt}}>{e.title}</div>
-          </div>
-        ))}
-        {tab==="extras"&&selExtra&&(
+
+        {/* EXTRAS LIST — grouped by stage */}
+        {tab==="extras"&&!selId&&(()=>{
+          // Define stage order and display
+          const stageOrder = [
+            {key:"New",        label:"New Lead",          icon:"1", color:C.txt3},
+            {key:"Contacted",  label:"First Contact",     icon:"2", color:C.blue},
+            {key:"Interested", label:"Discovery",         icon:"3", color:C.indigo},
+            {key:"Meeting Scheduled", label:"Meeting",    icon:"4", color:C.amber},
+            {key:"Proposal Sent",     label:"Proposal",   icon:"6", color:C.teal},
+            {key:"Negotiation",       label:"Negotiation",icon:"7", color:C.orange},
+            {key:"Closed Won",        label:"After Signing",icon:"✓",color:C.green},
+            {key:"Always",    label:"Always Relevant",    icon:"★", color:C.purple},
+          ];
+          return stageOrder.map(({key,label,icon,color})=>{
+            const group = extras.filter(e=>(e.stageGroup||"Always")===key);
+            if(!group.length) return null;
+            return(
+              <div key={key} style={{marginBottom:4}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 4px",marginBottom:5}}>
+                  <div style={{width:22,height:22,borderRadius:6,background:`${color}22`,border:`1px solid ${color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color,flexShrink:0}}>{icon}</div>
+                  <div style={{fontSize:10,fontWeight:700,color:color,letterSpacing:"0.08em",flex:1}}>{label.toUpperCase()}</div>
+                  <div style={{fontSize:9,color:C.txt3}}>{group.length} card{group.length!==1?"s":""}</div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:5,paddingLeft:8,borderLeft:`2px solid ${color}33`}}>
+                  {group.map(e=>{
+                    const c=C[e.color]||C.txt3;
+                    return(
+                      <div key={e.id} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:9,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}
+                        onClick={()=>setSelId(e.id)}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontWeight:600,fontSize:12,color:C.txt}}>{e.title}</div>
+                        </div>
+                        <div style={{display:"flex",gap:5,alignItems:"center",flexShrink:0,marginLeft:8}}>
+                          <div style={{width:8,height:8,borderRadius:2,background:c,flexShrink:0}}/>
+                          {isAdmin&&(
+                            <button className="btn" onClick={ev=>{ev.stopPropagation();setEditing({mode:"extra",item:{...e}});}}
+                              style={{background:`${C.blue}18`,color:C.blue2,padding:"3px 8px",fontSize:10,borderRadius:5,border:`1px solid ${C.blue}33`}}>✎</button>
+                          )}
+                          <span style={{color:C.txt3,fontSize:11}}>›</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          });
+        })()}
+        {tab==="extras"&&selId&&selExtra&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <button className="btn" onClick={()=>setSelExtra(null)} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Back</button>
-              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt}}>{selExtra.title}</div>
+              <button className="btn" onClick={()=>setSelId(null)} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Back</button>
+              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt,flex:1}}>{selExtra.title}</div>
+              {isAdmin&&<button className="btn" onClick={()=>setEditing({mode:"extra",item:{...selExtra}})} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>✎ Edit</button>}
             </div>
             <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
               <pre style={{fontFamily:"'Inter',sans-serif",fontSize:12,color:C.txt2,lineHeight:1.9,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{selExtra.text}</pre>
@@ -2367,9 +4061,174 @@ Top hot deals: ${hot.slice(0,5).map(l=>`${l.company} (${l.workers||"?"}w, ${l.st
   );
 }
 
+// ─── DASHBOARD TAB (Today actions + KPI stats merged) ────────────
+function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead}) {
+  const [summary,setSummary]=useState(""); const [summaryLoading,setSummaryLoading]=useState(false);
+  const [aiAnalysis,setAiAnalysis]=useState(""); const [aiLoading,setAiLoading]=useState(false);
+  const [section,setSection]=useState("actions"); // actions | stats
+  const today=new Date();
+  const uN=id=>users.find(u=>u.id===id)?.name||"—";
+  const myLocs=(isAdmin||isTeamLead)?locs:locs.filter(l=>l.salesId===cur.id);
+  const active=myLocs.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
+  const won=myLocs.filter(l=>l.stage==="Closed Won");
+  const lost=myLocs.filter(l=>l.stage==="Closed Lost");
+  const placed=won.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
+  const pipe=active.filter(l=>l.stage==="Negotiation"||l.stage==="Proposal Sent").reduce((s,l)=>s+(parseInt(l.workers)||0)*5800,0);
+  const overdue=active.filter(l=>l.nextStepDate&&new Date(l.nextStepDate)<today);
+  const noContact7=active.filter(l=>{if(!l.lastContact)return true;return Math.ceil((today-new Date(l.lastContact))/86400000)>7&&!overdue.find(o=>o.id===l.id);});
+  const meetingsToday=active.filter(l=>{if(!l.nextStepDate)return false;const diff=Math.abs(Math.ceil((new Date(l.nextStepDate)-today)/86400000));return diff<=1&&l.stage==="Meeting Scheduled";});
+  const hotNoStep=active.filter(l=>l.temp==="🔥 Hot"&&!l.nextStep&&!overdue.find(o=>o.id===l.id));
+  const newUnqualified=active.filter(l=>l.stage==="New"&&!l.contact);
+  const hot=active.filter(l=>l.temp==="🔥 Hot");
+  const stageCount=STAGES.reduce((a,s)=>({...a,[s]:myLocs.filter(l=>l.stage===s).length}),{});
+  const byUser=(isAdmin||isTeamLead)?users.filter(u=>u.active).map(u=>{const ul=myLocs.filter(l=>l.salesId===u.id);return{name:u.name,total:ul.length,won:ul.filter(l=>l.stage==="Closed Won").length,placed:ul.filter(l=>l.stage==="Closed Won").reduce((s,l)=>s+(parseInt(l.workers)||0),0),active:ul.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).length};}):[];
+
+  const loadSummary=async()=>{
+    setSummaryLoading(true);
+    const ctx=`Pipeline for ${cur.name}: Overdue: ${overdue.length} ${overdue.slice(0,3).map(l=>`${l.company}(${l.stage})`).join("; ")}. Meetings today: ${meetingsToday.length}. Hot/no-step: ${hotNoStep.length}. Top deals: ${active.filter(l=>parseInt(l.workers)>0).sort((a,b)=>(parseInt(b.workers)||0)-(parseInt(a.workers)||0)).slice(0,3).map(l=>`${l.company} ${l.workers}w ${l.stage}`).join("; ")}`;
+    const t=await aiCall("You are a sales AI for Gremi Personal Romania. Write a 2-3 sentence morning briefing. Be direct, specific, name the highest-priority deal. One clear recommendation. No fluff.",ctx,400);
+    setSummary(t);setSummaryLoading(false);
+  };
+  const loadAnalysis=async()=>{
+    setAiLoading(true);
+    const ctx=`Pipeline: ${myLocs.length} locs, ${won.length} won, ${active.length} active, ${placed} workers placed. Pipeline RON: ${Math.round(pipe/1000)}k. Hot: ${hot.length}. Overdue: ${overdue.length}. Stages: ${STAGES.map(s=>`${s}:${stageCount[s]||0}`).join(",")}`;
+    const t=await aiCall("Sales analyst for Gremi Personal Romania. 4-5 sentences: top bottleneck, stuck stage, biggest opportunity, specific action recommendation. Direct and specific.",ctx,500);
+    setAiAnalysis(t);setAiLoading(false);
+  };
+  useEffect(()=>{loadSummary();loadAnalysis();},[]);
+
+  const DealRow=({l})=>{
+    const sc=getSC()[l.stage]||C.txt3;const od=isOD(l.nextStepDate,l.stage);
+    return(
+      <div className="row-hover" onClick={()=>onSelectLoc(l)} style={{padding:"9px 14px",borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
+        <HealthDot loc={l} size={7}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:600,fontSize:13,color:C.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.company}</div>
+          <div style={{fontSize:11,color:C.txt3}}>📍 {l.location}{l.workers?` · 👷${l.workers}`:""}</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,flexShrink:0}}>
+          <span className="pill" style={{background:sc+"22",color:sc,border:`1px solid ${sc}44`,fontSize:9}}>{l.stage}</span>
+          {l.nextStepDate&&<span style={{fontSize:9,color:od?C.red:C.txt3,fontWeight:od?700:400}}>{od?"⚠ ":""}{fmtDate(l.nextStepDate)}</span>}
+        </div>
+      </div>
+    );
+  };
+
+  const ActionGroup=({icon,title,color,items})=>{
+    if(!items.length)return null;
+    return(
+      <div style={{background:C.bg2,border:`1px solid ${color}33`,borderLeft:`3px solid ${color}`,borderRadius:10,overflow:"hidden",marginBottom:8}}>
+        <div style={{padding:"8px 14px",background:`${color}10`,display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:14}}>{icon}</span>
+          <span style={{fontSize:10,fontWeight:700,color:color,letterSpacing:"0.06em"}}>{title.toUpperCase()}</span>
+          <span style={{marginLeft:"auto",background:`${color}22`,color:color,borderRadius:20,padding:"1px 8px",fontSize:11,fontWeight:700}}>{items.length}</span>
+        </div>
+        {items.map(l=><DealRow key={l.id} l={l}/>)}
+      </div>
+    );
+  };
+
+  return(
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      {/* Section toggle */}
+      <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,background:C.bg0,flexShrink:0}}>
+        {[["actions","⚡ Today's Actions"],["stats","📊 Pipeline Stats"]].map(([id,label])=>(
+          <button key={id} className="tab" onClick={()=>setSection(id)}
+            style={{flex:1,background:section===id?`${C.blue}12`:"transparent",color:section===id?C.blue2:C.txt3,borderBottom:`2px solid ${section===id?C.blue:"transparent"}`}}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:10}}>
+        {/* AI Brief — shown in both sections */}
+        <div style={{background:`linear-gradient(135deg,${C.bg2},${C.bg3})`,border:`1px solid ${C.teal}44`,borderRadius:12,padding:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:(summaryLoading||summary||aiLoading||aiAnalysis)?10:0}}>
+            <div style={{width:26,height:26,borderRadius:7,background:`linear-gradient(135deg,${C.blue},${C.teal})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.teal,letterSpacing:"0.06em"}}>{section==="actions"?"AI MORNING BRIEF":"PIPELINE INTELLIGENCE"}</div>
+              <div style={{fontSize:10,color:C.txt3}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long"})}</div>
+            </div>
+            <button className="btn" onClick={section==="actions"?loadSummary:loadAnalysis} disabled={summaryLoading||aiLoading}
+              style={{background:`${C.teal}18`,color:C.teal,padding:"5px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.teal}33`}}>
+              {(summaryLoading||aiLoading)?"...":"↻"}
+            </button>
+          </div>
+          {(summaryLoading||aiLoading)&&<div style={{display:"flex",gap:4}}>{[0,.2,.4].map((d,i)=><span key={i} style={{width:6,height:6,background:C.teal,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}</div>}
+          {section==="actions"&&summary&&!summaryLoading&&<div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{summary}</div>}
+          {section==="stats"&&aiAnalysis&&!aiLoading&&<div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{aiAnalysis}</div>}
+        </div>
+
+        {section==="actions"&&(
+          <>
+            {/* Quick stats row */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+              {[[overdue.length,"Overdue",C.red,"⚠"],[meetingsToday.length,"Meetings",C.amber,"📅"],[hotNoStep.length,"Hot/NoStep",C.orange,"🔥"]].map(([v,l,c,icon])=>(
+                <div key={l} style={{background:C.bg2,border:`1px solid ${v>0?c+"44":C.border}`,borderTop:`3px solid ${v>0?c:C.border2}`,padding:"10px",textAlign:"center",borderRadius:10}}>
+                  <div style={{fontSize:20,fontWeight:700,color:v>0?c:C.txt3,fontFamily:"'Space Grotesk',sans-serif"}}>{v}</div>
+                  <div style={{fontSize:9,color:C.txt3,marginTop:2}}>{l.toUpperCase()}</div>
+                </div>
+              ))}
+            </div>
+            <ActionGroup icon="⚠" title="Overdue Follow-ups" color={C.red} items={overdue}/>
+            <ActionGroup icon="📅" title="Meetings Today/Tomorrow" color={C.amber} items={meetingsToday}/>
+            <ActionGroup icon="🔥" title="Hot — No Next Step" color={C.orange} items={hotNoStep}/>
+            <ActionGroup icon="📭" title="No Contact > 7 days" color={C.blue} items={noContact7}/>
+            <ActionGroup icon="🆕" title="New Unqualified" color={C.teal} items={newUnqualified}/>
+            {!overdue.length&&!meetingsToday.length&&!hotNoStep.length&&(
+              <div style={{padding:40,textAlign:"center",color:C.green,fontSize:14}}>✅ Pipeline is clean — no urgent actions</div>
+            )}
+          </>
+        )}
+
+        {section==="stats"&&(
+          <>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {[[myLocs.length,"Total",C.txt2],[won.length,"Won",C.green],[placed,"Placed",C.teal],[`${Math.round(pipe/1000)}k`,"Pipeline RON",C.amber],[overdue.length,"Overdue",overdue.length>0?C.red:C.green],[hot.length,"Hot",C.orange]].map(([v,l,c])=>(
+                <div key={l} style={{background:C.bg2,border:`1px solid ${c}44`,borderTop:`3px solid ${c}`,borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
+                  <div style={{fontSize:22,fontWeight:700,color:c,fontFamily:"'Space Grotesk',sans-serif"}}>{v}</div>
+                  <div style={{fontSize:10,color:C.txt3,marginTop:3}}>{l.toUpperCase()}</div>
+                </div>
+              ))}
+            </div>
+            {/* Stage funnel */}
+            <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
+              <div className="lbl" style={{marginBottom:10}}>STAGE FUNNEL</div>
+              {STAGES.filter(s=>stageCount[s]>0).map(s=>{
+                const cnt=stageCount[s];const pct=Math.round(cnt/myLocs.length*100);const c=getSC()[s]||C.txt3;
+                return(
+                  <div key={s} style={{display:"flex",alignItems:"center",gap:10,marginBottom:7}}>
+                    <div style={{fontSize:11,color:c,fontWeight:600,width:130,flexShrink:0}}>{s}</div>
+                    <div style={{flex:1,background:C.bg4,borderRadius:3,height:6,overflow:"hidden"}}><div style={{width:pct+"%",background:c,height:6,borderRadius:3,transition:"width 0.4s"}}/></div>
+                    <div style={{fontSize:11,color:C.txt3,width:30,textAlign:"right",flexShrink:0}}>{cnt}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {(isAdmin||isTeamLead)&&byUser.length>0&&(
+              <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
+                <div className="lbl" style={{marginBottom:10}}>TEAM</div>
+                {byUser.map(u=>(
+                  <div key={u.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,padding:"8px",borderRadius:8,background:C.bg3}}>
+                    <div style={{fontWeight:600,fontSize:13,color:C.txt}}>{u.name}</div>
+                    <div style={{display:"flex",gap:10,fontSize:11}}>
+                      <span style={{color:C.txt3}}>{u.active} active</span>
+                      <span style={{color:C.green,fontWeight:600}}>{u.won}W</span>
+                      <span style={{color:C.teal,fontWeight:600}}>{u.placed}w</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── SETTINGS TAB ────────────────────────────────────────────────
-function SettingsTab({curUser,users,setUsers,services,setServices,entities,setEntities,playbook,setPlaybook,isAdmin,onChangePwd,onAdmin}) {
+function SettingsTab({curUser,users,setUsers,services,setServices,entities,setEntities,playbook,setPlaybook,isAdmin,onChangePwd,onAdmin,theme,setTheme}) {
   return(
     <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:10}}>
       <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginBottom:2}}>ACCOUNT</div>
@@ -2386,7 +4245,28 @@ function SettingsTab({curUser,users,setUsers,services,setServices,entities,setEn
           </div>
         ))}
       </div>
-      <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginTop:6,marginBottom:2}}>CUSTOMIZATION</div>
+
+      <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginTop:4,marginBottom:2}}>THEME</div>
+      {Object.entries(THEME_GROUPS).map(([group,keys])=>(
+        <div key={group}>
+          <div style={{fontSize:10,fontWeight:600,color:C.txt3,letterSpacing:"0.08em",marginBottom:6,padding:"0 2px"}}>{group.toUpperCase()}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {keys.map(k=>{const t=THEMES[k];if(!t)return null;return(
+              <button key={k} className="btn" onClick={()=>setTheme(k)}
+                style={{padding:"10px 12px",borderRadius:10,border:`2px solid ${theme===k?C.blue:t.border}`,background:t.bg2,color:t.txt,textAlign:"left",boxShadow:theme===k?`0 0 0 3px ${C.blue}33`:"none",transition:"all 0.15s"}}>
+                <div style={{fontWeight:600,fontSize:12,marginBottom:5,color:t.txt}}>{t.name}{theme===k?" ✓":""}</div>
+                <div style={{display:"flex",gap:3}}>
+                  {[t.bg0,t.bg2,t.blue,t.green,t.amber,t.red].map((cl,i)=>(
+                    <div key={i} style={{width:14,height:14,borderRadius:3,background:cl,border:`1px solid ${t.border}`}}/>
+                  ))}
+                </div>
+              </button>
+            );})}
+          </div>
+        </div>
+      ))}
+
+      <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginTop:4,marginBottom:2}}>CUSTOMIZATION</div>
       <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:14,display:"flex",flexDirection:"column",gap:12}}>
         <EditableList label="SERVICES" items={services} setItems={setServices} color={C.blue}/>
         <EditableList label="LEGAL ENTITIES" items={entities} setItems={setEntities} color={C.teal}/>
@@ -2468,9 +4348,10 @@ export default function GremiCRM() {
   const [services,setServices]=useState(DEF_SERVICES);
   const [entities,setEntities]=useState(DEF_ENTITIES);
   const [playbook,setPlaybook]=useState(INIT_PLAYBOOK);
+  const [templates,setTemplates]=useState(TPL_DATA);
   const [archive,setArchive]=useState([]);
   const [theme,setTheme]=useState(()=>{ try { return localStorage.getItem("gremi_theme")||"navy"; } catch(e){ return "navy"; } });
-  const [tab,setTab]=useState("today");
+  const [tab,setTab]=useState("dashboard");
   const [search,setSearch]=useState("");
   const [filters,setFilters]=useState({stage:"All",temp:"All",service:"All",entity:"All",county:"All",industry:"All",salesId:"All",overdueOnly:false,myOnly:false,showLocs:true});
   const [selHQ,setSelHQ]=useState(null);
@@ -2479,6 +4360,8 @@ export default function GremiCRM() {
   const [editHQ,setEditHQ]=useState(null);
   const [showPwd,setShowPwd]=useState(false);
   const [showAdmin,setShowAdmin]=useState(false);
+  const [showQuickAI,setShowQuickAI]=useState(false);
+  const [expandedHQs,setExpandedHQs]=useState({});
   const [dbReady,setDbReady]=useState(false);
   const [dbError,setDbError]=useState("");
   const [syncStatus,setSyncStatus]=useState("idle"); // idle | syncing | error
@@ -2656,7 +4539,22 @@ export default function GremiCRM() {
   const isTeamLead=curUser?.role==="team_lead";
   const filtered = locs.filter(l=>{
     const q=search.toLowerCase();
-    const matchQ=!q||l.company.toLowerCase().includes(q)||l.location?.toLowerCase().includes(q)||l.contact?.toLowerCase().includes(q)||l.county?.toLowerCase().includes(q)||l.stage?.toLowerCase().includes(q);
+    const hqForLoc = hqs.find(h=>h.id===l.parentId);
+    const matchQ=!q||
+      l.company.toLowerCase().includes(q)||
+      l.location?.toLowerCase().includes(q)||
+      l.contact?.toLowerCase().includes(q)||
+      l.county?.toLowerCase().includes(q)||
+      l.stage?.toLowerCase().includes(q)||
+      l.notes?.toLowerCase().includes(q)||
+      l.email?.toLowerCase().includes(q)||
+      l.phone?.toLowerCase().includes(q)||
+      l.workerType?.toLowerCase().includes(q)||
+      l.nextStep?.toLowerCase().includes(q)||
+      l.spin?.p?.toLowerCase().includes(q)||
+      l.spin?.painSummary?.toLowerCase().includes(q)||
+      hqForLoc?.intelligence?.toLowerCase().includes(q)||
+      hqForLoc?.notes?.toLowerCase().includes(q);
     const matchStage=filters.stage==="All"||l.stage===filters.stage;
     const matchTemp=filters.temp==="All"||l.temp===filters.temp;
     const matchSvc=filters.service==="All"||l.service===filters.service;
@@ -2670,7 +4568,7 @@ export default function GremiCRM() {
   }).sort((a,b)=>{
     const od=(l)=>isOD(l.nextStepDate,l.stage)?0:1;
     if(od(a)!==od(b))return od(a)-od(b);
-    const tp={["🔥 Hot"]:0,["🟡 Warm"]:1,["❄️ Cold"]:2};
+    const tp={"🔥 Hot":0,"🟡 Warm":1,"❄️ Cold":2};
     return (tp[a.temp]||1)-(tp[b.temp]||1);
   });
 
@@ -2705,20 +4603,18 @@ export default function GremiCRM() {
   const kpiLate = kpiActive.filter(l=>isOD(l.nextStepDate,l.stage)).length;
   const kpiHot = kpiActive.filter(l=>l.temp==="🔥 Hot").length;
   const TABS_DEF = [
-    {id:"today",label:"TODAY"},
+    {id:"dashboard",label:"DASHBOARD"},
     {id:"leads",label:"LEADS"},
-    {id:"kpi",label:"KPI"},
     {id:"templates",label:"SCRIPTS"},
     {id:"playbook",label:"PLAYBOOK"},
     {id:"team",label:"TEAM"},
     {id:"ai",label:"🤖 AI"},
-    {id:"theme",label:"THEME"},
     ...(isAdmin?[{id:"settings",label:"SETTINGS"}]:[]),
     ...(archive.length>0||isAdmin||isTeamLead?[{id:"archive",label:"ARCHIVE"+(archive.length?" ("+archive.length+")":"")}]:[]),
   ];
 
   // Mobile tab icons for bottom nav
-  const TAB_ICONS = {today:"📊",leads:"🏭",kpi:"📈",templates:"💬",playbook:"📖",team:"👥",ai:"🤖",archive:"📦",theme:"🎨",settings:"⚙"};
+  const TAB_ICONS = {dashboard:"📊",leads:"🏭",templates:"💬",playbook:"📖",team:"👥",ai:"🤖",archive:"📦",settings:"⚙"};
 
   return(
     <div style={{fontFamily:"'Inter',sans-serif",background:C.bg1,height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",color:C.txt}}>
@@ -2777,12 +4673,13 @@ export default function GremiCRM() {
 
       {/* Tab content */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        {tab==="today"&&<TodayTab locs={locs} hqs={hqs} users={users} cur={curUser} onSelectLoc={l=>{setSelLoc(l);setTab("leads");}} isAdmin={isAdmin} isTeamLead={isTeamLead}/>}
+        {tab==="dashboard"&&<DashboardTab locs={locs} hqs={hqs} users={users} cur={curUser} onSelectLoc={l=>{setSelLoc(l);setTab("leads");}} isAdmin={isAdmin} isTeamLead={isTeamLead}/>}
 
         {tab==="leads"&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
             <div style={{padding:"9px 12px",borderBottom:`1px solid ${C.border}`,background:C.bg1,display:"flex",gap:8,flexShrink:0}}>
-              <input dir="ltr" placeholder="Search company, location, contact..." value={search} onChange={e=>setSearch(e.target.value)} className="fi" style={{flex:1,padding:"9px 11px",fontSize:13}}/>
+              <input dir="ltr" placeholder="Search company, contact, notes, intelligence..." value={search} onChange={e=>setSearch(e.target.value)} className="fi" style={{flex:1,padding:"9px 11px",fontSize:13}}/>
+              <button className="btn" onClick={()=>setShowQuickAI(true)} style={{background:`${C.teal}18`,color:C.teal,padding:"9px 12px",fontSize:13,borderRadius:8,border:`1px solid ${C.teal}44`,flexShrink:0}} title="AI Import lead">🤖</button>
               <button className="btn" onClick={()=>setEditLoc({...EMPTY_LOC,salesId:curUser.id})} style={{background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"9px 14px",fontSize:12,borderRadius:8,flexShrink:0}}>+ New Deal</button>
             </div>
             <ConversationalLeadInput hqs={hqs} locs={locs} users={users} curId={curUser.id} services={services} entities={entities} onCreated={handleConversationalCreate}/>
@@ -2791,16 +4688,37 @@ export default function GremiCRM() {
               {filtered.length===0&&<div style={{textAlign:"center",padding:40,color:C.txt3,fontSize:13}}>No leads match the current filters</div>}
               {Object.entries(groupedByHQ).map(([hqId,locGroup])=>{
                 const hq=hqs.find(h=>h.id===parseInt(hqId));
-                const shown=locGroup.sort((a,b)=>{const tp={["🔥 Hot"]:0,["🟡 Warm"]:1,["❄️ Cold"]:2};return (tp[a.temp]||1)-(tp[b.temp]||1);});
+                const shown=locGroup.sort((a,b)=>{const tp={"🔥 Hot":0,"🟡 Warm":1,"❄️ Cold":2};return (tp[a.temp]||1)-(tp[b.temp]||1);});
+                const isExpanded=expandedHQs[hqId]!==false; // default expanded
+                const toggle=()=>setExpandedHQs(prev=>({...prev,[hqId]:!isExpanded}));
+                const hasOverdue=shown.some(l=>isOD(l.nextStepDate,l.stage));
+                const totalW=shown.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
+                const stages=[...new Set(shown.map(l=>l.stage))].slice(0,3);
                 return(
-                  <div key={hqId} style={{marginBottom:14}}>
-                    {hq&&(
-                      <div className="row-hover" onClick={()=>setSelHQ(hq)} style={{display:"flex",alignItems:"center",gap:7,padding:"6px 2px",marginBottom:4}}>
-                        <div style={{width:20,height:20,background:`${C.indigo}22`,border:`1px solid ${C.indigo}44`,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:C.indigo,flexShrink:0}}>🏢</div>
-                        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:700,color:C.indigo,letterSpacing:"0.05em"}}>{hq.company}</div>
-                        <div style={{fontSize:9,color:C.txt3,flexShrink:0}}>{shown.length} loc</div>
+                  <div key={hqId} style={{marginBottom:10,background:C.bg2,border:`1px solid ${hasOverdue?C.red+"33":C.border}`,borderRadius:12,overflow:"hidden"}}>
+                    {/* HQ Header — always visible, click to expand/collapse */}
+                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",cursor:"pointer",borderBottom:isExpanded?`1px solid ${C.border}`:"none",background:`${C.indigo}08`}}
+                      onClick={toggle}>
+                      <div style={{width:22,height:22,background:`${C.indigo}22`,border:`1px solid ${C.indigo}44`,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:C.indigo,flexShrink:0}}>🏢</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,color:C.indigo,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{hq?.company||"No Company"}</div>
+                        <div style={{display:"flex",gap:6,alignItems:"center",marginTop:2,flexWrap:"wrap"}}>
+                          <span style={{fontSize:10,color:C.txt3}}>{shown.length} deal{shown.length!==1?"s":""}</span>
+                          {totalW>0&&<span style={{fontSize:10,color:C.amber}}>👷{totalW}</span>}
+                          {stages.map(s=>{const sc=getSC()[s]||C.txt3;return <span key={s} style={{fontSize:9,color:sc,background:sc+"18",padding:"1px 6px",borderRadius:4,border:`1px solid ${sc}33`}}>{s}</span>;})}
+                          {hasOverdue&&<span style={{fontSize:10,color:C.red,fontWeight:600}}>⚠ overdue</span>}
+                        </div>
                       </div>
-                    )}
+                      <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                        <button className="btn" onClick={e=>{e.stopPropagation();if(hq)setSelHQ(hq);}}
+                          style={{background:`${C.indigo}18`,color:C.indigo,padding:"4px 8px",fontSize:10,borderRadius:5,border:`1px solid ${C.indigo}33`}}>Details</button>
+                        <span style={{color:C.txt3,fontSize:12,lineHeight:1}}>{isExpanded?"▲":"▼"}</span>
+                      </div>
+                    </div>
+                    {/* Locations — collapsible */}
+                    {isExpanded&&(
+                    <div>
+                    {shown.map(l=>{
                     {shown.map(l=>{
                       const sc=getSC()[l.stage]||C.txt3;
                       const od=isOD(l.nextStepDate,l.stage);
@@ -2841,6 +4759,8 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
+                    })}
+                    </div>)}
                   </div>
                 );
               })}
@@ -2849,13 +4769,11 @@ export default function GremiCRM() {
         )}
 
         {tab==="team"&&<TeamTab users={users} locs={locs} onSelect={l=>{setSelLoc(l);setTab("leads");}}/>}
-        {tab==="kpi"&&<KPITab locs={locs} hqs={hqs} users={users} cur={curUser} isAdmin={isAdmin} isTeamLead={isTeamLead}/>}
         {tab==="playbook"&&<PlaybookTab playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin}/>}
-        {tab==="templates"&&<TemplatesTab/>}
+        {tab==="templates"&&<TemplatesTab isAdmin={isAdmin} templates={templates} setTemplates={setTemplates}/>}
         {tab==="ai"&&<AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser}/>}
         {tab==="archive"&&<ArchiveTab archive={archive} onRestore={restore} isAdmin={isAdmin}/>}
-        {tab==="theme"&&<ThemeTab curTheme={theme} setTheme={t=>{setTheme(t);C=THEMES[t]||THEMES.navy;try{localStorage.setItem("gremi_theme",t);}catch(e){}}}/>}
-        {tab==="settings"&&<SettingsTab curUser={curUser} users={users} setUsers={setUsers} services={services} setServices={setServices} entities={entities} setEntities={setEntities} playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin} onChangePwd={()=>setShowPwd(true)} onAdmin={()=>setShowAdmin(true)}/>}
+        {tab==="settings"&&<SettingsTab curUser={curUser} users={users} setUsers={setUsers} services={services} setServices={setServices} entities={entities} setEntities={setEntities} playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin} onChangePwd={()=>setShowPwd(true)} onAdmin={()=>setShowAdmin(true)} theme={theme} setTheme={t=>{setTheme(t);C=THEMES[t]||THEMES.navy;try{localStorage.setItem("gremi_theme",t);}catch(e){}}}/>}
       </div>
 
       {/* MOBILE BOTTOM NAV */}
@@ -2868,6 +4786,43 @@ export default function GremiCRM() {
               <span style={{fontSize:8,fontWeight:600,letterSpacing:"0.04em",whiteSpace:"nowrap"}}>{t.label.length>6?t.label.slice(0,5)+"…":t.label}</span>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* QUICK AI PANEL — AI import + pipeline chat from leads */}
+      {showQuickAI&&(
+        <div className="modal" style={{zIndex:200}}>
+          <div className="mh">
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:26,height:26,borderRadius:7,background:`linear-gradient(135deg,${C.blue},${C.teal})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div>
+              <div style={{fontWeight:700,fontSize:15,color:C.txt}}>AI Assistant</div>
+            </div>
+            <button className="xb" onClick={()=>setShowQuickAI(false)}>×</button>
+          </div>
+          {/* Two sub-tabs: Import | Pipeline Chat */}
+          {(()=>{
+            const [qTab,setQTab]=React.useState("import");
+            return(
+              <>
+                <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:C.bg0}}>
+                  {[["import","🤖 AI Import Lead"],["chat","💬 Pipeline Chat"]].map(([id,label])=>(
+                    <button key={id} className="tab" onClick={()=>setQTab(id)}
+                      style={{flex:1,background:qTab===id?`${C.blue}12`:"transparent",color:qTab===id?C.blue2:C.txt3,borderBottom:`2px solid ${qTab===id?C.blue:"transparent"}`}}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {qTab==="import"?(
+                  <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+                    <ConversationalLeadInput hqs={hqs} locs={locs} users={users} curId={curUser.id} services={services} entities={entities}
+                      onCreated={(preview)=>{handleConversationalCreate(preview);setShowQuickAI(false);}} forceOpen={true}/>
+                  </div>
+                ):(
+                  <AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser}/>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -2901,7 +4856,7 @@ export default function GremiCRM() {
       {editHQ&&(
         <HQFormModal form={editHQ} setForm={setEditHQ}
           onClose={()=>setEditHQ(null)}
-          onSave={async()=>{await saveHQ(editHQ);setEditHQ(null);}}/>
+          onSave={async()=>{await saveHQ(editHQ);setSelHQ(editHQ);setEditHQ(null);}}/>
       )}
       {showPwd&&<ChangePwdModal cur={curUser} users={users} setUsers={setUsers} setCur={setCurUser} isAdmin={isAdmin} onClose={()=>setShowPwd(false)}/>}
       {showAdmin&&<AdminPanel users={users} setUsers={setUsers} cur={curUser} services={services} setServices={setServices} entities={entities} setEntities={setEntities} onClose={()=>setShowAdmin(false)}/>}
