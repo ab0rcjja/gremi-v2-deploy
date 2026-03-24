@@ -2434,28 +2434,23 @@ function ArchiveTab({archive,onRestore,isAdmin}) {
 // ─── THEME TAB ───────────────────────────────────────────────────
 function ThemeTab({curTheme,setTheme}) {
   return(
-    <div style={{flex:1,overflowY:"auto",padding:12}}>
-      <div style={{fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginBottom:14,fontWeight:600}}>SELECT THEME</div>
+    <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em"}}>CHOOSE YOUR THEME</div>
       {Object.entries(THEME_GROUPS).map(([group,keys])=>(
-        <div key={group} style={{marginBottom:20}}>
-          <div style={{fontSize:10,color:C.txt3,fontWeight:700,letterSpacing:"0.1em",marginBottom:10}}>{group.toUpperCase()}</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {keys.map(k=>{
-              const th=THEMES[k]; const isA=curTheme===k;
-              return(
-                <div key={k} onClick={()=>setTheme(k)} style={{background:isA?`${C.blue}18`:C.bg2,border:`2px solid ${isA?C.blue:C.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",transition:"all 0.15s"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <div style={{fontWeight:isA?700:500,fontSize:13,color:isA?C.blue2:C.txt}}>{th.name}</div>
-                    {isA&&<span style={{background:`${C.blue}22`,color:C.blue2,border:`1px solid ${C.blue}44`,borderRadius:5,padding:"2px 8px",fontSize:10,fontWeight:700}}>✓ Active</span>}
-                  </div>
-                  <div style={{display:"flex",gap:5}}>
-                    {[th.bg1,th.blue,th.teal,th.green,th.amber,th.red,th.indigo].map((c,i)=>(
-                      <div key={i} style={{width:22,height:22,borderRadius:5,background:c,border:`1px solid ${th.border}`}}/>
-                    ))}
-                  </div>
+        <div key={group}>
+          <div style={{fontSize:10,fontWeight:600,color:C.txt3,letterSpacing:"0.08em",marginBottom:6,padding:"0 2px"}}>{group.toUpperCase()}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {keys.map(k=>{const t=THEMES[k];if(!t)return null;return(
+              <button key={k} className="btn" onClick={()=>setTheme(k)}
+                style={{padding:"12px",borderRadius:10,border:`2px solid ${curTheme===k?C.blue:t.border}`,background:t.bg2,color:t.txt,fontSize:12,fontWeight:curTheme===k?700:400,textAlign:"left",boxShadow:curTheme===k?`0 0 0 3px ${C.blue}33`:"none",transition:"all 0.15s"}}>
+                <div style={{fontWeight:600,fontSize:12,marginBottom:6,color:t.txt}}>{t.name}{curTheme===k?" ✓":""}</div>
+                <div style={{display:"flex",gap:4}}>
+                  {[t.bg0,t.bg2,t.blue,t.green,t.amber,t.red].map((cl,i)=>(
+                    <div key={i} style={{width:16,height:16,borderRadius:4,background:cl,border:`1px solid ${t.border}`}}/>
+                  ))}
                 </div>
-              );
-            })}
+              </button>
+            );})}
           </div>
         </div>
       ))}
@@ -2487,6 +2482,16 @@ export default function GremiCRM() {
   const [dbReady,setDbReady]=useState(false);
   const [dbError,setDbError]=useState("");
   const [syncStatus,setSyncStatus]=useState("idle"); // idle | syncing | error
+  const [isMobile,setIsMobile]=useState(()=>{ try { return window.innerWidth < 768; } catch(e){ return false; } });
+  const [mobileForced,setMobileForced]=useState(null); // null = auto, true/false = forced
+
+  useEffect(()=>{
+    const handle=()=>{ if(mobileForced===null) setIsMobile(window.innerWidth<768); };
+    window.addEventListener("resize",handle);
+    return ()=>window.removeEventListener("resize",handle);
+  },[mobileForced]);
+
+  const mobile = mobileForced !== null ? mobileForced : isMobile;
 
   // ── Apply theme
   C = THEMES[theme]||THEMES.navy;
@@ -2692,44 +2697,83 @@ export default function GremiCRM() {
     {id:"settings",label:"Settings",icon:"⚙"},
   ];
 
-  const NavBar=()=>(
-    <div style={{background:C.bg0,borderTop:`1px solid ${C.border}`,display:"flex",flexShrink:0,overflowX:"auto"}}>
-      {TABS.map(t=>(
-        <button key={t.id} className="tab" onClick={()=>setTab(t.id)}
-          style={{background:tab===t.id?C.bg2:C.bg0,color:tab===t.id?C.txt:C.txt3,borderBottomColor:tab===t.id?C.blue:"transparent",minWidth:52,flexDirection:"column",gap:2,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <span style={{fontSize:14}}>{t.icon}</span>
-          <span style={{fontSize:9}}>{t.label}</span>
-        </button>
-      ))}
-    </div>
-  );
+  // KPI numbers
+  const kpiActive = locs.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
+  const kpiWon = locs.filter(l=>l.stage==="Closed Won");
+  const kpiPlaced = kpiWon.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
+  const kpiPipe = locs.filter(l=>l.stage==="Negotiation"||l.stage==="Proposal Sent").reduce((s,l)=>s+(parseInt(l.workers)||0)*5800,0);
+  const kpiLate = kpiActive.filter(l=>isOD(l.nextStepDate,l.stage)).length;
+  const kpiHot = kpiActive.filter(l=>l.temp==="🔥 Hot").length;
+  const TABS_DEF = [
+    {id:"today",label:"TODAY"},
+    {id:"leads",label:"LEADS"},
+    {id:"kpi",label:"KPI"},
+    {id:"templates",label:"SCRIPTS"},
+    {id:"playbook",label:"PLAYBOOK"},
+    {id:"team",label:"TEAM"},
+    {id:"ai",label:"🤖 AI"},
+    {id:"theme",label:"THEME"},
+    ...(isAdmin?[{id:"settings",label:"SETTINGS"}]:[]),
+    ...(archive.length>0||isAdmin||isTeamLead?[{id:"archive",label:"ARCHIVE"+(archive.length?" ("+archive.length+")":"")}]:[]),
+  ];
+
+  // Mobile tab icons for bottom nav
+  const TAB_ICONS = {today:"📊",leads:"🏭",kpi:"📈",templates:"💬",playbook:"📖",team:"👥",ai:"🤖",archive:"📦",theme:"🎨",settings:"⚙"};
 
   return(
-    <div style={{maxWidth:480,margin:"0 auto",height:"100svh",display:"flex",flexDirection:"column",background:C.bg1,fontFamily:"'Inter',sans-serif",position:"relative"}}>
+    <div style={{fontFamily:"'Inter',sans-serif",background:C.bg1,height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",color:C.txt}}>
       <style>{getCSS()}</style>
-      {/* Header */}
-      <div style={{background:`linear-gradient(90deg,${C.bg0},${C.bg1})`,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:9}}>
-          <div style={{width:30,height:30,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:15,color:"#fff",boxShadow:`0 2px 10px ${C.blue}40`}}>G</div>
-          <div>
-            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt,lineHeight:1}}>Gremi</div>
-            <div style={{fontSize:9,color:C.txt3,letterSpacing:"0.12em"}}>CRM · ROMANIA</div>
-          </div>
-        </div>
+
+      {/* HEADER */}
+      <div style={{background:C.bg0,borderBottom:`1px solid ${C.border}`,padding:mobile?"9px 12px":"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          {syncStatus==="syncing"&&<div style={{width:6,height:6,borderRadius:"50%",background:C.amber,animation:"pulse 1s infinite"}}/>}
+          <div style={{width:28,height:28,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:13,color:"#fff"}}>G</div>
+          {!mobile&&<div><div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt,lineHeight:1}}>Sales Team CRM</div><div style={{fontSize:9,color:C.txt3,letterSpacing:"0.1em"}}>GREMI · ROMANIA</div></div>}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:mobile?5:7}}>
+          {syncStatus==="syncing"&&<div style={{width:6,height:6,borderRadius:"50%",background:C.amber,animation:"pulse 1s infinite"}} title="Syncing"/>}
           {syncStatus==="error"&&<div style={{width:6,height:6,borderRadius:"50%",background:C.red}} title="DB error"/>}
-          {syncStatus==="idle"&&dbReady&&<div style={{width:6,height:6,borderRadius:"50%",background:C.green}}/>}
-          {tab==="leads"&&(
-            <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              <input className="fi" value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search..." style={{width:120,padding:"6px 10px",fontSize:12}}/>
-              <button className="btn" onClick={()=>setEditLoc({...EMPTY_LOC,salesId:curUser.id})} style={{background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"6px 12px",fontSize:12,borderRadius:7,boxShadow:`0 2px 8px ${C.green}44`}}>+ New</button>
-              {(isAdmin||isTeamLead)&&<button className="btn" onClick={exportXLSX} style={{background:C.bg3,color:C.txt3,padding:"6px 10px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>↓ XLS</button>}
-            </div>
-          )}
-          <button className="btn" onClick={()=>setCurUser(null)} style={{background:C.bg3,color:C.txt3,padding:"5px 9px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>↩</button>
+          {syncStatus==="idle"&&dbReady&&<div style={{width:6,height:6,borderRadius:"50%",background:C.green}} title="Connected"/>}
+          {/* Layout toggle button */}
+          <button className="btn" title={mobile?"Switch to Desktop layout":"Switch to Mobile layout"}
+            onClick={()=>setMobileForced(m=>m===null?(isMobile?false:true):m===true?false:true)}
+            style={{background:C.bg3,color:C.txt3,padding:"5px 8px",fontSize:12,borderRadius:7,border:`1px solid ${C.border}`}}>
+            {mobile?"🖥":"📱"}
+          </button>
+          {!mobile&&isAdmin&&<button className="btn" onClick={()=>setShowAdmin(true)} style={{background:`${C.purple}18`,color:C.purple,padding:"6px 10px",fontSize:11,borderRadius:7,border:`1px solid ${C.purple}44`}}>Admin</button>}
+          {!mobile&&(isAdmin||isTeamLead)&&<button className="btn" onClick={exportXLSX} style={{background:`${C.green}18`,color:C.green,padding:"6px 10px",fontSize:11,borderRadius:7,border:`1px solid ${C.green}44`}}>Excel</button>}
+          <button className="btn" onClick={loadAll} style={{background:C.bg3,color:C.txt3,padding:"5px 8px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}} title="Refresh">↻</button>
+          <div style={{cursor:"pointer",textAlign:"right"}} onClick={()=>setShowPwd(true)}>
+            <div style={{fontSize:mobile?11:12,fontWeight:600,color:C.txt}}>{curUser.name}</div>
+            {!mobile&&<div style={{fontSize:9,color:isAdmin?C.purple:isTeamLead?C.amber:C.blue}}>{isAdmin?"ADMIN":isTeamLead?"TL":"USER"} 🔑</div>}
+          </div>
+          <button className="btn" onClick={()=>setCurUser(null)} style={{background:C.bg3,color:C.txt3,padding:"5px 8px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>↩</button>
         </div>
       </div>
+
+      {/* KPI STRIP — desktop only */}
+      {!mobile&&(
+        <div style={{background:C.bg0,borderBottom:`1px solid ${C.border}`,display:"flex",overflowX:"auto",flexShrink:0}}>
+          {[["HQs",hqs.length,C.blue],["LOCS",locs.length,C.indigo],["🔥 HOT",kpiHot,C.red],["PLACED",kpiPlaced,C.green],["PIPE ~k",Math.round(kpiPipe/1000),C.amber],["⚠ LATE",kpiLate,C.orange]].map(([l,v,c])=>(
+            <div key={l} style={{flex:"1 0 60px",padding:"9px 5px",borderRight:`1px solid ${C.border}`,textAlign:"center"}}>
+              <div style={{fontSize:17,fontWeight:700,color:c,fontFamily:"'Space Grotesk',sans-serif"}}>{v}</div>
+              <div style={{fontSize:8,color:C.txt3,letterSpacing:"0.06em",marginTop:1}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* TABS — desktop: top bar, mobile: hidden (bottom nav instead) */}
+      {!mobile&&(
+        <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:C.bg0,overflowX:"auto"}}>
+          {TABS_DEF.map(t=>(
+            <button key={t.id} className="tab" onClick={()=>setTab(t.id)}
+              style={{background:tab===t.id?`${C.blue}12`:"transparent",color:tab===t.id?C.blue2:C.txt3,borderBottom:`2px solid ${tab===t.id?C.blue:"transparent"}`}}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Tab content */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
@@ -2737,6 +2781,10 @@ export default function GremiCRM() {
 
         {tab==="leads"&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <div style={{padding:"9px 12px",borderBottom:`1px solid ${C.border}`,background:C.bg1,display:"flex",gap:8,flexShrink:0}}>
+              <input dir="ltr" placeholder="Search company, location, contact..." value={search} onChange={e=>setSearch(e.target.value)} className="fi" style={{flex:1,padding:"9px 11px",fontSize:13}}/>
+              <button className="btn" onClick={()=>setEditLoc({...EMPTY_LOC,salesId:curUser.id})} style={{background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"9px 14px",fontSize:12,borderRadius:8,flexShrink:0}}>+ New Deal</button>
+            </div>
             <ConversationalLeadInput hqs={hqs} locs={locs} users={users} curId={curUser.id} services={services} entities={entities} onCreated={handleConversationalCreate}/>
             <FilterBar filters={filters} setFilters={setFilters} users={users} isAdmin={isAdmin} isTeamLead={isTeamLead} curId={curUser.id} services={services} entities={entities}/>
             <div style={{flex:1,overflowY:"auto",padding:10}}>
@@ -2810,7 +2858,18 @@ export default function GremiCRM() {
         {tab==="settings"&&<SettingsTab curUser={curUser} users={users} setUsers={setUsers} services={services} setServices={setServices} entities={entities} setEntities={setEntities} playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin} onChangePwd={()=>setShowPwd(true)} onAdmin={()=>setShowAdmin(true)}/>}
       </div>
 
-      <NavBar/>
+      {/* MOBILE BOTTOM NAV */}
+      {mobile&&(
+        <div style={{background:C.bg0,borderTop:`1px solid ${C.border}`,display:"flex",flexShrink:0,overflowX:"auto"}}>
+          {TABS_DEF.map(t=>(
+            <button key={t.id} className="btn" onClick={()=>setTab(t.id)}
+              style={{flex:"1 0 44px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,padding:"7px 2px",background:tab===t.id?`${C.blue}15`:C.bg0,color:tab===t.id?C.blue2:C.txt3,border:"none",borderTop:`2px solid ${tab===t.id?C.blue:"transparent"}`,cursor:"pointer",minWidth:44}}>
+              <span style={{fontSize:14}}>{TAB_ICONS[t.id]||"●"}</span>
+              <span style={{fontSize:8,fontWeight:600,letterSpacing:"0.04em",whiteSpace:"nowrap"}}>{t.label.length>6?t.label.slice(0,5)+"…":t.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Modals */}
       {selLoc&&(
