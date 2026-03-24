@@ -60,7 +60,7 @@ const locToDb = ({id,isHQ,_type,...l}) => ({
   pain_score:l.painScore||null, next_step:l.nextStep||"", next_step_date:l.nextStepDate||"",
   won_date:l.wonDate||null, start_date:l.startDate||null, lost_date:l.lostDate||null,
   lost_lesson:l.lostLesson||"", lost_description:l.lostDescription||"", won_notes:l.wonNotes||"",
-  lost_reason:l.lostReason||"",
+  lost_reason:l.lostReason||"", current_supplier:l.currentSupplier||"",
   spin_real:JSON.stringify(l.spinReal||{}),
 });
 const locFromDb = (r) => ({
@@ -4539,7 +4539,7 @@ function AIChatTab({locs,hqs,users,cur,onUpdateLoc,onUpdateHQ,onSaveLoc,onSaveHQ
     const overdue=active.filter(l=>isOD(l.nextStepDate,l.stage));
 
     // ALL companies with exact names (critical for updates)
-    const hqList = hqs.map(h=>`- "${h.company}" [${h.industry||"?"}] ${h.employees||"?"}emp${h.intelligence?", intel: "+h.intelligence.substring(0,80):""}`) .join("\n");
+    const hqList = hqs.map(h=>`- "${h.company}" [${h.industry||"?"}] ${h.employees||"?"}emp contact:"${h.centralContact||""}"(${h.centralRole||""}) phone:"${h.centralPhone||""}" email:"${h.centralEmail||""}"${h.intelligence?", intel: "+h.intelligence.substring(0,80):""}`) .join("\n");
 
     // ALL deals with exact names
     const dealList = locs.map(l=>{
@@ -4563,9 +4563,9 @@ Update deal fields:
 {"action":"update_loc","company":"EXACT name from list","location":"EXACT location from list","fields":{"stage":"Interested","temp":"🔥 Hot","nextStep":"text","nextStepDate":"2026-04-01","painScore":4,"spin_p":"text","spin_s":"text","spin_i":"text","spin_n":"text","notes":"text","contact":"name","phone":"number","role":"title"}}
 \`\`\`
 
-Update company fields:
+Update company (HQ) fields:
 \`\`\`json
-{"action":"update_hq","company":"EXACT name from list","fields":{"intelligence":"text","employees":"300","annualTurnover":"5000000","centralContact":"name","centralPhone":"number","centralRole":"title"}}
+{"action":"update_hq","company":"EXACT name from list","fields":{"centralContact":"Ion Popescu","centralPhone":"+40721000000","centralRole":"HR Director","centralEmail":"ion@company.ro","intelligence":"text","employees":"300","annualTurnover":"5000000","address":"str. X","website":"company.ro","industry":"Auto Parts"}}
 \`\`\`
 
 Create new lead:
@@ -4617,6 +4617,13 @@ IMPORTANT: For updates, copy company/location names EXACTLY as they appear in qu
       if(f.annualTurnover)hqPatch.annualTurnover=f.annualTurnover;
       if(f.employees)hqPatch.employees=f.employees;
       if(f.seasonality)hqPatch.seasonality=f.seasonality;
+      if(f.centralContact!==undefined)hqPatch.centralContact=f.centralContact;
+      if(f.centralPhone!==undefined)hqPatch.centralPhone=f.centralPhone;
+      if(f.centralRole!==undefined)hqPatch.centralRole=f.centralRole;
+      if(f.centralEmail!==undefined)hqPatch.centralEmail=f.centralEmail;
+      if(f.address!==undefined)hqPatch.address=f.address;
+      if(f.website!==undefined)hqPatch.website=f.website;
+      if(f.industry!==undefined)hqPatch.industry=f.industry;
       if(Object.keys(hqPatch).length>0){
         onUpdateHQ(hq.id,hqPatch);
         setMsgs(prev=>[...prev,{role:"system",content:`✅ Updated company ${hq.company}: ${Object.keys(f).join(", ")}`}]);
@@ -4644,15 +4651,22 @@ IMPORTANT: For updates, copy company/location names EXACTLY as they appear in qu
         parentId=created?.id||Date.now();
         setMsgs(prev=>[...prev,{role:"system",content:`✅ New company created: ${a.hq_company}`}]);
       }
-      // Create location
+      // Create location - only fields that exist in DB schema
       const spin={s:a.spin_s||"",p:a.spin_p||"",i:a.spin_i||"",n:a.spin_n||""};
-      const newLoc={...EMPTY_LOC,
-        parentId,company:a.hq_company||"",location:a.loc_location||a.hq_company||"",
-        county:a.loc_county||"",address:a.loc_address||"",workers:a.loc_workers||"",
-        workerType:a.loc_worker_type||"",service:a.loc_service||"Outsourcing",
-        contact:a.loc_contact||"",role:a.loc_role||"",phone:a.loc_phone||"",email:a.loc_email||"",
-        notes:a.loc_notes||"",spin,painSummary:a.spin_p||"",
-        stage:"New",temp:"❄️ Cold",salesId:cur?.id,id:null
+      const newLoc={
+        id:null, isHQ:false,
+        parentId, company:a.hq_company||"", location:a.loc_location||a.hq_company||"",
+        county:a.loc_county||"", address:a.loc_address||"", workers:a.loc_workers||"",
+        workerType:a.loc_worker_type||"", service:a.loc_service||"Outsourcing",
+        contact:a.loc_contact||"", role:a.loc_role||"", phone:a.loc_phone||"",
+        email:a.loc_email||"", notes:a.loc_notes||"", spin,
+        stage:"New", temp:"❄️ Cold", salesId:cur?.id,
+        employees:"", industry:"", source:"", companyName:"",
+        lastContact:"", nextStep:"", nextStepDate:"", painScore:null,
+        activities:[], decisionProcess:"", champion:"",
+        economicBuyer:"", decisionCriteria:"", lostReason:"", currentSupplier:"",
+        wonDate:null, startDate:null, lostDate:null,
+        lostLesson:"", lostDescription:"", wonNotes:"", spinReal:{},
       };
       await onSaveLoc(newLoc,null);
       setMsgs(prev=>[...prev,{role:"system",content:`✅ New lead created: ${a.hq_company} / ${a.loc_location}`}]);
@@ -5549,7 +5563,7 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-                    
+
                     </div>)}
                   </div>
                 );
