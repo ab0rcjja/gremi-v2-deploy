@@ -2765,11 +2765,12 @@ function InlineAI({loc,hq,onUpdate,onUpdateHQ}) {
 
 
 // ─── HQ DETAIL MODAL ─────────────────────────────────────────────
-function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddLoc,onSelectLoc,onSaveChecklist}) {
+function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddLoc,onSelectLoc,onSaveChecklist,onUpdateHQ,onUpdateLoc,curUser}) {
   const hqLocs=locs.filter(l=>l.parentId===hq.id);
   const totalW=hqLocs.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
   const stages=[...new Set(hqLocs.map(l=>l.stage))];
   const [showDanger,setShowDanger]=useState(false);
+  const [showAI,setShowAI]=useState(false);
   const uN=id=>users.find(u=>u.id===id)?.name||"—";
   return(
     <div className="modal">
@@ -2846,7 +2847,19 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
           </div>
         )}
       </div>
-      <div className="mf">
+      <div className="mf" style={{display:"flex",flexDirection:"column",gap:8}}>
+        {onUpdateHQ&&(
+          <button className="btn" onClick={()=>setShowAI(v=>!v)}
+            style={{width:"100%",background:showAI?`${C.teal}22`:`${C.teal}12`,color:C.teal,padding:"11px",fontSize:13,borderRadius:10,border:`1px solid ${C.teal}44`}}>
+            🤖 {showAI?"Hide AI Assistant":"AI Assistant"}
+          </button>
+        )}
+        {showAI&&onUpdateHQ&&curUser&&(
+          <div style={{background:C.bg2,border:`1px solid ${C.teal}33`,borderRadius:12,overflow:"hidden",maxHeight:420,display:"flex",flexDirection:"column"}}>
+            <AIChatTab locs={hqLocs} hqs={[hq]} users={users} cur={curUser}
+              onUpdateLoc={onUpdateLoc} onUpdateHQ={onUpdateHQ}/>
+          </div>
+        )}
         <button className="btn" onClick={onEditHQ} style={{width:"100%",background:C.bg3,color:C.txt2,padding:"13px",fontSize:13,borderRadius:10,border:`1px solid ${C.border}`}}>✎ Edit HQ Info</button>
       </div>
     </div>
@@ -3472,111 +3485,449 @@ function HQFormModal({form,setForm,onSave,onClose}) {
 
 // ─── TEMPLATES TAB ───────────────────────────────────────────────
 const TPL_DATA = [
-  {id:"cold_call_opener",category:"Cold Call",title:"Cold Call Opener",text:`Bună ziua, [PRENUME]!
 
-Mă numesc Walery, sunt Director de Dezvoltare la Gremi Personal — colaborăm cu producători din România pentru a rezolva problema de personal cu lucrători calificați din Ucraina și Asia.
+  // ══════════════════════════════════════════════════════
+  // COLD CALL
+  // ══════════════════════════════════════════════════════
+  {id:"cc_opener",category:"Cold Call",title:"Cold Call Opener — Challenger",text:`[YOUR NAME]: Buna ziua, ma numesc [NAME], sunt [Directorul de Dezvoltare / Account Manager] la Gremi Personal.
 
-Am văzut că [COMPANIA] are [X] posturi deschise pe eJobs de [Y] săptămâni.
+Am vazut ca aveti [X] pozitii de operatori deschise pe eJobs de [Y] saptamani — pare ca recrutarea locala e dificila in [JUDET] momentan.
 
-Am un minut să vă explic cum am rezolvat o situație similară la o fabrică din [JUDEȚ]?`},
-  {id:"voicemail",category:"Cold Call",title:"Voicemail Script",text:`Bună ziua, [PRENUME].
+Voiam sa va intreb: care e principala provocare acum cu aceste pozitii?
 
-Sunt Walery de la Gremi Personal. Am văzut că [COMPANIA] caută personal de producție.
+[WAIT — do not fill the silence]
 
-Vă sun să vă prezint o soluție care a redus timpul de recrutare la 3 săptămâni pentru fabrici similare din [JUDEȚ].
+---
+STRUCTURE (Challenger Sale — Teach before you Sell):
+1. Who you are + company (5 sec)
+2. One specific observation about THEM — shows you did research (5 sec)
+3. Open question — not a pitch, not "do you need workers?" (5 sec)
 
-Vă sun din nou marți la 10:00 — sau puteți nota numărul meu: [TELEFON].
+IF THEY ENGAGE: move to Problem questions (SPIN-P)
+IF "SEND EMAIL": "Desigur. Inainte sa fac asta — ca sa trimit ceva relevant — pot sa va pun doua intrebari rapide?"
+IF GATEKEEPER: "Am trimis un email dl-ului [NAME] referitor la personal operational. Puteti sa ma transferati?"
+NEVER leave voicemail. NEVER say "Is this a bad time?"`},
 
-Succes!`},
-  {id:"first_email",category:"Email",title:"First Contact Email",text:`Subiect: Personal calificat pentru [COMPANIA] — soluție în 3 săptămâni
+  {id:"cc_reframe",category:"Cold Call",title:"Cold Call — Commercial Insight Reframe",text:`[Opening after they pick up]
 
-Bună ziua, [PRENUME],
+"Buna ziua, ma numesc [NAME] de la Gremi Personal. Lucrez cu producatori din [industria lor] din toata Romania, si am observat ceva interesant: companiile care trec de la recrutare directa la outsourcing de muncitori straini isi reduc costul total pe angajat cu 30-40% — nu prin taiere de salarii, ci prin eliminarea costurilor ascunse.
 
-Am observat că [COMPANIA] are mai multe posturi deschise pentru operatori producție. Știu că găsirea de personal stabil pe piața locală devine din ce în ce mai dificilă.
+Voiam sa inteleg daca asta e relevant si pentru dvs. — cat de mare e presiunea pe staffing momentan?"
 
-La Gremi Personal, rezolvăm exact această problemă — livrăm lucrători calificați din Ucraina și Asia, gata de muncă, cu toată documentația legală în regulă.
+[WAIT]
 
-Un exemplu concret: am livrat 35 de lucrători pentru o fabrică de piese auto din Argeș în 18 zile.
+---
+SOURCE: Challenger Sale — Commercial Insight
+Rule: Your first sentence must change how they see their own situation.
+NOT: "We provide foreign workers."
+YES: A reframe that makes them think about a cost or risk they haven't quantified.
 
-Aș aprecia 20 de minute pentru un apel să înțeleg situația dumneavoastră. Sunteți disponibil joi sau vineri?
+Commercial Insights for this market:
+— "Costul real al unui angajat direct include recrutare + onboarding + fluctuatie + admin ITM. La [X] angajati, asta inseamna [Y RON/luna] pe care nu il vedeti in nicio linie bugetara."
+— "Agentiile mari gestioneaza toate profilurile. Noi facem un singur lucru: muncitori straini pentru productie. Viteza noastra de livrare e de 2-4 saptamani pentru profil UA — comparativ cu 6-8 saptamani industrie standard."
+— "ITM-ul vine la noi, nu la dvs. — asta e o protectie structurala pe care putini clienti o calculeaza cand compara oferte."`},
 
-Cu respect,
-Walery
-Director Dezvoltare — Gremi Personal Romania
-[TELEFON]`},
-  {id:"post_meeting",category:"Email",title:"Post-Meeting Follow-up",text:`Subiect: Mulțumesc pentru întâlnire — Next steps [COMPANIA]
+  {id:"cc_objection_email",category:"Cold Call",title:"Cold Call — 'Send Email' Deflection",text:`CLIENT: "Trimiteti un email."
 
-Bună ziua, [PRENUME],
+YOU: "Desigur. Inainte sa fac asta — ca sa trimit ceva specific, nu un email generic — pot sa va pun doua intrebari rapide?"
 
-Vă mulțumesc pentru timp și pentru discuția deschisă de azi.
+[Usually they say yes]
 
-Am înțeles că principala provocare este [PROBLEMA]. Pe baza celor discutate, voi pregăti o ofertă personalizată pentru [X] lucrători [TIP], cu termen de start [DATA].
+Q1: "Cam cate pozitii de productie aveti deschise momentan?"
+Q2: "Care e termenul — aveti un deadline de sezon sau e o nevoie continua?"
 
-Trimit oferta până [DATA+1]. Dacă aveți întrebări între timp, sunt la dispoziție.
+THEN: "Perfect, va trimit ceva specific in [X ore]. Si ca sa merite timpul dvs. — ar fi ok sa facem un apel de 15 minute [ziua] la [ora] sa il parcurgem impreuna?"
 
-Cu respect,
-Walery`},
-  {id:"follow_up_3",category:"Email",title:"Follow-up Day 3 (after Proposal)",text:`Subiect: Re: Oferta Gremi Personal — [COMPANIA]
+---
+SOURCE: Voss — Never Split the Difference
+Principle: Invite a safe "no" to stay in conversation.
+"Would it be a problem if I asked two quick questions?" — most people say "no" (= go ahead).
+Goal: attach a booked call to the email. An email without a follow-up call is dead.`},
 
-Bună ziua, [PRENUME],
+  // ══════════════════════════════════════════════════════
+  // EMAIL
+  // ══════════════════════════════════════════════════════
+  {id:"email_first",category:"Email",title:"First Contact Email — SPIN Opener",text:`Subiect: Personal de productie pentru [COMPANIA] — livrat in 3 saptamani
 
-Revin cu un scurt mesaj după oferta trimisă acum 3 zile.
+Buna ziua [PRENUME],
 
-Vreau să mă asigur că ați primit documentele și să răspund la orice întrebări.
+Am vazut ca [COMPANIA] are [X] pozitii de operatori deschise pe [eJobs/BestJobs] de [Y] saptamani. Companiile cu care lucrez in [industrie] intampina de obicei aceeasi problema: recrutarea locala e lenta si fluctuatia e mare.
 
-Suntem flexibili pe termeni — dacă ceva nu se potrivește, discutăm.
+Ce rezolvam noi: muncitori straini pentru productie (profil ucrainean sau asiatic), livrati in 3-4 saptamani, cu toata documentatia ITM gestionata de noi. Dvs. nu atingeti niciun dosar.
 
-Sunteți disponibil pentru un scurt apel azi sau mâine?
+Trei intrebari rapide:
+1. Care e termenul — aveti un deadline de sezon sau e o nevoie continua?
+2. Lucrati deja cu o agentie de muncitori straini?
+3. Cine e persoana care ia decizia in acest subiect?
 
-Cu respect,
-Walery`},
-  {id:"breakup",category:"Email",title:"Breakup Message (Day 14)",text:`Subiect: Ultima încercare — [COMPANIA]
+Daca are sens, propun un apel de 15 minute pentru a intelege situatia dvs. mai exact.
 
-Bună ziua, [PRENUME],
+Cu stima,
+[NAME] | Gremi Personal Romania | [PHONE]
 
-Am încercat să vă contactez de câteva ori în ultimele două săptămâni, fără succes.
+---
+SOURCE: SPIN Selling (Rackham) — Situation questions in writing
+Rule: 3 questions max. Each one diagnostic, not rhetorical.
+Goal: get a reply that gives you SPIN-S data before the call.`},
 
-Înțeleg că prioritățile se schimbă. Îmi permit să închid dosarul [COMPANIA] din sistemul nostru.
+  {id:"email_followup",category:"Email",title:"Follow-up Email — Challenger Insight",text:`Subiect: Re: [previous subject] — o observatie despre [industria lor]
 
-Dacă situația se schimbă și problema de personal revine pe agendă, sunt disponibil.
+Buna ziua [PRENUME],
 
-O zi bună,
-Walery`},
-  {id:"objection_price",category:"Objection",title:"Price Objection",text:`Înțeleg preocuparea legată de preț — și apreciez că sunteți direct.
+Revin cu o perspectiva care ar putea fi relevanta pentru dvs.
 
-Înainte să comparăm cifrele, haideți să punem pe masă costul total:
-— [X] posturi neocupate × [Y] RON/zi producție pierdută = [Z] RON/lună
-— Timp HR alocat recrutării: [H] ore × cost/oră
-— Fluctuație: cost de înlocuire per angajat ≈ 2-3 salarii
+[CHOOSE ONE INSIGHT BASED ON THEIR INDUSTRY]:
 
-La Gremi, garantăm: lucrătorii vin gata documentați, nu plătiți recrutare, nu vă ocupați de housing dacă nu doriți.
+AUTO PARTS: "Producatorii auto din Romania cu care lucrez au inregistrat o fluctuatie medie de 35% la muncitorii locali in ultimele 12 luni. Cei care au trecut la muncitori straini au redus fluctuatia la sub 8% — stabilitatea echipei s-a transformat direct in predictibilitate pe linie."
 
-Care este cifra pe care o comparați cu oferta noastră?`},
-  {id:"objection_quality",category:"Objection",title:"Quality / Reliability Objection",text:`Înțeleg — ați auzit povești despre probleme de calitate cu lucrătorii străini.
+TEXTILE: "In textile, problema nu e sezonul — e viteza de rampa. Muncitorii UA invata linia in 5-7 zile vs 3-4 saptamani pentru angajari locale noi. Companiile care au calculat costul de rampa si-au schimbat strategia complet."
 
-Iată ce facem diferit:
-1. Selecție strictă în țara de origine — interviu tehnic + test practic
-2. Coordonator român/ucrainian dedicat pe site
-3. Garanție de înlocuire în 72h dacă cineva nu se adaptează
-4. Referințe disponibile: [CLIENT DIN ACELAȘI JUDEȚ/INDUSTRIE]
+FOOD PRODUCTION: "Producatorii alimentari au cea mai mare expunere ITM — documentatia pentru muncitori straini are zero marja de eroare. Noi suntem angajatorul de inregistrare — orice control ITM vine la noi, nu la dvs."
 
-Aș putea aranja o vizită la un client actual din [JUDEȚ/INDUSTRIE] similară?`},
-  {id:"linkedin_connect",category:"LinkedIn",title:"LinkedIn Connection Request",text:`Bună ziua, [PRENUME].
+---
+Daca oricare din acestea e relevanta pentru [COMPANIA], propun un apel de 20 minute saptamana aceasta.
 
-Am văzut că [COMPANIA] se extinde — posturi noi pe eJobs. Activez în staffing industrial în România și cred că ar putea fi un context de colaborare.
+Cu stima,
+[NAME] | [PHONE]
 
-Vreau să rămânem conectați.
+---
+SOURCE: Challenger Sale — Teach in every touchpoint, not just first contact
+Rule: Never "just checking in." Every email must deliver insight or value.
+Rule: Insight must be industry-specific and contain a real number.`},
 
-Walery Gremi Personal`},
-  {id:"linkedin_follow",category:"LinkedIn",title:"LinkedIn Message (after connection)",text:`Bună ziua, [PRENUME],
+  {id:"email_proposal",category:"Email",title:"Proposal Email — EVC Framework",text:`Subiect: Propunere personalizata — [X] muncitori [UA/Asiatic] pentru [COMPANIA/LOCATIE]
 
-Vă mulțumesc pentru conectare.
+Buna ziua [PRENUME],
 
-Lucrez cu fabrici similare din [JUDEȚ/INDUSTRIE] pe subiectul de personal foreign — mai ales sezon sau extindere rapidă.
+Asa cum am discutat, atașez propunerea pentru [X] muncitori [profil] pentru locatia dvs. din [LOCATIE].
 
-Nu vă propun nimic acum — doar o întrebare: este problema de personal ceva activ la [COMPANIA] în perioada asta?
+Cateva puncte cheie pe care vreau sa le subliniez:
 
-Cu respect, Walery`},
+1. COSTUL REAL AL ALTERNATIVEI
+Pe baza a ce mi-ati spus, costul actual (recrutare + fluctuatie + admin HR + overtime in vacanta) este estimat la [X RON/luna] pentru [Y] pozitii. Propunerea noastra: [Z RON/luna] all-inclusive. Delta: [X-Z RON/luna].
+
+2. CE ESTE INCLUS
+Permise de munca, documentatie ITM, housing coordination (daca e cazul), coordonator dedicat, garantie de inlocuire in 72h.
+
+3. CALENDARUL
+Semnare → Selectie workers → Start pe site: [DATA ESTIMATA]
+Profil UA: 2-4 saptamani | Profil Asiatic: minimum 4-6 luni
+
+4. PASUL URMATOR
+Am rezervat [ZI] la [ORA] pentru un apel de 20 minute sa parcurgem propunerea impreuna. Va contactez atunci.
+
+Daca nu e potrivit, anuntati-ma si stabilim alta ora.
+
+Cu stima,
+[NAME] | Gremi Personal Romania | [PHONE]
+
+---
+SOURCE: Nagle — Strategy and Tactics of Pricing: EVC Framework
+Rule: Price comes AFTER value calculation, never before.
+Rule: Always attach a scheduled call to the proposal — proposals without follow-up die.
+Rule: State the timeline clearly — Asian vs UA profiles have fundamentally different timelines.`},
+
+  {id:"email_breakup",category:"Email",title:"Breakup Email — Voss Pattern",text:`Subiect: Ultima incercare — [COMPANIA]
+
+Buna ziua [PRENUME],
+
+Am incercat sa va contactez de [X] ori in ultimele [Y] saptamani — inteleg ca sunteti ocupat.
+
+Inchid dosarul din sistemul nostru. Daca situatia cu personalul se schimba — sau daca timing-ul nu a fost bun — sunt disponibil.
+
+Cu stima,
+[NAME] | [PHONE]
+
+---
+SOURCE: Voss — Never Split the Difference
+Principle: "A clear no is more useful than a false maybe."
+The breakup message often gets a response — people react to closure.
+Tone: professional, respectful, leaves the door open. Zero passive-aggression.
+Timing: Day 14+ after proposal with no response, after 4+ contact attempts.
+
+WHAT NOT TO WRITE:
+✗ "I just wanted to follow up again..."
+✗ "I understand you're very busy..."
+✗ Any guilt or pressure language`},
+
+  // ══════════════════════════════════════════════════════
+  // LINKEDIN
+  // ══════════════════════════════════════════════════════
+  {id:"li_first_hr",category:"LinkedIn",title:"LinkedIn — First Message to HR Director",text:`"Buna ziua [PRENUME],
+
+Am vazut ca recrutati operatori de linie de cateva luni — am urmarit si postarile voastre pe eJobs. Companiile din productie cu care lucrez au redus timpul de recrutare cu 60% trecand la un model diferit de staffing.
+
+Va intreb direct: cat timp aloca echipa HR lunar pentru aceasta problema?"
+
+---
+SOURCE: Challenger Sale — Teach before you ask. Lead with insight, not pitch.
+Rule: Never mention your company in the first message.
+Rule: One question only — not two.
+Hook: Their specific hiring activity (shows you studied them).
+Insight: 60% reduction — specific, credible, makes them curious about "what model."
+Question: Diagnostic, not rhetorical.
+
+IF THEY REPLY: "Multumesc pentru raspuns. Ar fi ok sa facem un apel de 15 minute sa inteleg mai bine situatia dvs.?"`},
+
+  {id:"li_first_plant",category:"LinkedIn",title:"LinkedIn — First Message to Plant/Ops Manager",text:`"Buna ziua [PRENUME],
+
+Felicitari pentru extinderea liniei de productie [sau: am vazut ca [COMPANIA] a castigat contractul cu [CLIENT]]. Din experienta cu producatori similari din [JUDET] — cel mai mare risc in primele 3 luni de scale-up e stabilitatea echipei, nu capacitatea.
+
+Cum gestionati asta momentan?"
+
+---
+SOURCE: Challenger Sale — Commercial Insight tailored to Production Manager persona.
+Hook: Specific news about their company — expansion, new contract, new plant.
+Insight: Reframe "the risk is stability, not capacity" — challenges their assumption.
+Question: Opens the real conversation.
+
+IF NO REPLY after 7 days: send one follow-up with a DIFFERENT angle.
+IF STILL NO REPLY: move to Cold Call. LinkedIn silence ≠ rejection.`},
+
+  {id:"li_followup",category:"LinkedIn",title:"LinkedIn — Follow-up Message (7 days later)",text:`"Revin cu o perspectiva diferita.
+
+Am lucrat recent cu un producator similar din [aceeasi industrie / acelasi judet] — provocarea lor principala era [fluctuatie mare / pozitii deschise de 3 luni / ITM problematic].
+
+Ce au schimbat: au trecut la un model de muncitori straini cu angajator de inregistrare extern. Fluctuatia a scazut la 8% in 6 luni.
+
+Daca asta suna relevant — propun un apel de 15 minute. Daca nu, nicio problema."
+
+---
+SOURCE: Voss — Invite the safe 'no': "If not, no problem."
+This gives them permission to decline — paradoxically increases response rate.
+Different angle = case study from same industry/county, not same message.`},
+
+  // ══════════════════════════════════════════════════════
+  // OBJECTION
+  // ══════════════════════════════════════════════════════
+  {id:"obj_price",category:"Objection",title:"Objection: 'Too Expensive'",text:`CLIENT: "E prea scump / Avem alt furnizor mai ieftin."
+
+STEP 1 — LABEL (Voss: tactical empathy before logic)
+"Inteleg — investitia pare mai mare decat ce ati bugetat initial."
+[pause — let them confirm]
+
+STEP 2 — CALIBRATED QUESTION (Voss)
+"Ce a inclus oferta lor exact? Documentatie ITM, coordinare housing, garantie de inlocuire in 72h?"
+[Listen. Most competitors do not include all of these.]
+
+STEP 3 — BUILD THE EVC (Nagle: Economic Value to Customer)
+"Hai sa calculam impreuna costul real.
+Recrutare directa: [X RON/angajare] × fluctuatie [Y%] anuala = [Z RON/an] doar in recrutare.
+Admin HR pentru dosare muncitori: [W ore/luna] × costul intern = [V RON/luna].
+Exposure ITM in caz de control: risc de [U RON].
+Total cost of status quo: [T RON/luna].
+Propunerea noastra: [S RON/luna] all-inclusive. Delta: [T-S RON/luna] in favoarea noastra."
+
+STEP 4 — WAIT
+Don't fill the silence. Let them process.
+
+---
+SOURCE: Nagle — never defend price. Defend value.
+NEVER: drop the price immediately. It signals your price was wrong to begin with.
+NEVER: say "we're worth it" — unverifiable. Show the math instead.`},
+
+  {id:"obj_agency",category:"Objection",title:"Objection: 'We Already Have an Agency'",text:`CLIENT: "Lucram deja cu [Adecco/Manpower/Lugera/alta agentie]."
+
+STEP 1 — LABEL
+"Inteleg — inseamna ca vedeti valoarea in modelul asta de staffing. Respect asta."
+[pause]
+
+STEP 2 — CALIBRATED QUESTION
+"Cat de bine va acopera nevoile curente in termeni de volum si viteza de livrare?"
+[Listen. Most clients reveal a gap without you prompting.]
+
+STEP 3 — REFRAME (Challenger: change how they evaluate suppliers)
+"Multe din companiile cu care lucrez folosesc doua agentii in paralel — una pentru personal local, una pentru muncitori straini. Sunt nise diferite. Noi facem exclusiv muncitori straini pentru productie. Asta inseamna viteza si expertiza legala pe care agentiile generaliste nu le pot replica.
+
+O singura intrebare: aveti un program de muncitori straini activ sau discutam strict local momentan?"
+
+---
+SOURCE: Challenger Sale — position as complement, not replacement.
+Porter — Competitive Strategy: differentiation through specialization wins in niches.
+NEVER attack the competitor. Let the client see the gap themselves.`},
+
+  {id:"obj_timing",category:"Objection",title:"Objection: 'Not the Right Time'",text:`CLIENT: "Momentan nu e momentul potrivit / revenim dupa sezon / asteptam decizia de buget."
+
+STEP 1 — LABEL
+"Inteleg — timing-ul e important si nu vreau sa va presez intr-o decizie prematura."
+
+STEP 2 — FIND THE REAL BLOCKER (Voss: "Not the right time" = something unresolved)
+"Ce anume nu e clarificat inca — e vorba de buget, de decizia interna, sau de altceva?"
+[Listen. "Not the right time" almost always means something specific.]
+
+STEP 3 — CONNECT TO THEIR TIMELINE (Dixit & Nalebuff: first-mover advantage)
+"Inteleg. Un singur aspect practic: pentru profil UA, procesul de la semnare la primul muncitor pe site e de 2-4 saptamani. Daca peak-ul dvs. e in [LUNA], start-ul procesului ar trebui sa fie in [LUNA-6 SAPTAMANI].
+
+Nu va cer o decizie acum — va cer sa stabilim o data concreta pentru a relua discutia: [DATA SPECIFICA]."
+
+---
+SOURCE: Dixit & Nalebuff — Thinking Strategically: first-mover advantage in seasonal markets.
+Clients who start early get the best worker profiles. Clients who start at peak wait 6+ weeks.
+This reframe changes "later" into "I'm losing my advantage by waiting."`},
+
+  {id:"obj_complicated",category:"Objection",title:"Objection: 'Foreign Workers Are Too Complicated'",text:`CLIENT: "Muncitorii straini sunt prea complicati legal / nu vrem riscul ITM."
+
+STEP 1 — LABEL + ACCUSATION AUDIT (Voss)
+"Inteleg complet — si apreciez ca sunteti direct in legatura cu asta. Probabil va ganditi: ce se intampla daca vine un control ITM si nu avem documentatia in regula."
+
+[Let them confirm — this is the real fear]
+
+STEP 2 — STRUCTURAL REASSURANCE
+"Exact de aceea clientii nostri aleg modelul de outsourcing in loc sa gestioneze singuri.
+
+In modelul Gremi Personal:
+— Noi suntem angajatorul de inregistrare (angajatorul legal)
+— Noi gestionam 100% din documentatia ITM
+— Noi gestionam permisele de munca si inregistrarile
+— Daca vine un control ITM — vine la noi, nu la dvs.
+— Dvs. aveti un contract de prestari servicii cu noi — zero dosar de personal strain
+
+Asta e o protectie structurala, nu o promisiune."
+
+STEP 3 — PROOF
+"Putem sa va trimit contractul-cadru si un one-pager cu structura legala ca sa il vedeti un avocat sau juristul dvs. inainte de orice decizie?"
+
+---
+SOURCE: Challenger Sale — "Take Control" when they have a misconception.
+This objection = knowledge gap, not a real objection. Your job is to educate.
+The key insight: THEY are not the employer. YOU are. That changes everything legally.`},
+
+  // ══════════════════════════════════════════════════════
+  // DISCOVERY
+  // ══════════════════════════════════════════════════════
+  {id:"disc_spin",category:"Discovery",title:"SPIN Discovery — Full Question Bank",text:`SOURCE: Rackham — SPIN Selling (35,000 sales calls researched)
+Use these in sequence. Fill each CRM field as you go.
+
+━━━ S — SITUATION (facts — use sparingly, 2-3 max) ━━━
+"Cate persoane aveti pe linia de productie momentan?"
+"Lucrati deja cu vreo agentie de personal?"
+"Cate pozitii aveti deschise acum si de cat timp?"
+"Ce tip de muncitori cautati — calificati, semi, necalificati?"
+→ Write answers in SPIN-S
+
+━━━ P — PROBLEM (expose dissatisfaction) ━━━
+"Care e principala provocare cand vine vorba de ocuparea acestor pozitii?"
+"Cand o linie e sub-staffata — cum arata asta operationally?"
+"Ati avut situatii in care un muncitor a plecat in primele 2-4 saptamani?"
+"Cat de des se intampla sa nu gasiti oamenii de care aveti nevoie in timp util?"
+→ Write their exact words in SPIN-P — do NOT paraphrase
+
+━━━ I — IMPLICATION (make consequences visible — this is the engine) ━━━
+"Daca linia merge cu 10 oameni in minus — cat costa asta per schimb?"
+"A afectat asta vreun termen de livrare catre clientii dvs.?"
+"Cat timp aloca echipa HR pe luna pentru recrutare si admin?"
+"Ce se intampla cu aceasta situatie in [luna de peak]?"
+"Care e costul de fluctuatie anuala — recrutare + onboarding + pierdere productivitate?"
+→ Write financial and operational impact in SPIN-I
+RULE: Do not answer these questions. Ask and wait. Write exactly what they say.
+
+━━━ N — NEED-PAYOFF (let them articulate value — ONE question) ━━━
+"Daca ati avea 25 de operatori fiabili care incep in 3 saptamani — ce ar schimba asta pentru dvs.?"
+→ Write their answer word-for-word in SPIN-N
+→ This becomes your proposal language — use their words back to them
+
+Pain Score: 1 (no pain visible) → 2 (aware but not urgent) → 3 (significant) → 4 (urgent) → 5 (crisis)
+DO NOT close until Pain Score ≥ 4.`},
+
+  {id:"disc_meeting",category:"Discovery",title:"Discovery Meeting — Challenger Structure",text:`SOURCE: Challenger Sale — Teach-Tailor-Take Control
+Use this for the physical on-site meeting. You have already done the phone Discovery Call.
+
+[0-3 min] RAPPORT — specific, not generic
+Compliment something concrete: their facility, a news item, their LinkedIn post.
+NOT: "Nice to meet you, let me tell you about Gremi Personal."
+
+[3-6 min] SET THE AGENDA (Take Control from minute 1)
+"Vreau sa petrecem ~30 minute impreuna. As vrea sa va impartasesc cateva observatii din industrie — apoi sa inteleg situatia dvs. mai in profunzime — si daca are sens, sa discutam ce putem face impreuna. Va convine?"
+
+[6-12 min] TEACH — Commercial Insight (Challenger)
+Deliver ONE prepared insight specific to their industry and size.
+It must challenge an assumption they hold.
+Example: "Producatorii din [industrie] cu care lucrez credeau initial ca muncitorii straini sunt o solutie de criza. Ce am descoperit impreuna: fluctuatia la muncitori straini e de 3-4x mai mica decat la personal local — si asta schimba complet calculul de cost pe 12 luni."
+
+[12-22 min] TAILOR — go deeper on SPIN
+Use prepared Implication questions based on their SPIN-P from the Discovery Call.
+Listen. Take notes. Update SPIN fields.
+
+[22-30 min] PRESENT — your specific proposal
+Only now. Never before.
+"Pe baza a ce mi-ati spus — as propune [X] muncitori [profil], outsourcing via Gremi Personal SRL, livrare estimata [DATA]. Rata all-inclusive: [RANGE] RON/muncitor/luna."
+
+[30-33 min] PAIN SUMMARY — get "That's Right" (Voss)
+"Sa verific ca am inteles corect: aveti [X] pozitii deschise, dureaza [Y] saptamani sa le ocupati, si fiecare saptamana de intarziere costa aproximativ [Z RON]. E corect?"
+Wait for "Exact." Not "Da, aveti dreptate" — that's different.
+
+[33-36 min] NEXT STEP — specific, not vague
+"Pregatesc propunerea si v-o trimit pana [DATA]. Facem un apel de 20 minute pe [ZI] la [ORA] sa o parcurgem impreuna?"
+Get YES + date. Confirm email.`},
+
+  // ══════════════════════════════════════════════════════
+  // NEGOTIATION
+  // ══════════════════════════════════════════════════════
+  {id:"neg_price_push",category:"Negotiation",title:"Price Negotiation — Ackerman Method",text:`SOURCE: Voss — Never Split the Difference: Ackerman Bargaining
+Use when they push back on price after you've shown EVC.
+
+BEFORE THE CALL: write your walk-away number. Do not cross it.
+
+STEP 1 — LABEL FIRST
+"Inteleg — presiunea pe buget e reala."
+[pause]
+
+STEP 2 — CALIBRATED QUESTION (do not defend, ask)
+"Cum as putea sa fac asta sa functioneze la nivelul asta?"
+[Let them answer. Often they will explain what they actually need.]
+
+STEP 3 — ACKERMAN MOVES (if you must negotiate price)
+Target: [your real minimum acceptable rate]
+Move 1: anchor far — [65% of target, or your listed rate]
+Move 2: → 85% of target
+Move 3: → 95% of target
+Move 4: → 100% of target (final)
+Each move SMALLER than the last — signals you're approaching your limit.
+Final number: precise, non-round (e.g., 5,840 RON not 5,800) — feels calculated, not arbitrary.
+On final move: add small non-monetary item: "Pot sa adaug prima luna de coordonator la cost zero."
+
+STEP 4 — NEVER CONCEDE WITHOUT TRADING
+"Pot sa ma uit la rata — daca putem confirma volumul si durata contractului."
+"Pot sa ofer pilot — daca convenim acum ca un pilot reusit duce direct la contractul complet."
+
+STEP 5 — ESCALATE IF NEEDED
+"> 5% discount: 'Lasati-ma sa aduc directorul nostru intr-un apel — are mai multa flexibilitate pe termeni decat mine.'"
+This is strategic, not weakness. Escalation signals seriousness.`},
+
+  {id:"neg_close",category:"Negotiation",title:"Closing Techniques — Four Methods",text:`SOURCE: Voss + Challenger Sale
+Use only when: Pain Score ≥ 4 + Economic Buyer involved + proposal discussed + no open objections.
+
+CHECK BEFORE CLOSING — get "That's Right" (Voss):
+"Sa verific ca am inteles: [pain summary]. E corect?"
+If they say "Exact" → proceed.
+If they say "Aveti dreptate" → not ready. More discovery needed.
+
+━━━ METHOD 1: ASSUMPTIVE CLOSE ━━━
+Best when: alignment is clear, only timing is open.
+"Cand va este mai convenabil sa incepem — la inceputul lui [LUNA] sau la mijlocul lunii?"
+Assumes yes. Only asks about timing.
+
+━━━ METHOD 2: SUMMARY CLOSE ━━━
+Best when: all terms have been discussed.
+"Am convenit: [X] persoane, profil [UA/Asiatic], start [DATA], via [ENTITATE], rata [X] RON/luna. Semnam?"
+No ambiguity. Forces a clear yes or no.
+
+━━━ METHOD 3: TRIAL CLOSE ━━━
+Best when: testing if last objection is the real one.
+"Daca rezolvam problema cu [specific concern] — sunteti pregatiti sa mergem mai departe?"
+YES → resolve it → close immediately.
+Another concern appears → address → trial close again.
+
+━━━ METHOD 4: ESCALATION CLOSE ━━━
+Best when: they stall and you suspect authority is the issue.
+"Lasati-ma sa aduc directorul nostru intr-un apel de 20 minute — poate autoriza lucruri pe care eu nu le pot."
+Creates seriousness. Often accelerates decisions.
+
+AFTER EVERY CLOSE ATTEMPT:
+YES → confirm in writing same day.
+NOT YET → "Ce anume lipseste pentru a lua decizia?"
+NO → "Ce s-a schimbat fata de ultima noastra conversatie?" → update Lost Reason in CRM.`},
+
 ];
 
 function TemplatesTab({isAdmin, templates, setTemplates}) {
@@ -3864,8 +4215,9 @@ function PlaybookTab({playbook,setPlaybook,isAdmin}) {
 }
 
 // ─── AI CHAT TAB ─────────────────────────────────────────────────
-function AIChatTab({locs,hqs,users,cur}) {
+function AIChatTab({locs,hqs,users,cur,onUpdateLoc,onUpdateHQ}) {
   const [msgs,setMsgs]=useState([]); const [input,setInput]=useState(""); const [loading,setLoading]=useState(false);
+  const [pending,setPending]=useState(null);
   const bottomRef=useRef(null); const taRef=useRef(null);
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
 
@@ -3875,21 +4227,93 @@ function AIChatTab({locs,hqs,users,cur}) {
     const placed=won.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
     const hot=active.filter(l=>l.temp==="🔥 Hot");
     const overdue=active.filter(l=>isOD(l.nextStepDate,l.stage));
-    return `You are the internal sales AI for Gremi Personal Romania. You are talking with ${cur.name} (${cur.role}).
-Pipeline: ${locs.length} total locations, ${active.length} active, ${won.length} won, ${placed} workers placed.
-Hot deals: ${hot.length}, Overdue: ${overdue.length}
-Companies: ${hqs.length} companies. Key clients: ${hqs.slice(0,5).map(h=>h.company).join(", ")}
-Active stages: ${STAGES.map(s=>{const c=active.filter(l=>l.stage===s).length;return c>0?`${s}(${c})`:null}).filter(Boolean).join(", ")}
-Respond in the user's language. Be specific, direct, and helpful.`;
+    // Full HQ details
+    const hqDetails = hqs.slice(0,8).map(h=>`${h.company} (${h.industry||"?"}): ${h.employees||"?"}emp, turnover ${h.annualTurnover||"?"}, intelligence: ${h.intelligence?.substring(0,100)||"none"}`).join("\n");
+    // Full active deals with SPIN
+    const dealDetails = active.slice(0,10).map(l=>{
+      const hq=hqs.find(h=>h.id===l.parentId);
+      return `${l.company}/${l.location} [${l.stage}/${l.temp}]: ${l.workers||"?"}w ${l.workerType||""}, contact:${l.contact||"?"}(${l.role||"?"}), pain:${l.painScore||"?"}/5, SPIN-P:"${l.spin?.p?.substring(0,60)||"empty"}", nextStep:${l.nextStep||"none"} by ${l.nextStepDate||"?"}`;
+    }).join("\n");
+    return `You are the internal sales AI for Gremi Personal Romania. Talking with ${cur.name} (${cur.role}).
+
+PIPELINE SUMMARY:
+Total: ${locs.length} locations, ${active.length} active, ${won.length} won, ${placed} workers placed.
+Hot: ${hot.length}, Overdue: ${overdue.length}
+Stages: ${STAGES.map(s=>{const c=active.filter(l=>l.stage===s).length;return c>0?`${s}(${c})`:null}).filter(Boolean).join(", ")}
+
+COMPANIES (${hqs.length} total):
+${hqDetails}
+
+ACTIVE DEALS (top 10):
+${dealDetails}
+
+CAPABILITIES: You can suggest CRM field updates. When recommending changes to a specific deal or company, end your response with a JSON block:
+\`\`\`json
+{"action":"update_loc","company":"EXACT company name","location":"EXACT location name","fields":{"stage":"...","nextStep":"...","painScore":3,"spin_p":"...","notes":"..."}}
+\`\`\`
+Or for HQ:
+\`\`\`json
+{"action":"update_hq","company":"EXACT company name","fields":{"intelligence":"...","annualTurnover":"...","employees":"..."}}
+\`\`\`
+Only include fields you are confident about. Respond in the user's language.`;
+  };
+
+  const parseAction=(text)=>{
+    const m=text.match(/```json\s*([\s\S]*?)```/);
+    if(!m)return null;
+    try{return JSON.parse(m[1].trim());}catch(e){return null;}
+  };
+  const stripAction=(text)=>text.replace(/```json[\s\S]*?```/g,"").trim();
+
+  const applyAction=(action)=>{
+    if(!action||!onUpdateLoc||!onUpdateHQ)return;
+    if(action.action==="update_loc"){
+      const loc=locs.find(l=>l.company.toLowerCase()===action.company?.toLowerCase()&&(!action.location||l.location?.toLowerCase()===action.location?.toLowerCase()));
+      if(!loc){setMsgs(prev=>[...prev,{role:"system",content:`❌ Location not found: ${action.company} / ${action.location}`}]);return;}
+      const patch={};
+      const f=action.fields||{};
+      if(f.stage)patch.stage=f.stage;
+      if(f.nextStep)patch.nextStep=f.nextStep;
+      if(f.nextStepDate)patch.nextStepDate=f.nextStepDate;
+      if(f.painScore)patch.painScore=parseInt(f.painScore);
+      if(f.notes)patch.notes=(loc.notes?loc.notes+"\n\n":"")+"[AI] "+f.notes;
+      if(f.spin_p||f.spin_s||f.spin_i||f.spin_n){
+        const spin={...loc.spin};
+        if(f.spin_s)spin.s=f.spin_s;if(f.spin_p)spin.p=f.spin_p;if(f.spin_i)spin.i=f.spin_i;if(f.spin_n)spin.n=f.spin_n;
+        patch.spin=spin;
+      }
+      if(Object.keys(patch).length>0){
+        const act={id:Date.now(),type:"Note",note:"[AI Chat] Updated: "+Object.keys(patch).join(", "),date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};
+        patch.activities=[act,...(loc.activities||[])];
+        onUpdateLoc(loc.id,patch);
+        setMsgs(prev=>[...prev,{role:"system",content:`✅ Updated ${loc.company}/${loc.location}: ${Object.keys(f).join(", ")}`}]);
+      }
+    } else if(action.action==="update_hq"){
+      const hq=hqs.find(h=>h.company.toLowerCase()===action.company?.toLowerCase());
+      if(!hq){setMsgs(prev=>[...prev,{role:"system",content:`❌ Company not found: ${action.company}`}]);return;}
+      const hqPatch={};
+      const f=action.fields||{};
+      if(f.intelligence)hqPatch.intelligence=(hq.intelligence?hq.intelligence+"\n\n":"")+"[AI] "+f.intelligence;
+      if(f.annualTurnover)hqPatch.annualTurnover=f.annualTurnover;
+      if(f.employees)hqPatch.employees=f.employees;
+      if(f.seasonality)hqPatch.seasonality=f.seasonality;
+      if(Object.keys(hqPatch).length>0){
+        onUpdateHQ(hq.id,hqPatch);
+        setMsgs(prev=>[...prev,{role:"system",content:`✅ Updated company ${hq.company}: ${Object.keys(f).join(", ")}`}]);
+      }
+    }
+    setPending(null);
   };
 
   const send=async()=>{
     const text=input.trim(); if(!text||loading) return;
-    const newMsgs=[...msgs,{role:"user",content:text}]; setMsgs(newMsgs); setInput(""); setLoading(true);
+    const newMsgs=[...msgs,{role:"user",content:text}]; setMsgs(newMsgs); setInput(""); setLoading(true); setPending(null);
     try{
-      const res=await fetch(AI_PROXY,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:ctx(),messages:newMsgs.map(m=>({role:m.role,content:m.content}))})});
-      const data=await res.json(); const raw=data.content?.[0]?.text||"Error.";
-      setMsgs(prev=>[...prev,{role:"assistant",content:raw}]);
+      const res=await fetch(AI_PROXY,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:ctx(),messages:newMsgs.filter(m=>m.role!=="system").map(m=>({role:m.role,content:m.content}))})});
+      const d=await res.json(); const raw=d.content?.[0]?.text||"Error.";
+      const action=parseAction(raw); const clean=stripAction(raw);
+      setMsgs(prev=>[...prev,{role:"assistant",content:clean}]);
+      if(action)setPending(action);
     }catch(e){setMsgs(prev=>[...prev,{role:"assistant",content:"Error: "+e.message}]);}
     setLoading(false);
   };
@@ -3933,6 +4357,25 @@ Respond in the user's language. Be specific, direct, and helpful.`;
         {loading&&<div style={{display:"flex",gap:6}}><div style={{width:26,height:26,borderRadius:6,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🤖</div><div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px",display:"flex",gap:4}}>{[0,0.2,0.4].map((d,i)=><span key={i} style={{width:6,height:6,background:C.blue,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}</div></div>}
         <div ref={bottomRef}/>
       </div>
+      {pending&&(
+        <div style={{borderTop:`1px solid ${C.teal}44`,background:`${C.teal}08`,padding:"10px 12px",flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.teal}}>🤖 SUGGESTED UPDATE — {pending.action==="update_hq"?"Company":"Deal"}: <span style={{color:C.txt}}>{pending.company}{pending.location?` / ${pending.location}`:""}</span></div>
+            <div style={{display:"flex",gap:5}}>
+              <button className="btn" onClick={()=>applyAction(pending)} style={{background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"6px 14px",fontSize:12,borderRadius:7}}>✅ Apply</button>
+              <button className="btn" onClick={()=>setPending(null)} style={{background:C.bg4,color:C.txt3,padding:"6px 10px",fontSize:12,borderRadius:7,border:`1px solid ${C.border}`}}>✕</button>
+            </div>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+            {Object.entries(pending.fields||{}).map(([k,v])=>(
+              <div key={k} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:11}}>
+                <span style={{color:C.teal,fontWeight:600}}>{k.replace(/_/g," ")}: </span>
+                <span style={{color:C.txt2}}>{String(v).substring(0,60)}{String(v).length>60?"...":""}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{borderTop:`1px solid ${C.border}`,padding:"10px 12px",display:"flex",gap:8,alignItems:"flex-end",flexShrink:0,background:C.bg0}}>
         <textarea ref={taRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder="Ask about your pipeline... (Enter to send)" rows={2} style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:8,padding:"10px 12px",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.5,outline:"none"}}/>
         <button className="btn" onClick={send} disabled={loading||!input.trim()} style={{background:loading||!input.trim()?C.bg4:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:loading||!input.trim()?C.txt3:"#fff",width:40,height:40,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>↑</button>
@@ -4698,7 +5141,7 @@ export default function GremiCRM() {
                   <div key={hqId} style={{marginBottom:10,background:C.bg2,border:`1px solid ${hasOverdue?C.red+"33":C.border}`,borderRadius:12,overflow:"hidden"}}>
                     {/* HQ Header — always visible, click to expand/collapse */}
                     <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",cursor:"pointer",borderBottom:isExpanded?`1px solid ${C.border}`:"none",background:`${C.indigo}08`}}
-                      onClick={toggle}>
+                      onClick={()=>{ if(hq) setSelHQ(hq); }}>
                       <div style={{width:22,height:22,background:`${C.indigo}22`,border:`1px solid ${C.indigo}44`,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:C.indigo,flexShrink:0}}>🏢</div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:12,fontWeight:700,color:C.indigo,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{hq?.company||"No Company"}</div>
@@ -4710,15 +5153,15 @@ export default function GremiCRM() {
                         </div>
                       </div>
                       <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-                        <button className="btn" onClick={e=>{e.stopPropagation();if(hq)setSelHQ(hq);}}
-                          style={{background:`${C.indigo}18`,color:C.indigo,padding:"4px 8px",fontSize:10,borderRadius:5,border:`1px solid ${C.indigo}33`}}>Details</button>
-                        <span style={{color:C.txt3,fontSize:12,lineHeight:1}}>{isExpanded?"▲":"▼"}</span>
+                        <button className="btn" onClick={e=>{e.stopPropagation();setExpandedHQs(prev=>({...prev,[hqId]:!isExpanded}));}}
+                          style={{background:isExpanded?`${C.indigo}22`:C.bg3,color:isExpanded?C.indigo:C.txt3,padding:"4px 10px",fontSize:11,borderRadius:5,border:`1px solid ${isExpanded?C.indigo+"44":C.border}`,fontWeight:700}}>
+                          {isExpanded?"−":"+"}
+                        </button>
                       </div>
                     </div>
-                    {/* Locations — collapsible */}
+                    {/* Locations — collapsible, click HQ header to open HQ modal */}
                     {isExpanded&&(
                     <div>
-                    {shown.map(l=>{
                     {shown.map(l=>{
                       const sc=getSC()[l.stage]||C.txt3;
                       const od=isOD(l.nextStepDate,l.stage);
@@ -4759,7 +5202,7 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-                    })}
+
                     </div>)}
                   </div>
                 );
@@ -4771,7 +5214,7 @@ export default function GremiCRM() {
         {tab==="team"&&<TeamTab users={users} locs={locs} onSelect={l=>{setSelLoc(l);setTab("leads");}}/>}
         {tab==="playbook"&&<PlaybookTab playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin}/>}
         {tab==="templates"&&<TemplatesTab isAdmin={isAdmin} templates={templates} setTemplates={setTemplates}/>}
-        {tab==="ai"&&<AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser}/>}
+        {tab==="ai"&&<AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser} onUpdateLoc={updLoc} onUpdateHQ={updHQ}/>}
         {tab==="archive"&&<ArchiveTab archive={archive} onRestore={restore} isAdmin={isAdmin}/>}
         {tab==="settings"&&<SettingsTab curUser={curUser} users={users} setUsers={setUsers} services={services} setServices={setServices} entities={entities} setEntities={setEntities} playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin} onChangePwd={()=>setShowPwd(true)} onAdmin={()=>setShowAdmin(true)} theme={theme} setTheme={t=>{setTheme(t);C=THEMES[t]||THEMES.navy;try{localStorage.setItem("gremi_theme",t);}catch(e){}}}/>}
       </div>
@@ -4818,7 +5261,7 @@ export default function GremiCRM() {
                       onCreated={(preview)=>{handleConversationalCreate(preview);setShowQuickAI(false);}} forceOpen={true}/>
                   </div>
                 ):(
-                  <AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser}/>
+                  <AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser} onUpdateLoc={updLoc} onUpdateHQ={updHQ}/>
                 )}
               </>
             );
@@ -4842,7 +5285,8 @@ export default function GremiCRM() {
           onDeleteHQ={()=>archiveHQ(selHQ)}
           onAddLoc={()=>{setEditLoc({...EMPTY_LOC,parentId:selHQ.id,company:selHQ.company,salesId:curUser.id});setSelHQ(null);}}
           onSelectLoc={l=>setSelLoc(l)}
-          onSaveChecklist={patch=>updHQ(selHQ.id,patch)}/>
+          onSaveChecklist={patch=>updHQ(selHQ.id,patch)}
+          onUpdateHQ={updHQ} onUpdateLoc={updLoc} curUser={curUser}/>
       )}
       {editLoc&&(
         <LocFormModal form={editLoc} setForm={setEditLoc} hqs={hqs} users={users} isAdmin={isAdmin} services={services} entities={entities} editMode={!!editLoc.id}
