@@ -5225,8 +5225,70 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
 
   const loadSummary=async()=>{
     setSummaryLoading(true);
-    const ctx=`Pipeline for ${cur.name}: Overdue: ${overdue.length} ${overdue.slice(0,3).map(l=>`${l.company}(${l.stage})`).join("; ")}. Meetings today: ${meetingsToday.length}. Hot/no-step: ${hotNoStep.length}. Top deals: ${active.filter(l=>parseInt(l.workers)>0).sort((a,b)=>(parseInt(b.workers)||0)-(parseInt(a.workers)||0)).slice(0,3).map(l=>`${l.company} ${l.workers}w ${l.stage}`).join("; ")}`;
-    const t=await aiCall("You are a sales AI for Gremi Personal Romania. Write a 2-3 sentence morning briefing. Be direct, specific, name the highest-priority deal. One clear recommendation. No fluff.",ctx,400);
+    const today2=new Date().toISOString().slice(0,10);
+    const dayName=new Date().toLocaleDateString("pl-PL",{weekday:"long"});
+    // Full pipeline data
+    const overdueList=overdue.map(l=>`- ${l.company}/${l.location} [${l.stage}] next step: "${l.nextStep||"brak"}" było na ${l.nextStepDate}`).join("\n");
+    const todayList=meetingsToday.map(l=>`- ${l.company} [${l.stage}] ${l.nextStep||""}`).join("\n");
+    const hotList=active.filter(l=>l.temp==="🔥 Hot").map(l=>`- ${l.company} [${l.stage}] pain:${l.painScore||"?"}/5 workers:${l.workers||"?"} nextStep:"${l.nextStep||"brak"}" on ${l.nextStepDate||"—"}`).join("\n");
+    const negotiList=active.filter(l=>["Negotiation","Proposal Sent"].includes(l.stage)).map(l=>`- ${l.company} ${l.workers||"?"}w [${l.stage}] contact:${l.contact||"?"}`).join("\n");
+    const noContactList=active.filter(l=>{if(!l.lastContact)return true;return (new Date()-new Date(l.lastContact))>7*24*3600*1000;}).slice(0,5).map(l=>`- ${l.company} [${l.stage}] last contact: ${l.lastContact||"nigdy"}`).join("\n");
+    const newUnqList=active.filter(l=>l.stage==="New"&&!l.spin?.p).slice(0,5).map(l=>`- ${l.company} county:${l.county||"?"} workers:${l.workers||"?"}`).join("\n");
+    const workload=buildWorkloadContext(cur.id, locs, users, null, null);
+
+    // What was already done today (from activity logs)
+    const todayDone=locs.flatMap(l=>(l.activities||[]).filter(a=>a.date===today2).map(a=>({company:l.company,type:a.type,note:a.note||""})));
+    const todayDoneList=todayDone.map(a=>`- ${a.company}: ${a.type} — ${a.note.substring(0,80)}`).join("\n");
+
+    const ctx=`Dzisiaj: ${today2} (${dayName})
+Handlowiec: ${cur.name}
+Pipeline: ${active.length} aktywnych, ${won.length} wygranych, ${placed} pracowników, pipeline RON ~${Math.round(pipe/1000)}k
+
+ZALEGŁE (${overdue.length}):
+${overdueList||"Brak zaległości ✅"}
+
+ZAPLANOWANE DZISIAJ/JUTRO (${meetingsToday.length}):
+${todayList||"Brak zaplanowanych działań"}
+
+HOT DEALS (${active.filter(l=>l.temp==="🔥 Hot").length}):
+${hotList||"Brak hot dealów"}
+
+W NEGOCJACJI / PROPOZYCJA WYSŁANA:
+${negotiList||"Brak"}
+
+BEZ KONTAKTU >7 DNI:
+${noContactList||"Brak"}
+
+NOWE NIEKWALIFIKOWANE LEADY:
+${newUnqList||"Brak"}
+
+JUŻ ZROBIONE DZISIAJ (${todayDone.length} akcji):
+${todayDoneList||"Nic jeszcze nie zalogowano dzisiaj"}
+
+ETAPY: ${STAGES.map(s=>stageCount[s]>0?s+":"+stageCount[s]:null).filter(Boolean).join(", ")}
+${workload}`;
+
+    const sys=`Jesteś AI asystentem sprzedaży dla Gremi Personal Romania. 
+Piszesz poranny briefing dla handlowca ${cur.name}.
+
+Twoje zadanie: napisz ZAKTUALIZOWANY plan na resztę dnia — uwzględnij co już zostało zrobione dziś.
+
+STRUKTURA ODPOWIEDZI (zawsze po polsku, konkretnie, bez owijania w bawełnę):
+
+✅ JUŻ ZROBIONE DZIŚ — krótko co zostało wykonane (jeśli są dane)
+🔴 PILNE — zrób teraz (zaległości, hot deals bez next step)
+🟡 ZAPLANOWANE NA DZIŚ — co już jest w harmonogramie  
+🟢 REKOMENDOWANE DZIŚ — co proponujesz zrobić (uzasadnij dlaczego)
+🔵 NOWE LEADY — ile i jakie nowe firmy warto dziś prospektować (zawsze min. 10 nowych kontaktów dziennie jako norma minimalna)
+⚡ PRIORYTET #1 — jeden deal/akcja którą MUSISZ wykonać dziś
+
+Zasady:
+- Wymieniaj konkretne nazwy firm, nie ogólniki
+- Uwzględnij capacity handlowca (ile czasu ma realnie)
+- Nie zapomnij o pozyskiwaniu nowych leadów — to zawsze w planie
+- Bądź jak doświadczony sales manager który dobrze zna pipeline`;
+
+    const t=await aiCall(sys,ctx,900);
     setSummary(t);setSummaryLoading(false);
   };
   const loadAnalysis=async()=>{
@@ -5290,12 +5352,13 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
               <div style={{fontSize:10,color:C.txt3}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long"})}</div>
             </div>
             <button className="btn" onClick={section==="actions"?loadSummary:loadAnalysis} disabled={summaryLoading||aiLoading}
-              style={{background:`${C.teal}18`,color:C.teal,padding:"5px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.teal}33`}}>
-              {(summaryLoading||aiLoading)?"...":"↻"}
+              style={{background:`${C.teal}18`,color:C.teal,padding:"5px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.teal}33`}}
+              title="Refresh brief — AI sees what you've done today">
+              {(summaryLoading||aiLoading)?"...":"↻ Refresh"}
             </button>
           </div>
           {(summaryLoading||aiLoading)&&<div style={{display:"flex",gap:4}}>{[0,.2,.4].map((d,i)=><span key={i} style={{width:6,height:6,background:C.teal,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}</div>}
-          {section==="actions"&&summary&&!summaryLoading&&<div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{summary}</div>}
+          {section==="actions"&&summary&&!summaryLoading&&<div style={{fontSize:12,color:C.txt2,lineHeight:1.75,whiteSpace:"pre-wrap"}}>{summary}</div>}
           {section==="stats"&&aiAnalysis&&!aiLoading&&<div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{aiAnalysis}</div>}
         </div>
 
@@ -5896,7 +5959,7 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-                    
+
                     </div>)}
                   </div>
                 );
