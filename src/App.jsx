@@ -4556,6 +4556,61 @@ function ConfirmDelete({label, onConfirm}) {
       <span style={{fontSize:11,color:C.red,fontWeight:600}}>Sure? This cannot be undone.</span>
       <button className="btn" onClick={onConfirm} style={{background:C.red,color:"#fff",padding:"5px 12px",fontSize:11,borderRadius:6,fontWeight:700}}>Yes, delete</button>
       <button className="btn" onClick={()=>setStep(0)} style={{background:C.bg3,color:C.txt3,padding:"5px 10px",fontSize:11,borderRadius:6,border:`1px solid ${C.border}`}}>Cancel</button>
+
+      {/* Team Today modal */}
+      {(isAdmin||isTeamLead)&&showTeamToday&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setShowTeamToday(false);}}>
+          <div style={{background:C.bg1,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:700,maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",flexShrink:0}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:15,color:C.txt}}>📅 Team Today</div>
+                <div style={{fontSize:11,color:C.txt3}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long"})}</div>
+              </div>
+              <button className="xb" onClick={()=>setShowTeamToday(false)}>×</button>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:8}}>
+              {(()=>{
+                const todayStr=new Date().toISOString().slice(0,10);
+                return users.filter(u=>u.active).map(u=>{
+                  const todayActs=locs.flatMap(l=>(l.activities||[]).filter(a=>a.date===todayStr&&l.salesId===u.id).map(a=>({company:l.company,type:a.type,note:a.note||""})));
+                  const overdueCount=locs.filter(l=>l.salesId===u.id&&isOD(l.nextStepDate,l.stage)).length;
+                  const hasPlan=u.daily_plan&&u.daily_plan_date===todayStr;
+                  return(
+                    <div key={u.id} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:hasPlan||todayActs.length>0?8:0}}>
+                        <div style={{width:32,height:32,borderRadius:9,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:14,color:"#fff",flexShrink:0}}>{u.name[0]}</div>
+                        <div style={{flex:1}}>
+                          <span style={{fontWeight:600,fontSize:13,color:C.txt}}>{u.name}</span>
+                          <span style={{fontSize:10,color:u.role==="admin"?C.purple:u.role==="team_lead"?C.amber:C.txt3,marginLeft:6}}>{u.role==="admin"?"ADMIN":u.role==="team_lead"?"TL":""}</span>
+                          <span style={{fontSize:10,color:C.txt3,marginLeft:8}}>{todayActs.length} actions today</span>
+                          {overdueCount>0&&<span style={{fontSize:10,color:C.red,marginLeft:8,fontWeight:600}}>⚠ {overdueCount} overdue</span>}
+                        </div>
+                        <span style={{fontSize:14}}>{{en:"🇬🇧",pl:"🇵🇱",ro:"🇷🇴",ru:"🇷🇺"}[u.brief_lang||"en"]}</span>
+                      </div>
+                      {hasPlan&&(
+                        <div style={{fontSize:11,color:C.txt2,lineHeight:1.65,whiteSpace:"pre-wrap",background:C.bg3,borderRadius:7,padding:"8px 10px",borderLeft:`3px solid ${C.blue}`,marginBottom:todayActs.length>0?6:0}}>
+                          <div style={{fontSize:9,color:C.blue2,fontWeight:700,marginBottom:3}}>📝 PLAN</div>
+                          {u.daily_plan.substring(0,300)}{u.daily_plan.length>300?"...":""}
+                        </div>
+                      )}
+                      {todayActs.length>0&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                          <div style={{fontSize:9,color:C.teal,fontWeight:700,marginBottom:2}}>✅ DONE TODAY</div>
+                          {todayActs.slice(0,5).map((a,i)=>(
+                            <div key={i} style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>· {a.company}: {a.type}{a.note?" — "+a.note.substring(0,60):""}</div>
+                          ))}
+                          {todayActs.length>5&&<div style={{fontSize:10,color:C.txt3}}>+{todayActs.length-5} more</div>}
+                        </div>
+                      )}
+                      {!hasPlan&&todayActs.length===0&&<div style={{fontSize:11,color:C.txt3,fontStyle:"italic"}}>No plan, no activity yet</div>}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -4853,60 +4908,6 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,templates,setTemplates}) {
         {tab==="scripts"&&<ScriptsTab tplData={tplData} isAdmin={isAdmin} setTemplates={setTemplates}/>}
       </div>
 
-      {/* Team Today modal */}
-      {(isAdmin||isTeamLead)&&showTeamToday&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setShowTeamToday(false);}}>
-          <div style={{background:C.bg1,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:700,maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
-            <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",flexShrink:0}}>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:15,color:C.txt}}>📅 Team Today</div>
-                <div style={{fontSize:11,color:C.txt3}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long"})}</div>
-              </div>
-              <button className="xb" onClick={()=>setShowTeamToday(false)}>×</button>
-            </div>
-            <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:8}}>
-              {(()=>{
-                const todayStr=new Date().toISOString().slice(0,10);
-                return users.filter(u=>u.active).map(u=>{
-                  const todayActs=locs.flatMap(l=>(l.activities||[]).filter(a=>a.date===todayStr&&l.salesId===u.id).map(a=>({company:l.company,type:a.type,note:a.note||""})));
-                  const overdueCount=locs.filter(l=>l.salesId===u.id&&isOD(l.nextStepDate,l.stage)).length;
-                  const hasPlan=u.daily_plan&&u.daily_plan_date===todayStr;
-                  return(
-                    <div key={u.id} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:hasPlan||todayActs.length>0?8:0}}>
-                        <div style={{width:32,height:32,borderRadius:9,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:14,color:"#fff",flexShrink:0}}>{u.name[0]}</div>
-                        <div style={{flex:1}}>
-                          <span style={{fontWeight:600,fontSize:13,color:C.txt}}>{u.name}</span>
-                          <span style={{fontSize:10,color:u.role==="admin"?C.purple:u.role==="team_lead"?C.amber:C.txt3,marginLeft:6}}>{u.role==="admin"?"ADMIN":u.role==="team_lead"?"TL":""}</span>
-                          <span style={{fontSize:10,color:C.txt3,marginLeft:8}}>{todayActs.length} actions today</span>
-                          {overdueCount>0&&<span style={{fontSize:10,color:C.red,marginLeft:8,fontWeight:600}}>⚠ {overdueCount} overdue</span>}
-                        </div>
-                        <span style={{fontSize:14}}>{{en:"🇬🇧",pl:"🇵🇱",ro:"🇷🇴",ru:"🇷🇺"}[u.brief_lang||"en"]}</span>
-                      </div>
-                      {hasPlan&&(
-                        <div style={{fontSize:11,color:C.txt2,lineHeight:1.65,whiteSpace:"pre-wrap",background:C.bg3,borderRadius:7,padding:"8px 10px",borderLeft:`3px solid ${C.blue}`,marginBottom:todayActs.length>0?6:0}}>
-                          <div style={{fontSize:9,color:C.blue2,fontWeight:700,marginBottom:3}}>📝 PLAN</div>
-                          {u.daily_plan.substring(0,300)}{u.daily_plan.length>300?"...":""}
-                        </div>
-                      )}
-                      {todayActs.length>0&&(
-                        <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                          <div style={{fontSize:9,color:C.teal,fontWeight:700,marginBottom:2}}>✅ DONE TODAY</div>
-                          {todayActs.slice(0,5).map((a,i)=>(
-                            <div key={i} style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>· {a.company}: {a.type}{a.note?" — "+a.note.substring(0,60):""}</div>
-                          ))}
-                          {todayActs.length>5&&<div style={{fontSize:10,color:C.txt3}}>+{todayActs.length-5} more</div>}
-                        </div>
-                      )}
-                      {!hasPlan&&todayActs.length===0&&<div style={{fontSize:11,color:C.txt3,fontStyle:"italic"}}>No plan, no activity yet</div>}
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -5547,46 +5548,7 @@ Rules:
             </div>
           )}
 
-          {/* Business priorities — editable */}
-          {section==="actions"&&(
-            <div style={{background:C.bg2,border:`1px solid ${C.amber}33`,borderRadius:12,padding:12}}>
-              <div style={{display:"flex",alignItems:"center",marginBottom:editingPriorities?8:6}}>
-                <span style={{fontSize:10,fontWeight:700,color:C.amber,letterSpacing:"0.08em",flex:1}}>🎯 BUSINESS PRIORITIES</span>
-                <button className="btn" onClick={()=>setEditingPriorities(e=>!e)}
-                  style={{background:`${C.amber}15`,color:C.amber,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.amber}33`}}>
-                  {editingPriorities?"✓ Zamknij":"✎ Edit"}
-                </button>
-              </div>
-              {editingPriorities?(
-                <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  <div>
-                    <div className="lbl">PRIORITY REGIONS / COUNTY (comma separated)</div>
-                    <input type="text" className="fi" value={priorities.counties.join(", ")}
-                      onChange={e=>savePriorities({...priorities,counties:e.target.value.split(",").map(s=>s.trim()).filter(Boolean)})}
-                      placeholder="Ilfov, Giurgiu, Bucharest"/>
-                  </div>
-                  <div>
-                    <div className="lbl">PRIORITY INDUSTRIES (comma separated)</div>
-                    <input type="text" className="fi" value={priorities.industries.join(", ")}
-                      onChange={e=>savePriorities({...priorities,industries:e.target.value.split(",").map(s=>s.trim()).filter(Boolean)})}
-                      placeholder="Transport, Logistică, Producție"/>
-                  </div>
-                  <div>
-                    <div className="lbl">EXTRA NOTES FOR AI</div>
-                    <textarea className="fi" rows={2} value={priorities.notes||""}
-                      onChange={e=>savePriorities({...priorities,notes:e.target.value})}
-                      placeholder="np. skupiamy się na firmach podobnych do ROAD READY, min 10 nowych leadów/dzień"/>
-                  </div>
-                </div>
-              ):(
-                <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                  {priorities.counties.map(c=><span key={c} style={{background:`${C.amber}15`,color:C.amber,border:`1px solid ${C.amber}33`,borderRadius:12,padding:"2px 9px",fontSize:11}}>📍{c}</span>)}
-                  {priorities.industries.map(i=><span key={i} style={{background:`${C.blue}12`,color:C.blue2,border:`1px solid ${C.blue}33`,borderRadius:12,padding:"2px 9px",fontSize:11}}>🏭{i}</span>)}
-                  {priorities.notes&&<span style={{fontSize:11,color:C.txt3,fontStyle:"italic",width:"100%",marginTop:2}}>{priorities.notes.substring(0,80)}{priorities.notes.length>80?"...":""}</span>}
-                </div>
-              )}
-            </div>
-          )}
+
         </div>
 
         {section==="actions"&&(
@@ -6196,7 +6158,7 @@ export default function GremiCRM() {
           </div>
         )}
 
-        {tab==="team"&&<TeamTab users={users} locs={locs} onSelect={l=>{setSelLoc(l);setTab("leads");}}/>}
+        {tab==="team"&&<TeamTab users={users} locs={locs} onSelect={l=>{setSelLoc(l);setTab("leads");}} isAdmin={isAdmin} isTeamLead={isTeamLead} curUser={curUser}/>}
         {tab==="playbook"&&<PlaybookTab playbook={playbook} setPlaybook={setPlaybook} isAdmin={isAdmin} templates={templates} setTemplates={setTemplates}/>}
         {tab==="ai"&&<AIChatTab locs={locs} hqs={hqs} users={users} cur={curUser} onUpdateLoc={updLoc} onUpdateHQ={updHQ} onSaveLoc={saveLoc} onSaveHQ={saveHQ}/>}
         {tab==="archive"&&<ArchiveTab archive={archive} onRestore={restore} isAdmin={isAdmin}/>}
