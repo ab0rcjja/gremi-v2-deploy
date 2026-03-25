@@ -26,7 +26,121 @@ const aiCall = async (system, userMsg, maxTok=1500) => {
     });
     const d = await res.json(); return d.content?.[0]?.text || "";
   } catch(e) { return ""; }
+}
+
+// ─── GLOBAL WORKLOAD + SCHEDULING CONTEXT ────────────────────────
+// Inject into any AI prompt that involves scheduling or next steps
+const buildWorkloadContext = (salesId, locs, users, playbook, currentStage) => {
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+  const dayName = today.toLocaleDateString("en-GB",{weekday:"long"});
+  const salesperson = (users||[]).find(u=>u.id===salesId);
+  const myLocs = (locs||[]).filter(l=>l.salesId===salesId&&!["Closed Won","Closed Lost"].includes(l.stage));
+
+  // ── Daily capacity model ──
+  // Estimated time costs per activity type
+  const CAPACITY = {
+    cold_call: 15,        // min per cold call (prep + call + log)
+    followup_call: 20,    // min per follow-up call
+    discovery_call: 45,   // min per discovery call
+    meeting_prep: 60,     // min to prepare for meeting
+    meeting_online: 60,   // min for online meeting
+    meeting_onsite: 180,  // min for on-site meeting (travel included)
+    proposal_prep: 120,   // min to prepare a proposal
+    email_outreach: 10,   // min per email
+    crm_update: 10,       // min per CRM update
+  };
+  const DAILY_WORK_MINUTES = 420; // 7 hours of productive sales time
+
+  // ── What's already scheduled this week (Mon-Fri) ──
+  const weekDays = [];
+  for(let i=0;i<14;i++){
+    const d=new Date(today); d.setDate(d.getDate()+i);
+    if(d.getDay()>0&&d.getDay()<6) weekDays.push(d.toISOString().slice(0,10));
+  }
+  
+  // Count scheduled activities per day
+  const dayLoad = {};
+  weekDays.forEach(d=>{ dayLoad[d]={items:[],estimatedMinutes:0}; });
+  
+  myLocs.forEach(l=>{
+    if(!l.nextStepDate||!dayLoad[l.nextStepDate]) return;
+    const stage = l.stage;
+    let mins = CAPACITY.followup_call;
+    if(stage==="Meeting Scheduled") mins = CAPACITY.meeting_prep + CAPACITY.meeting_online;
+    else if(stage==="Meeting Done") mins = CAPACITY.proposal_prep;
+    else if(stage==="New"||stage==="Contacted") mins = CAPACITY.cold_call;
+    else if(stage==="Interested") mins = CAPACITY.discovery_call;
+    else if(stage==="Proposal Sent") mins = CAPACITY.followup_call;
+    else if(stage==="Negotiation") mins = CAPACITY.followup_call;
+    dayLoad[l.nextStepDate].items.push({company:l.company, stage, mins});
+    dayLoad[l.nextStepDate].estimatedMinutes += mins;
+  });
+
+  // ── Find first available day with capacity ──
+  const estimateNewActivity = (stage) => {
+    if(!stage) return CAPACITY.followup_call;
+    if(stage==="Meeting Scheduled") return CAPACITY.meeting_prep + CAPACITY.meeting_online;
+    if(stage==="Interested") return CAPACITY.discovery_call;
+    if(stage==="Proposal Sent") return CAPACITY.followup_call;
+    return CAPACITY.followup_call;
+  };
+  const neededMins = estimateNewActivity(currentStage);
+  
+  const firstAvailable = weekDays.find(d=>{
+    const load = dayLoad[d]?.estimatedMinutes||0;
+    return (load + neededMins) <= DAILY_WORK_MINUTES;
+  }) || weekDays[0];
+
+  // ── Playbook timing rules for stage ──
+  const PLAYBOOK_TIMING = {
+    "New":               "Research + first contact within 24h of lead entry",
+    "Contacted":         "3 attempts over 7 days: Day1 call+email, Day3 call+LinkedIn, Day7 email",
+    "Interested":        "Book discovery meeting within 5 business days",
+    "Meeting Scheduled": "Confirm meeting 24h before; prepare Commercial Insight day before",
+    "Meeting Done":      "Send proposal within 24h; schedule follow-up call for Day 3",
+    "Proposal Sent":     "Day 3: call. Day 7: value email. Day 14: breakup if no response",
+    "Negotiation":       "Respond to pushback within 24h; close or escalate within 10 days",
+    "No Answer":         "4 attempts: Day1, Day3, Day7, Day14 — then archive or 60-day reminder",
+    "Closed Lost":       "Fill lost reason today; set re-entry reminder 6 months out",
+  };
+
+  // ── Build the context string ──
+  const overdue = myLocs.filter(l=>l.nextStepDate&&new Date(l.nextStepDate)<today);
+  const thisWeekItems = weekDays.slice(0,5).map(d=>{
+    const load = dayLoad[d];
+    if(!load||!load.items.length) return null;
+    const pct = Math.round(load.estimatedMinutes/DAILY_WORK_MINUTES*100);
+    return `  ${d} (${new Date(d).toLocaleDateString("en-GB",{weekday:"short"})}): ${load.items.length} items, ~${load.estimatedMinutes}min / ${DAILY_WORK_MINUTES}min [${pct}% capacity]`;
+  }).filter(Boolean);
+
+  return `
+━━━ SALESPERSON SCHEDULE & CAPACITY ━━━
+Person: ${salesperson?.name||"salesperson"} | Today: ${todayStr} (${dayName})
+Active deals: ${myLocs.length} | Overdue: ${overdue.length}
+
+DAILY CAPACITY: ${DAILY_WORK_MINUTES} productive minutes/day
+Activity time estimates: cold call=15min, follow-up call=20min, discovery call=45min, online meeting=60min, on-site meeting=180min (incl. travel), proposal prep=120min, email=10min
+
+SCHEDULE THIS WEEK:
+${thisWeekItems.length ? thisWeekItems.join("\n") : "  No items scheduled yet this week"}
+
+FIRST AVAILABLE DAY for new ~${neededMins}min activity: ${firstAvailable}
+
+PLAYBOOK TIMING for stage "${currentStage||"?"}":
+${PLAYBOOK_TIMING[currentStage]||"Follow up promptly based on deal temperature"}
+
+SCHEDULING RULES:
+1. Prefer ${firstAvailable} as next_step_date (best capacity fit + playbook timing)
+2. NEVER schedule on weekends (Sat/Sun)
+3. If day already >80% full, push to next available day
+4. On-site meetings: block 3h minimum — check if day allows it
+5. Multiple hot deals same day = split across adjacent days
+6. Overdue items should be addressed BEFORE scheduling new ones
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 };
+
+;
 
 const hqToDb  = ({id,isHQ,_type,...h}) => ({
   company:h.company, industry:h.industry, notes:h.notes||"", address:h.address||"", website:h.website||"",
@@ -208,12 +322,13 @@ const webUrl   = w => { if(!w) return null; return w.startsWith("http")?w:"https
 const getCSS = () => `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:${C.bg1};color:${C.txt};direction:ltr;}
+  :root{--app-fs:13px;}
+  body{background:${C.bg1};color:${C.txt};direction:ltr;font-size:var(--app-fs);}
   ::-webkit-scrollbar{width:8px;height:8px;}
   ::-webkit-scrollbar-track{background:${C.bg0};}
   ::-webkit-scrollbar-thumb{background:${C.border2};border-radius:4px;}
   input,select,textarea,button{font-family:'Inter',sans-serif;}
-  .fi{width:100%;background:${C.bg4};border:1.5px solid ${C.border};color:${C.txt};padding:10px 12px;font-size:13px;outline:none;border-radius:8px;transition:border 0.15s;direction:ltr;text-align:left;}
+  .fi{width:100%;background:${C.bg4};border:1.5px solid ${C.border};color:${C.txt};padding:10px 12px;font-size:var(--app-fs);outline:none;border-radius:8px;transition:border 0.15s;direction:ltr;text-align:left;}
   .fi:focus{border-color:${C.blue};}
   .fi::placeholder{color:${C.txt3};}
   select.fi{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%237a9fc4' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
@@ -2102,7 +2217,7 @@ Return ONLY valid JSON, no explanation.`;
 
 
 // ─── QUICK SCRIPT MODAL ──────────────────────────────────────────
-function QuickScriptModal({loc, hq, onClose}) {
+function QuickScriptModal({loc, hq, onClose, locs, users}) {
   const LANGS = [
     {id:"ro",label:"🇷🇴 RO"},{id:"pl",label:"🇵🇱 PL"},
     {id:"en",label:"🇬🇧 EN"},{id:"ru",label:"🇷🇺 RU"},
@@ -2147,7 +2262,9 @@ HQ Contact: ${hq?.centralContact||""} (${hq?.centralRole||""}) ${hq?.centralPhon
 ACTIVITY LOG:
 ${acts.length?acts.map(a=>"["+a.date+"] "+a.type+": "+(a.note||"").substring(0,100)).join("\n"):"No activity yet"}
 
-LANGUAGE: Write all scripts in ${LANG_NAMES[selLang]||"Romanian"}. 
+LANGUAGE: Write all scripts in ${LANG_NAMES[selLang]||"Romanian"}.
+
+${buildWorkloadContext(loc.salesId, locs||[], users||[], null, loc.stage)} 
 
 YOUR ROLE:
 - You are a collaborative coach. You write scripts AND discuss strategy.
@@ -2361,7 +2478,7 @@ YOUR ROLE:
 }
 
 // ─── POST-CALL DEBRIEF MODAL ─────────────────────────────────────
-function PostCallDebrief({loc, hq, onClose, onApply}) {
+function PostCallDebrief({loc, hq, onClose, onApply, locs, users, playbook}) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
@@ -2381,7 +2498,7 @@ Return ONLY a JSON object with these possible keys (omit fields you cannot deter
   "workers": "number as string",
   "current_supplier": "name",
   "next_step": "specific action",
-  "next_step_date": "YYYY-MM-DD within next 14 days",
+  "next_step_date": "YYYY-MM-DD — use a date within the next 14 days from today (today = " + new Date().toISOString().slice(0,10) + ")",
   "decision_criteria": "what matters to them",
   "economic_buyer": "who holds budget",
   "champion": "internal ally",
@@ -2389,57 +2506,81 @@ Return ONLY a JSON object with these possible keys (omit fields you cannot deter
   "stage_suggestion": "one of: New,Contacted,Interested,Meeting Scheduled,Meeting Done,Proposal Sent,Negotiation,Closed Won,Closed Lost,No Answer"
 }
 Return ONLY valid JSON.`;
+    const workloadCtx = buildWorkloadContext(loc.salesId, locs||[], users||[], playbook, loc.stage);
     const ctx = `Current deal: ${loc.company} — ${loc.location}
-Stage: ${loc.stage}, Workers: ${loc.workers||"?"}
+Stage: ${loc.stage} | Workers: ${loc.workers||"?"} | Pain Score: ${loc.painScore||"?"}
 SPIN-P: ${loc.spin?.p||"empty"}
-Pain Score: ${loc.painScore||"?"}
-Call note: ${text}`;
+Next Step: ${loc.nextStep||"none"} by ${loc.nextStepDate||"not set"} | Last Contact: ${loc.lastContact||"never"}
+Call note: ${text}
+${workloadCtx}`;
     const raw = await aiCall(sys, ctx, 700);
     try {
       const clean = raw.replace(/```json|```/g,"").trim();
-      setSuggestions(JSON.parse(clean));
+      const parsed=JSON.parse(clean);setSuggestions(parsed);initAccepted(parsed);
     } catch(e) {
       setSuggestions({_error:"Parse error — try rewording the note."});
     }
     setLoading(false);
   };
 
-  const apply = () => {
+  const [accepted, setAccepted] = useState({});   // field -> true/false
+  const [fieldEdits, setFieldEdits] = useState({}); // field -> edited value
+  const [discussing, setDiscussing] = useState("");  // user comment input
+  const [chatMsgs, setChatMsgs] = useState([]);
+
+  const initAccepted = (sugg) => {
+    const acc = {};
+    Object.keys(sugg).filter(k=>!k.startsWith("_")&&sugg[k]).forEach(k=>{ acc[k]=true; });
+    setAccepted(acc);
+    setFieldEdits({});
+  };
+
+  const applySelected = () => {
     if(!suggestions || suggestions._error) return;
     const patch = {};
     const spin = {...(loc.spin||{})};
     let spinChanged = false;
-    if(suggestions.spin_s){spin.s=suggestions.spin_s;spinChanged=true;}
-    if(suggestions.spin_p){spin.p=suggestions.spin_p;spinChanged=true;}
-    if(suggestions.spin_i){spin.i=suggestions.spin_i;spinChanged=true;}
-    if(suggestions.spin_n){spin.n=suggestions.spin_n;spinChanged=true;}
-    if(suggestions.pain_summary){spin.painSummary=suggestions.pain_summary;spinChanged=true;}
+    const effective = {...suggestions,...fieldEdits};
+    const toApply = Object.entries(effective).filter(([k])=>accepted[k]&&!k.startsWith("_")&&effective[k]);
+    toApply.forEach(([k,v])=>{
+      if(k==="spin_s"){spin.s=v;spinChanged=true;}
+      else if(k==="spin_p"){spin.p=v;spinChanged=true;}
+      else if(k==="spin_i"){spin.i=v;spinChanged=true;}
+      else if(k==="spin_n"){spin.n=v;spinChanged=true;}
+      else if(k==="pain_summary"){spin.painSummary=v;spinChanged=true;}
+      else if(k==="pain_score")patch.painScore=parseInt(v);
+      else if(k==="workers")patch.workers=v;
+      else if(k==="current_supplier")patch.currentSupplier=v;
+      else if(k==="next_step")patch.nextStep=v;
+      else if(k==="next_step_date")patch.nextStepDate=v;
+      else if(k==="decision_criteria")patch.decisionCriteria=v;
+      else if(k==="economic_buyer")patch.economicBuyer=v;
+      else if(k==="champion")patch.champion=v;
+      else if(k==="stage_suggestion")patch.stage=v;
+    });
     if(spinChanged) patch.spin=spin;
-    if(suggestions.pain_score) patch.painScore=parseInt(suggestions.pain_score);
-    if(suggestions.workers) patch.workers=String(suggestions.workers);
-    if(suggestions.current_supplier) patch.currentSupplier=suggestions.current_supplier;
-    if(suggestions.next_step) patch.nextStep=suggestions.next_step;
-    if(suggestions.next_step_date) patch.nextStepDate=suggestions.next_step_date;
-    if(suggestions.decision_criteria) patch.decisionCriteria=suggestions.decision_criteria;
-    if(suggestions.economic_buyer) patch.economicBuyer=suggestions.economic_buyer;
-    if(suggestions.champion) patch.champion=suggestions.champion;
-    // Add activity log entry
-    const act = {
-      id:Date.now(), type:"Call",
-      note:text.trim()+(suggestions.activity_note?"\n\n[AI Summary] "+suggestions.activity_note:""),
-      date:new Date().toISOString().slice(0,10),
-      time:new Date().toTimeString().slice(0,5)
-    };
-    patch.activities = [act,...(loc.activities||[])];
-    patch.lastContact = act.date;
-    if(suggestions.stage_suggestion && suggestions.stage_suggestion !== loc.stage) {
-      patch.stage = suggestions.stage_suggestion;
+    if(accepted["activity_note"]&&(fieldEdits["activity_note"]||suggestions.activity_note)){
+      const note = fieldEdits["activity_note"]||suggestions.activity_note;
+      const act={id:Date.now(),type:"Post-Call",note,date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};
+      patch.activities=[act,...(loc.activities||[])];
     }
-    onApply(loc.id, patch);
+    if(Object.keys(patch).length>0){onApply(loc.id,patch);}
     onClose();
   };
 
-  const labelMap = {spin_s:"SPIN-S (Situation)",spin_p:"SPIN-P (Problem)",spin_i:"SPIN-I (Implication)",spin_n:"SPIN-N (Need-Payoff)",pain_summary:"Pain Summary",pain_score:"Pain Score",workers:"Workers Needed",current_supplier:"Current Supplier",next_step:"Next Step",next_step_date:"Next Step Date",decision_criteria:"Decision Criteria",economic_buyer:"Economic Buyer",champion:"Champion",stage_suggestion:"Stage Update",activity_note:"Activity Log Entry"};
+  const discussWithAI = async () => {
+    if(!discussing.trim()||!suggestions) return;
+    const userMsg = discussing;
+    setChatMsgs(prev=>[...prev,{role:"user",content:userMsg}]);
+    setDiscussing("");
+    const ctx2 = `Current deal: ${loc.company} — ${loc.stage}. Original call note: ${text}. AI suggested: ${JSON.stringify(suggestions)}. User says: ${userMsg}. Respond briefly and if needed provide revised JSON suggestions in a \`\`\`json block.`;
+    const raw = await aiCall("You are a CRM AI for Gremi Personal Romania. The user wants to discuss or modify the suggested CRM updates. Be concise. If suggesting revised fields, put them in a ```json block.", ctx2, 500);
+    setChatMsgs(prev=>[...prev,{role:"assistant",content:raw}]);
+    // Try to extract revised suggestions
+    const m = raw.match(/```json\s*([\s\S]*?)```/);
+    if(m){try{const revised=JSON.parse(m[1].trim());setSuggestions(s=>({...s,...revised}));initAccepted({...suggestions,...revised});}catch(e){}}
+  };
+
 
   return(
     <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
@@ -2467,23 +2608,51 @@ Call note: ${text}`;
           </button>
 
           {suggestions && !suggestions._error && (
-            <div className="anim-in" style={{display:"flex",flexDirection:"column",gap:8}}>
-              <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.08em"}}>SUGGESTED CRM UPDATES</div>
+            <div className="anim-in" style={{display:"flex",flexDirection:"column",gap:6}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.08em"}}>SUGGESTED UPDATES — check what to apply, edit inline:</div>
               {Object.entries(suggestions).filter(([k])=>!k.startsWith("_")&&suggestions[k]).map(([k,v])=>(
-                <div key={k} style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 12px",display:"flex",gap:8,alignItems:"flex-start"}}>
-                  <div style={{fontSize:10,fontWeight:700,color:C.teal,flexShrink:0,minWidth:100,paddingTop:1}}>{labelMap[k]||k}</div>
-                  <div style={{fontSize:12,color:C.txt2,lineHeight:1.5}}>{String(v)}</div>
+                <div key={k} style={{background:accepted[k]?`${C.teal}08`:C.bg4,border:`1px solid ${accepted[k]?C.teal+"44":C.border}`,borderRadius:8,padding:"7px 10px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <input type="checkbox" checked={!!accepted[k]} onChange={e=>setAccepted(a=>({...a,[k]:e.target.checked}))} style={{cursor:"pointer",flexShrink:0}}/>
+                    <span style={{fontSize:10,fontWeight:700,color:C.teal,minWidth:110,flexShrink:0}}>{labelMap[k]||k}</span>
+                    <span style={{fontSize:12,color:C.txt2,flex:1,lineHeight:1.4,wordBreak:"break-word"}}>{fieldEdits[k]!==undefined?fieldEdits[k]:String(v)}</span>
+                    <button className="btn" onClick={()=>setFieldEdits(e=>e[k]!==undefined?Object.fromEntries(Object.entries(e).filter(([kk])=>kk!==k)):{...e,[k]:String(v)})}
+                      style={{background:`${C.blue}15`,color:C.blue2,padding:"2px 7px",fontSize:9,borderRadius:4,border:`1px solid ${C.blue}33`,flexShrink:0}}>
+                      {fieldEdits[k]!==undefined?"✕ revert":"✏️"}
+                    </button>
+                  </div>
+                  {fieldEdits[k]!==undefined&&(
+                    <input type="text" value={fieldEdits[k]} onChange={e=>setFieldEdits(f=>({...f,[k]:e.target.value}))}
+                      style={{marginTop:5,width:"100%",background:C.bg4,border:`1px solid ${C.blue}`,color:C.txt,borderRadius:6,padding:"5px 8px",fontSize:12,outline:"none"}}/>
+                  )}
                 </div>
               ))}
             </div>
           )}
           {suggestions?._error&&<div style={{color:C.red,fontSize:12,padding:"8px 12px",background:`${C.red}10`,borderRadius:8}}>{suggestions._error}</div>}
+          {/* Discuss with AI */}
+          {suggestions&&!suggestions._error&&(
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {chatMsgs.map((m,i)=>(
+                <div key={i} style={{background:m.role==="user"?`${C.blue}10`:C.bg3,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",fontSize:12,color:C.txt,lineHeight:1.6}}>{m.content}</div>
+              ))}
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <input type="text" value={discussing} onChange={e=>setDiscussing(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter")discussWithAI();}}
+                  placeholder="Discuss a suggestion or disagree..."
+                  style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:7,padding:"7px 10px",fontSize:12,outline:"none"}}/>
+                <button className="btn" onClick={discussWithAI} disabled={!discussing.trim()}
+                  style={{background:`${C.teal}18`,color:C.teal,padding:"7px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.teal}44`}}>Ask AI</button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{padding:"12px 14px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,flexShrink:0}}>
           {suggestions&&!suggestions._error&&(
-            <button className="btn" onClick={apply} style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"12px",fontSize:14,borderRadius:9}}>
-              ✅ Apply to CRM
+            <button className="btn" onClick={applySelected}
+              style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"12px",fontSize:13,borderRadius:9}}>
+              ✅ Apply {Object.values(accepted).filter(Boolean).length} selected fields
             </button>
           )}
           <button className="btn" onClick={onClose} style={{background:C.bg3,color:C.txt3,padding:"12px 16px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>
@@ -2905,7 +3074,7 @@ LOC_NOTES: [notes to append]
 
 Rules: Only include fields where you have meaningful data. Write field values in the language the user writes in. Respond in the language the user writes.`;
 
-function InlineAI({loc,hq,onUpdate,onUpdateHQ}) {
+function InlineAI({loc,hq,onUpdate,onUpdateHQ,locs,users}) {
   const [msgs,setMsgs]=useState([]); const [input,setInput]=useState(""); const [loading,setLoading]=useState(false); const [pending,setPending]=useState(null);
   const bottomRef=useRef(null); const taRef=useRef(null);
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
@@ -2955,7 +3124,7 @@ function InlineAI({loc,hq,onUpdate,onUpdateHQ}) {
     const userMsg={role:"user",content:text};const newMsgs=[...msgs,userMsg];
     setMsgs(newMsgs);setInput("");setLoading(true);setPending(null);
     try{
-      const ctx=buildCtx();const sysMsg=AI_SYS_INLINE+"\n\n--- CRM CONTEXT ---"+ctx;
+      const ctx=buildCtx();const workload=buildWorkloadContext(loc.salesId,locs||[],users||[],null,loc.stage);const sysMsg=AI_SYS_INLINE+"\n\n--- CRM CONTEXT ---"+ctx+workload;
       const apiMsgs=newMsgs.filter(m=>m.role!=="system").map(m=>({role:m.role,content:m.content}));
       const res=await fetch(AI_PROXY,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:sysMsg,messages:apiMsgs})});
       const data=await res.json();const raw=data.content?.[0]?.text||"Error.";
@@ -3023,7 +3192,7 @@ function InlineAI({loc,hq,onUpdate,onUpdateHQ}) {
 
 
 // ─── HQ DETAIL MODAL ─────────────────────────────────────────────
-function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddLoc,onSelectLoc,onSaveChecklist,onUpdateHQ,onUpdateLoc,curUser}) {
+function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddLoc,onSelectLoc,onSaveChecklist,onUpdateHQ,onUpdateLoc,curUser,allLocs}) {
   const hqLocs=locs.filter(l=>l.parentId===hq.id);
   const totalW=hqLocs.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
   const stages=[...new Set(hqLocs.map(l=>l.stage))];
@@ -3114,7 +3283,7 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
         )}
         {showAI&&onUpdateHQ&&curUser&&(
           <div style={{background:C.bg2,border:`1px solid ${C.teal}33`,borderRadius:12,overflow:"hidden",maxHeight:420,display:"flex",flexDirection:"column"}}>
-            <AIChatTab locs={hqLocs} hqs={[hq]} users={users} cur={curUser}
+            <AIChatTab locs={allLocs||hqLocs} hqs={[hq]} users={users} cur={curUser}
               onUpdateLoc={onUpdateLoc} onUpdateHQ={onUpdateHQ}/>
           </div>
         )}
@@ -3176,7 +3345,7 @@ function InlineEditField({label, value, onSave, color, multiline=false, placehol
 }
 
 // ─── LOCATION DETAIL MODAL ───────────────────────────────────────
-function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate,onUpdateHQ}) {
+function LocDetailModal({loc,hqs,locs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate,onUpdateHQ}) {
   const hq=hqs.find(h=>h.id===loc.parentId);
   const sc=getSC()[loc.stage]||C.txt3;
   const uN=id=>users.find(u=>u.id===id)?.name||"—";
@@ -3400,9 +3569,9 @@ function LocDetailModal({loc,hqs,users,isAdmin,canArchive,canEdit,onClose,onEdit
         :<div style={{flex:1,padding:"13px",fontSize:12,color:C.txt3,textAlign:"center"}}>View only</div>}
         <button className="btn" onClick={()=>setShowAI(!showAI)} style={{background:showAI?`${C.teal}28`:`${C.teal}18`,color:C.teal,padding:"13px 16px",fontSize:14,borderRadius:10,border:`1px solid ${showAI?C.teal:C.teal+"44"}`}} title="AI Assistant">🤖</button>
       </div>
-      {showAI&&<InlineAI loc={loc} hq={hq} onUpdate={onUpdate} onUpdateHQ={onUpdateHQ}/>}
-      {showQuickScript&&<QuickScriptModal loc={loc} hq={hq} onClose={()=>setShowQuickScript(false)}/>}
-      {showDebrief&&<PostCallDebrief loc={loc} hq={hq} onClose={()=>setShowDebrief(false)} onApply={onUpdate}/>}
+      {showAI&&<InlineAI loc={loc} hq={hq} onUpdate={onUpdate} onUpdateHQ={onUpdateHQ} locs={locs} users={users}/>}
+      {showQuickScript&&<QuickScriptModal loc={loc} hq={hq} onClose={()=>setShowQuickScript(false)} locs={locs} users={users}/>}
+      {showDebrief&&<PostCallDebrief loc={loc} hq={hq} onClose={()=>setShowDebrief(false)} onApply={onUpdate} locs={locs} users={users} playbook={playbook}/>}
       {showEmail&&<EmailDraftModal loc={loc} hq={hq} onClose={()=>setShowEmail(false)}/>}
       {showStageGuide&&(()=>{
         const pb = INIT_PLAYBOOK;
@@ -4647,7 +4816,9 @@ Create new lead:
 {"action":"create_lead","hq_company":"Name","hq_industry":"Auto Parts","hq_address":"address","hq_employees":"300","hq_intelligence":"research","loc_location":"City","loc_county":"County","loc_workers":"20","loc_worker_type":"UA Ukrainian","loc_service":"Outsourcing","loc_contact":"Name","loc_role":"HR Director","loc_phone":"07xx","loc_email":"email","loc_notes":"notes","spin_p":"pain"}
 \`\`\`
 
-IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's language.`;
+IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's language.
+
+${buildWorkloadContext(cur.id, locs, users, null, null)}`;
   };
 
   const parseAction=(text)=>{
@@ -5242,6 +5413,9 @@ export default function GremiCRM() {
   const [templates,setTemplates]=useState(TPL_DATA);
   const [archive,setArchive]=useState([]);
   const [theme,setTheme]=useState(()=>{ try { return localStorage.getItem("gremi_theme")||"navy"; } catch(e){ return "navy"; } });
+  const [fontSize,setFontSize]=useState(()=>{ try { return parseInt(localStorage.getItem("gremi_fontsize")||"13"); } catch(e){ return 13; } });
+  const applyFontSize=(s)=>{ setFontSize(s); try{localStorage.setItem("gremi_fontsize",String(s));}catch(e){} document.documentElement.style.setProperty("--app-fs",s+"px"); };
+  useEffect(()=>{ document.documentElement.style.setProperty("--app-fs",fontSize+"px"); },[fontSize]);
   const [tab,setTab]=useState("dashboard");
   const [search,setSearch]=useState("");
   const [filters,setFilters]=useState({stage:"All",temp:"All",service:"All",entity:"All",county:"All",industry:"All",salesId:"All",overdueOnly:false,myOnly:false,showLocs:true});
@@ -5508,6 +5682,14 @@ export default function GremiCRM() {
           {syncStatus==="syncing"&&<div style={{width:6,height:6,borderRadius:"50%",background:C.amber,animation:"pulse 1s infinite"}} title="Syncing"/>}
           {syncStatus==="error"&&<div style={{width:6,height:6,borderRadius:"50%",background:C.red}} title="DB error"/>}
           {syncStatus==="idle"&&dbReady&&<div style={{width:6,height:6,borderRadius:"50%",background:C.green}} title="Connected"/>}
+          {/* Font size control */}
+          <div style={{display:"flex",alignItems:"center",gap:2,background:C.bg3,borderRadius:7,border:`1px solid ${C.border}`,padding:"2px 4px"}}>
+            <button className="btn" onClick={()=>applyFontSize(Math.max(11,fontSize-1))} disabled={fontSize<=11}
+              style={{background:"transparent",color:fontSize<=11?C.txt3:C.txt2,padding:"3px 6px",fontSize:13,borderRadius:5,minWidth:22,lineHeight:1}}>−</button>
+            <span style={{fontSize:10,color:C.txt3,minWidth:28,textAlign:"center",fontWeight:600}}>{fontSize}px</span>
+            <button className="btn" onClick={()=>applyFontSize(Math.min(17,fontSize+1))} disabled={fontSize>=17}
+              style={{background:"transparent",color:fontSize>=17?C.txt3:C.txt2,padding:"3px 6px",fontSize:13,borderRadius:5,minWidth:22,lineHeight:1}}>+</button>
+          </div>
           {/* Layout toggle button */}
           <button className="btn" title={mobile?"Switch to Desktop layout":"Switch to Mobile layout"}
             onClick={()=>setMobileForced(m=>m===null?(isMobile?false:true):m===true?false:true)}
@@ -5636,8 +5818,8 @@ export default function GremiCRM() {
                           {l.nextStep&&<div style={{marginTop:4,fontSize:11,color:C.amber,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>→ {l.nextStep}</div>}
                         </div>
                       );
-                    
                     })}
+                    
                     </div>)}
                   </div>
                 );
@@ -5700,7 +5882,7 @@ export default function GremiCRM() {
 
       {/* Modals */}
       {selLoc&&(
-        <LocDetailModal loc={selLoc} hqs={hqs} users={users} isAdmin={isAdmin} canArchive={isAdmin} canEdit={isAdmin||isTeamLead||selLoc.salesId===curUser.id}
+        <LocDetailModal loc={selLoc} hqs={hqs} locs={locs} users={users} isAdmin={isAdmin} canArchive={isAdmin} canEdit={isAdmin||isTeamLead||selLoc.salesId===curUser.id}
           onClose={()=>setSelLoc(null)}
           onEdit={()=>{setEditLoc({...selLoc});setSelLoc(null);}}
           onArchive={()=>archiveLoc(selLoc)}
@@ -5715,7 +5897,7 @@ export default function GremiCRM() {
           onAddLoc={()=>{setEditLoc({...EMPTY_LOC,parentId:selHQ.id,company:selHQ.company,salesId:curUser.id});setSelHQ(null);}}
           onSelectLoc={l=>setSelLoc(l)}
           onSaveChecklist={patch=>updHQ(selHQ.id,patch)}
-          onUpdateHQ={updHQ} onUpdateLoc={updLoc} curUser={curUser}/>
+          onUpdateHQ={updHQ} onUpdateLoc={updLoc} curUser={curUser} allLocs={locs}/>
       )}
       {editLoc&&(
         <LocFormModal form={editLoc} setForm={setEditLoc} hqs={hqs} users={users} isAdmin={isAdmin} services={services} entities={entities} editMode={!!editLoc.id}
