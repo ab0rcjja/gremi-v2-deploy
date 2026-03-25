@@ -3018,8 +3018,86 @@ function HQPreCallChecklist({hq,onSave,onNavigate}) {
   );
 }
 
+function NotesField({value, onSave, label="NOTES"}) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(value);
+  useEffect(()=>setVal(value),[value]);
+  const save = () => { if(onSave&&val!==value) onSave(val); setEditing(false); };
+  const cancel = () => { setVal(value); setEditing(false); };
+  if(!value&&!editing) return onSave?(
+    <button className="btn" onClick={()=>setEditing(true)}
+      style={{width:"100%",background:`${C.bg3}`,color:C.txt3,padding:"9px",fontSize:12,borderRadius:10,border:`1.5px dashed ${C.border}`}}>
+      + Add {label.replace("HQ ","")}
+    </button>
+  ):null;
+  return(
+    <div style={{background:C.bg3,border:`1px solid ${editing?C.blue:C.border}`,borderRadius:10,padding:12}}>
+      <div style={{display:"flex",alignItems:"center",marginBottom:editing?8:6}}>
+        <div className="lbl" style={{marginBottom:0,flex:1}}>{label}</div>
+        {!editing&&onSave&&<button className="btn" onClick={()=>setEditing(true)}
+          style={{background:`${C.blue}15`,color:C.blue2,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.blue}33`}}>✎ Edit</button>}
+      </div>
+      {editing?(
+        <>
+          <textarea value={val} onChange={e=>setVal(e.target.value)} rows={5} autoFocus
+            style={{width:"100%",background:C.bg4,border:`1px solid ${C.blue}`,color:C.txt,borderRadius:8,padding:"9px 11px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.7,outline:"none"}}/>
+          <div style={{display:"flex",gap:6,marginTop:8}}>
+            <button className="btn" onClick={save} style={{flex:1,background:`linear-gradient(135deg,${C.blue},${C.teal})`,color:"#fff",padding:"9px",fontSize:12,borderRadius:8}}>✓ Save</button>
+            <button className="btn" onClick={cancel} style={{background:C.bg4,color:C.txt3,padding:"9px 14px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>Cancel</button>
+          </div>
+        </>
+      ):(
+        <div style={{fontSize:12,color:C.txt2,lineHeight:1.7,whiteSpace:"pre-wrap",cursor:onSave?"pointer":"default"}}
+          onClick={onSave?()=>setEditing(true):undefined}>{value}</div>
+      )}
+    </div>
+  );
+}
+
+function IntelligenceField({hq, onUpdateHQ}) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(hq.intelligence||"");
+  const save = () => { if(onUpdateHQ&&val!==hq.intelligence) onUpdateHQ(hq.id,{intelligence:val}); setEditing(false); };
+  const cancel = () => { setVal(hq.intelligence||""); setEditing(false); };
+  if(!hq.intelligence&&!editing) return(
+    <button className="btn" onClick={()=>setEditing(true)}
+      style={{width:"100%",background:`${C.indigo}10`,color:C.indigo,padding:"10px",fontSize:12,borderRadius:10,border:`1.5px dashed ${C.indigo}44`}}>
+      + Add Intelligence
+    </button>
+  );
+  return(
+    <div style={{background:C.bg3,border:`1px solid ${editing?C.indigo:C.indigo+"44"}`,borderRadius:10,padding:12}}>
+      <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
+        <div className="lbl" style={{color:C.indigo,marginBottom:0,flex:1}}>INTELLIGENCE</div>
+        {!editing&&onUpdateHQ&&<button className="btn" onClick={()=>setEditing(true)} style={{background:`${C.indigo}15`,color:C.indigo,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.indigo}33`}}>✎ Edit</button>}
+      </div>
+      {editing?(
+        <>
+          <textarea value={val} onChange={e=>setVal(e.target.value)} rows={6} autoFocus
+            style={{width:"100%",background:C.bg4,border:`1px solid ${C.indigo}`,color:C.txt,borderRadius:8,padding:"9px 11px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.8,outline:"none"}}/>
+          <div style={{display:"flex",gap:6,marginTop:8}}>
+            <button className="btn" onClick={save} style={{flex:1,background:`linear-gradient(135deg,${C.indigo},${C.blue})`,color:"#fff",padding:"9px",fontSize:12,borderRadius:8}}>✓ Save</button>
+            <button className="btn" onClick={cancel} style={{background:C.bg4,color:C.txt3,padding:"9px 14px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>Cancel</button>
+          </div>
+        </>
+      ):(
+        <div style={{fontSize:12,color:C.txt2,lineHeight:1.8,whiteSpace:"pre-wrap",cursor:"pointer"}} onClick={onUpdateHQ?()=>setEditing(true):undefined}>
+          {(hq.intelligence||"").split("\n\n").map((para,i)=>(
+            <div key={i} style={{marginBottom:para?8:0,
+              background:para.startsWith("[AI update]")?`${C.teal}10`:para.startsWith("[AI]")?`${C.blue}08`:"transparent",
+              borderLeft:para.startsWith("[AI")?"3px solid "+(para.startsWith("[AI update]")?C.teal:C.blue):"none",
+              padding:para.startsWith("[AI")?"4px 8px":"0",borderRadius:para.startsWith("[AI")?"4px":"0"}}>
+              {para}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── HQ DETAILS SECTION ──────────────────────────────────────────
-function HqDetailsSection({hq}) {
+function HqDetailsSection({hq, onUpdateHQ}) {
   const hasDetails=hq.employees||hq.annualTurnover||hq.intelligence||hq.seasonality||hq.leadSource;
   const [open,setOpen]=useState(false);
   if(!hasDetails) return null;
@@ -3036,7 +3114,7 @@ function HqDetailsSection({hq}) {
             {hq.seasonality&&<div className="kv" style={{gridColumn:"1/-1"}}><div className="lbl">SEASONALITY</div><div style={{fontSize:12,color:C.txt2}}>{hq.seasonality}</div></div>}
             {hq.leadSource&&<div className="kv"><div className="lbl">LEAD SOURCE</div><div style={{fontSize:12,color:C.blue2}}>{hq.leadSource}</div></div>}
           </div>
-          {hq.intelligence&&<div style={{background:C.bg3,border:`1px solid ${C.indigo}44`,borderRadius:10,padding:12}}><div className="lbl" style={{color:C.indigo}}>INTELLIGENCE</div><div style={{fontSize:12,color:C.txt2,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{hq.intelligence}</div></div>}
+          {(hq.intelligence||true)&&<IntelligenceField hq={hq} onUpdateHQ={onUpdateHQ}/>}
         </div>
       )}
     </div>
@@ -3113,7 +3191,7 @@ function InlineAI({loc,hq,onUpdate,onUpdateHQ,locs,users}) {
     if(locFields.length>0){const act={id:Date.now(),type:"Note",note:"[AI] Fields updated: "+locFields.join(", "),date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};locPatch.activities=[act,...(loc.activities||[])];locPatch.lastContact=act.date;onUpdate(loc.id,locPatch);}
     const hqFields=Object.keys(fields).filter(k=>k.startsWith("HQ_"));
     let hqSaved=false;
-    if(hqFields.length>0&&hq&&onUpdateHQ){const hqPatch={};if(fields.HQ_INTELLIGENCE)hqPatch.intelligence=(hq.intelligence?hq.intelligence+"\n\n":"")+"[AI] "+fields.HQ_INTELLIGENCE;if(fields.HQ_ANNUAL_TURNOVER)hqPatch.annualTurnover=fields.HQ_ANNUAL_TURNOVER;if(fields.HQ_EMPLOYEES)hqPatch.employees=fields.HQ_EMPLOYEES;if(fields.HQ_SEASONALITY)hqPatch.seasonality=fields.HQ_SEASONALITY;if(Object.keys(hqPatch).length>0){onUpdateHQ(hq.id,hqPatch);hqSaved=true;}}
+    if(hqFields.length>0&&hq&&onUpdateHQ){const hqPatch={};if(fields.HQ_INTELLIGENCE)hqPatch.intelligence=hq.intelligence?hq.intelligence.replace(/\[AI update\][^\n]*/g,"").trim()+"\n\n[AI update] "+fields.HQ_INTELLIGENCE:"[AI] "+fields.HQ_INTELLIGENCE;if(fields.HQ_ANNUAL_TURNOVER)hqPatch.annualTurnover=fields.HQ_ANNUAL_TURNOVER;if(fields.HQ_EMPLOYEES)hqPatch.employees=fields.HQ_EMPLOYEES;if(fields.HQ_SEASONALITY)hqPatch.seasonality=fields.HQ_SEASONALITY;if(Object.keys(hqPatch).length>0){onUpdateHQ(hq.id,hqPatch);hqSaved=true;}}
     setPending(null);
     const msg="✅ Applied to CRM."+(hqSaved?" HQ fields (Intelligence, Turnover etc.) saved to company record.":"")+(locFields.length===0&&!hqSaved?" (no actionable fields found)":"");
     setMsgs(prev=>[...prev,{role:"system",content:msg}]);
@@ -3224,9 +3302,9 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
           <div className="kv" style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:C.green,fontFamily:"'Space Grotesk',sans-serif"}}>{hqLocs.filter(l=>l.stage==="Closed Won").length}</div><div className="lbl" style={{marginBottom:0}}>Won</div></div>
         </div>
         {stages.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6}}>{stages.map(s=>{const cnt=hqLocs.filter(l=>l.stage===s).length;const c=getSC()[s]||C.txt3;return <span key={s} className="pill" style={{background:c+"22",color:c,border:`1px solid ${c}44`,fontSize:11,padding:"4px 10px"}}>{s} ({cnt})</span>;})}</div>}
-        <HqDetailsSection hq={hq}/>
+        <HqDetailsSection hq={hq} onUpdateHQ={onUpdateHQ}/>
         <HQPreCallChecklist hq={hq} onSave={onSaveChecklist} onNavigate={(fieldId)=>{const hqFields=["#hq-annual-turnover","#hq-employees","#hq-intelligence","#hq-central-contact","#hq-central-phone"];if(hqFields.includes(fieldId)){onEditHQ();setTimeout(()=>{const el=document.querySelector(fieldId);if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.focus();}},300);}else{const el=document.querySelector(fieldId);if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.focus();}}}}/>
-        {hq.notes&&<div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}><div className="lbl">NOTES</div><div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{hq.notes}</div></div>}
+        <NotesField value={hq.notes||""} onSave={onUpdateHQ?v=>onUpdateHQ(hq.id,{notes:v}):null} label="HQ NOTES"/>
         <div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,fontWeight:600,color:C.txt3,letterSpacing:"0.08em"}}>LOCATIONS / DEALS ({hqLocs.length})</div>
@@ -4858,7 +4936,7 @@ ${buildWorkloadContext(cur.id, locs, users, null, null)}`;
       if(!hq){const availH=hqs.slice(0,5).map(h=>h.company).join(", ");setMsgs(prev=>[...prev,{role:"system",content:`❌ Company not found: "${action.company}". Available: ${availH}`}]);return;}
       const hqPatch={};
       const f=action.fields||{};
-      if(f.intelligence)hqPatch.intelligence=(hq.intelligence?hq.intelligence+"\n\n":"")+"[AI] "+f.intelligence;
+      if(f.intelligence!==undefined)hqPatch.intelligence=hq.intelligence?hq.intelligence.replace(/\[AI update\][^\n]*/g,"").trim()+"\n\n[AI update] "+f.intelligence:"[AI] "+f.intelligence;
       if(f.annualTurnover)hqPatch.annualTurnover=f.annualTurnover;
       if(f.employees)hqPatch.employees=f.employees;
       if(f.seasonality)hqPatch.seasonality=f.seasonality;
@@ -5818,7 +5896,7 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-
+                    
                     </div>)}
                   </div>
                 );
