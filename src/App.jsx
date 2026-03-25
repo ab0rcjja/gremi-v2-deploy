@@ -3769,62 +3769,6 @@ function TeamTab({users,locs,onSelect,isAdmin,isTeamLead,curUser}) {
   const [showTeamToday,setShowTeamToday]=useState(false);
   return(
     <div style={{flex:1,overflowY:"auto",padding:"12px 12px 80px",display:"flex",flexDirection:"column",gap:10}}>
-      {/* Team Today button — admin/TL only */}
-      {(isAdmin||isTeamLead)&&showTeamToday&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setShowTeamToday(false);}}>
-          <div style={{background:C.bg1,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:700,maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
-            <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:15,color:C.txt}}>📅 Team Today</div>
-                <div style={{fontSize:11,color:C.txt3}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long"})}</div>
-              </div>
-              <button className="xb" onClick={()=>setShowTeamToday(false)}>×</button>
-            </div>
-            <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:8}}>
-              {(()=>{
-                const todayStr=new Date().toISOString().slice(0,10);
-                return users.filter(u=>u.active).map(u=>{
-                  const todayActs=locs.flatMap(l=>(l.activities||[]).filter(a=>a.date===todayStr&&l.salesId===u.id).map(a=>({company:l.company,type:a.type,note:a.note||""})));
-                  const overdueCount=locs.filter(l=>l.salesId===u.id&&isOD(l.nextStepDate,l.stage)).length;
-                  const hasPlan=u.daily_plan&&u.daily_plan_date===todayStr;
-                  return(
-                    <div key={u.id} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:hasPlan||todayActs.length>0?8:0}}>
-                        <div style={{width:32,height:32,borderRadius:9,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:14,color:"#fff",flexShrink:0}}>{u.name[0]}</div>
-                        <div style={{flex:1}}>
-                          <span style={{fontWeight:600,fontSize:13,color:C.txt}}>{u.name}</span>
-                          <span style={{fontSize:10,color:u.role==="admin"?C.purple:u.role==="team_lead"?C.amber:C.txt3,marginLeft:6}}>{u.role==="admin"?"ADMIN":u.role==="team_lead"?"TL":""}</span>
-                          <span style={{fontSize:10,color:C.txt3,marginLeft:8}}>{todayActs.length} actions today</span>
-                          {overdueCount>0&&<span style={{fontSize:10,color:C.red,marginLeft:8,fontWeight:600}}>⚠ {overdueCount} overdue</span>}
-                        </div>
-                        <span style={{fontSize:13}}>{{en:"🇬🇧",pl:"🇵🇱",ro:"🇷🇴",ru:"🇷🇺"}[u.brief_lang||"en"]}</span>
-                      </div>
-                      {hasPlan&&(
-                        <div style={{fontSize:11,color:C.txt2,lineHeight:1.65,whiteSpace:"pre-wrap",background:C.bg3,borderRadius:7,padding:"8px 10px",borderLeft:`3px solid ${C.blue}`,marginBottom:todayActs.length>0?6:0}}>
-                          <div style={{fontSize:9,color:C.blue2,fontWeight:700,marginBottom:3}}>📝 PLAN</div>
-                          {u.daily_plan.substring(0,300)}{u.daily_plan.length>300?"...":""}
-                        </div>
-                      )}
-                      {todayActs.length>0&&(
-                        <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                          <div style={{fontSize:9,color:C.teal,fontWeight:700,marginBottom:2}}>✅ DONE TODAY</div>
-                          {todayActs.slice(0,5).map((a,i)=>(
-                            <div key={i} style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                              · {a.company}: {a.type}{a.note?" — "+a.note.substring(0,60):""}
-                            </div>
-                          ))}
-                          {todayActs.length>5&&<div style={{fontSize:10,color:C.txt3}}>+{todayActs.length-5} more</div>}
-                        </div>
-                      )}
-                      {!hasPlan&&todayActs.length===0&&<div style={{fontSize:11,color:C.txt3,fontStyle:"italic"}}>No plan, no activity yet today</div>}
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
       <div style={{display:"flex",alignItems:"center",marginBottom:2}}>
         <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",flex:1}}>TEAM OVERVIEW</div>
         {(isAdmin||isTeamLead)&&(
@@ -3834,7 +3778,6 @@ function TeamTab({users,locs,onSelect,isAdmin,isTeamLead,curUser}) {
           </button>
         )}
       </div>
-      <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginBottom:2}}>TEAM OVERVIEW</div>
       {users.filter(u=>u.active).map(u=>{
         const ul=locs.filter(l=>l.salesId===u.id);const won=ul.filter(l=>l.stage==="Closed Won");const pipe=ul.filter(l=>l.stage!=="Closed Won"&&l.stage!=="Closed Lost");const late=ul.filter(l=>isOD(l.nextStepDate,l.stage));const placed=won.reduce((s,l)=>s+(parseInt(l.workers)||0),0);const isE=exp===u.id;
         return(
@@ -4909,6 +4852,61 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,templates,setTemplates}) {
 
         {tab==="scripts"&&<ScriptsTab tplData={tplData} isAdmin={isAdmin} setTemplates={setTemplates}/>}
       </div>
+
+      {/* Team Today modal */}
+      {(isAdmin||isTeamLead)&&showTeamToday&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setShowTeamToday(false);}}>
+          <div style={{background:C.bg1,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:700,maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",flexShrink:0}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:15,color:C.txt}}>📅 Team Today</div>
+                <div style={{fontSize:11,color:C.txt3}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long"})}</div>
+              </div>
+              <button className="xb" onClick={()=>setShowTeamToday(false)}>×</button>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:8}}>
+              {(()=>{
+                const todayStr=new Date().toISOString().slice(0,10);
+                return users.filter(u=>u.active).map(u=>{
+                  const todayActs=locs.flatMap(l=>(l.activities||[]).filter(a=>a.date===todayStr&&l.salesId===u.id).map(a=>({company:l.company,type:a.type,note:a.note||""})));
+                  const overdueCount=locs.filter(l=>l.salesId===u.id&&isOD(l.nextStepDate,l.stage)).length;
+                  const hasPlan=u.daily_plan&&u.daily_plan_date===todayStr;
+                  return(
+                    <div key={u.id} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:hasPlan||todayActs.length>0?8:0}}>
+                        <div style={{width:32,height:32,borderRadius:9,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:14,color:"#fff",flexShrink:0}}>{u.name[0]}</div>
+                        <div style={{flex:1}}>
+                          <span style={{fontWeight:600,fontSize:13,color:C.txt}}>{u.name}</span>
+                          <span style={{fontSize:10,color:u.role==="admin"?C.purple:u.role==="team_lead"?C.amber:C.txt3,marginLeft:6}}>{u.role==="admin"?"ADMIN":u.role==="team_lead"?"TL":""}</span>
+                          <span style={{fontSize:10,color:C.txt3,marginLeft:8}}>{todayActs.length} actions today</span>
+                          {overdueCount>0&&<span style={{fontSize:10,color:C.red,marginLeft:8,fontWeight:600}}>⚠ {overdueCount} overdue</span>}
+                        </div>
+                        <span style={{fontSize:14}}>{{en:"🇬🇧",pl:"🇵🇱",ro:"🇷🇴",ru:"🇷🇺"}[u.brief_lang||"en"]}</span>
+                      </div>
+                      {hasPlan&&(
+                        <div style={{fontSize:11,color:C.txt2,lineHeight:1.65,whiteSpace:"pre-wrap",background:C.bg3,borderRadius:7,padding:"8px 10px",borderLeft:`3px solid ${C.blue}`,marginBottom:todayActs.length>0?6:0}}>
+                          <div style={{fontSize:9,color:C.blue2,fontWeight:700,marginBottom:3}}>📝 PLAN</div>
+                          {u.daily_plan.substring(0,300)}{u.daily_plan.length>300?"...":""}
+                        </div>
+                      )}
+                      {todayActs.length>0&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                          <div style={{fontSize:9,color:C.teal,fontWeight:700,marginBottom:2}}>✅ DONE TODAY</div>
+                          {todayActs.slice(0,5).map((a,i)=>(
+                            <div key={i} style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>· {a.company}: {a.type}{a.note?" — "+a.note.substring(0,60):""}</div>
+                          ))}
+                          {todayActs.length>5&&<div style={{fontSize:10,color:C.txt3}}>+{todayActs.length-5} more</div>}
+                        </div>
+                      )}
+                      {!hasPlan&&todayActs.length===0&&<div style={{fontSize:11,color:C.txt3,fontStyle:"italic"}}>No plan, no activity yet</div>}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -6189,7 +6187,7 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-                   
+                    
                     </div>)}
                   </div>
                 );
