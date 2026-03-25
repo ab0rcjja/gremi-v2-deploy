@@ -5206,6 +5206,23 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
   const [summary,setSummary]=useState(""); const [summaryLoading,setSummaryLoading]=useState(false);
   const [aiAnalysis,setAiAnalysis]=useState(""); const [aiLoading,setAiLoading]=useState(false);
   const [section,setSection]=useState("actions"); // actions | stats
+  const [myPlan,setMyPlan]=useState(()=>{try{return localStorage.getItem("gremi_plan_"+new Date().toISOString().slice(0,10))||"";}catch(e){return "";}});
+  const [editingPlan,setEditingPlan]=useState(false);
+  const [priorities,setPriorities]=useState(()=>{try{return JSON.parse(localStorage.getItem("gremi_priorities")||"null")||{counties:["Ilfov","Ilfov County"],industries:["Transport","Logistică","Depozitare","Producție"],notes:"Prioritate: firme din Ilfov + transport/logistică (similar ROAD READY). Min 10 nowych leadów/dzień."};}catch(e){return {counties:["Ilfov"],industries:["Transport","Logistică"],notes:""};}}); 
+  const [editingPriorities,setEditingPriorities]=useState(false);
+  const savePlan=(v)=>{setMyPlan(v);try{localStorage.setItem("gremi_plan_"+new Date().toISOString().slice(0,10),v);}catch(e){}};
+  const savePriorities=(v)=>{setPriorities(v);try{localStorage.setItem("gremi_priorities",JSON.stringify(v));}catch(e){}};
+  const [briefInput,setBriefInput]=useState("");
+  const [briefChat,setBriefChat]=useState([]); // [{role,content}]
+  const [briefLoading,setBriefLoading]=useState(false);
+  const sendBriefMsg=async()=>{
+    const txt=briefInput.trim(); if(!txt||briefLoading) return;
+    const newChat=[...briefChat,{role:"user",content:txt}];
+    setBriefChat(newChat); setBriefInput(""); setBriefLoading(true);
+    const ctx=`Aktualny brief:\n${summary}\n\nPlan handlowca:\n${myPlan||"brak"}\n\nPriorytety: ${priorities.counties.join(", ")} | ${priorities.industries.join(", ")}`;
+    const t=await aiCall("Jesteś AI asystentem sprzedaży Gremi Personal Romania. Handlowiec mówi co chce zmienić w planie lub co jeszcze ma do zrobienia. Odpowiedz krótko i konkretnie po polsku. Jeśli prosi o aktualizację planu — zaproponuj nową wersję.",ctx+"\n\nHandlowiec: "+txt,500);
+    setBriefChat(prev=>[...prev,{role:"assistant",content:t}]); setBriefLoading(false);
+  };
   const today=new Date();
   const uN=id=>users.find(u=>u.id===id)?.name||"—";
   const myLocs=(isAdmin||isTeamLead)?locs:locs.filter(l=>l.salesId===cur.id);
@@ -5235,6 +5252,11 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
     const noContactList=active.filter(l=>{if(!l.lastContact)return true;return (new Date()-new Date(l.lastContact))>7*24*3600*1000;}).slice(0,5).map(l=>`- ${l.company} [${l.stage}] last contact: ${l.lastContact||"nigdy"}`).join("\n");
     const newUnqList=active.filter(l=>l.stage==="New"&&!l.spin?.p).slice(0,5).map(l=>`- ${l.company} county:${l.county||"?"} workers:${l.workers||"?"}`).join("\n");
     const workload=buildWorkloadContext(cur.id, locs, users, null, null);
+    const prioCtx=`\nBIZNESOWE PRIORYTETY HANDLOWCA:
+Priorytetowe county/region: ${priorities.counties.join(", ")}
+Priorytetowe branże: ${priorities.industries.join(", ")}
+Uwagi: ${priorities.notes||"brak"}
+Plan handlowca na dziś (jeśli jest): ${myPlan||"nie wpisany"}`;
 
     // What was already done today (from activity logs)
     const todayDone=locs.flatMap(l=>(l.activities||[]).filter(a=>a.date===today2).map(a=>({company:l.company,type:a.type,note:a.note||""})));
@@ -5266,7 +5288,7 @@ JUŻ ZROBIONE DZISIAJ (${todayDone.length} akcji):
 ${todayDoneList||"Nic jeszcze nie zalogowano dzisiaj"}
 
 ETAPY: ${STAGES.map(s=>stageCount[s]>0?s+":"+stageCount[s]:null).filter(Boolean).join(", ")}
-${workload}`;
+${workload}${prioCtx}`;
 
     const sys=`Jesteś AI asystentem sprzedaży dla Gremi Personal Romania. 
 Piszesz poranny briefing dla handlowca ${cur.name}.
@@ -5284,6 +5306,8 @@ STRUKTURA ODPOWIEDZI (zawsze po polsku, konkretnie, bez owijania w bawełnę):
 
 Zasady:
 - Wymieniaj konkretne nazwy firm, nie ogólniki
+- UWZGLĘDNIAJ BIZNESOWE PRIORYTETY: premiuj firmy z priorytetowych regionów i branż
+- Przy prospektingu nowych leadów sugeruj konkretne branże/regiony z listy priorytetów
 - Uwzględnij capacity handlowca (ile czasu ma realnie)
 - Nie zapomnij o pozyskiwaniu nowych leadów — to zawsze w planie
 - Bądź jak doświadczony sales manager który dobrze zna pipeline`;
@@ -5343,23 +5367,130 @@ Zasady:
       </div>
 
       <div style={{flex:1,overflowY:"auto",padding:12,paddingBottom:70,display:"flex",flexDirection:"column",gap:10}}>
-        {/* AI Brief — shown in both sections */}
-        <div style={{background:`linear-gradient(135deg,${C.bg2},${C.bg3})`,border:`1px solid ${C.teal}44`,borderRadius:12,padding:14}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:(summaryLoading||summary||aiLoading||aiAnalysis)?10:0}}>
-            <div style={{width:26,height:26,borderRadius:7,background:`linear-gradient(135deg,${C.blue},${C.teal})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:11,fontWeight:700,color:C.teal,letterSpacing:"0.06em"}}>{section==="actions"?"AI MORNING BRIEF":"PIPELINE INTELLIGENCE"}</div>
-              <div style={{fontSize:10,color:C.txt3}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long"})}</div>
+        {/* AI Morning Brief + My Plan + Priorities */}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+
+          {/* AI Brief card */}
+          <div style={{background:`linear-gradient(135deg,${C.bg2},${C.bg3})`,border:`1px solid ${C.teal}44`,borderRadius:12,padding:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:(summaryLoading||summary||aiLoading||aiAnalysis)?10:0}}>
+              <div style={{width:26,height:26,borderRadius:7,background:`linear-gradient(135deg,${C.blue},${C.teal})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.teal,letterSpacing:"0.06em"}}>{section==="actions"?"AI MORNING BRIEF":"PIPELINE INTELLIGENCE"}</div>
+                <div style={{fontSize:10,color:C.txt3}}>{new Date().toLocaleDateString("pl-PL",{weekday:"long",day:"2-digit",month:"long"})}</div>
+              </div>
+              <button className="btn" onClick={section==="actions"?loadSummary:loadAnalysis} disabled={summaryLoading||aiLoading}
+                style={{background:`${C.teal}18`,color:C.teal,padding:"5px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.teal}33`}}
+                title="Refresh — AI sees what you've done today">
+                {(summaryLoading||aiLoading)?"⏳":"↻ Refresh"}
+              </button>
             </div>
-            <button className="btn" onClick={section==="actions"?loadSummary:loadAnalysis} disabled={summaryLoading||aiLoading}
-              style={{background:`${C.teal}18`,color:C.teal,padding:"5px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.teal}33`}}
-              title="Refresh brief — AI sees what you've done today">
-              {(summaryLoading||aiLoading)?"...":"↻ Refresh"}
-            </button>
+            {(summaryLoading||aiLoading)&&<div style={{display:"flex",gap:4,padding:"4px 0"}}>{[0,.2,.4].map((d,i)=><span key={i} style={{width:6,height:6,background:C.teal,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}<span style={{fontSize:11,color:C.txt3,marginLeft:6}}>Analizuję pipeline...</span></div>}
+            {section==="actions"&&summary&&!summaryLoading&&<div style={{fontSize:12,color:C.txt2,lineHeight:1.75,whiteSpace:"pre-wrap"}}>{summary}</div>}
+            {section==="stats"&&aiAnalysis&&!aiLoading&&<div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{aiAnalysis}</div>}
+            {section==="actions"&&!summary&&!summaryLoading&&(
+              <div style={{fontSize:12,color:C.txt3,fontStyle:"italic"}}>Kliknij ↻ Refresh żeby wygenerować plan dnia</div>
+            )}
           </div>
-          {(summaryLoading||aiLoading)&&<div style={{display:"flex",gap:4}}>{[0,.2,.4].map((d,i)=><span key={i} style={{width:6,height:6,background:C.teal,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}</div>}
-          {section==="actions"&&summary&&!summaryLoading&&<div style={{fontSize:12,color:C.txt2,lineHeight:1.75,whiteSpace:"pre-wrap"}}>{summary}</div>}
-          {section==="stats"&&aiAnalysis&&!aiLoading&&<div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{aiAnalysis}</div>}
+
+          {/* Brief chat — quick input */}
+          {section==="actions"&&(
+            <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:12,display:"flex",flexDirection:"column",gap:8}}>
+              {briefChat.length>0&&(
+                <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:200,overflowY:"auto"}}>
+                  {briefChat.map((m,i)=>(
+                    <div key={i} style={{display:"flex",gap:7,alignItems:"flex-start",flexDirection:m.role==="user"?"row-reverse":"row"}}>
+                      <div style={{width:22,height:22,borderRadius:6,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,
+                        background:m.role==="user"?`${C.blue}22`:`${C.teal}22`}}>
+                        {m.role==="user"?"👤":"🤖"}
+                      </div>
+                      <div style={{maxWidth:"85%",background:m.role==="user"?`${C.blue}10`:C.bg3,border:`1px solid ${m.role==="user"?C.blue+"22":C.border}`,borderRadius:9,padding:"7px 11px",fontSize:12,color:C.txt,lineHeight:1.65,whiteSpace:"pre-wrap"}}>
+                        {m.content}
+                      </div>
+                    </div>
+                  ))}
+                  {briefLoading&&<div style={{display:"flex",gap:4,padding:"4px 8px"}}>{[0,.15,.3].map((d,i)=><span key={i} style={{width:5,height:5,background:C.teal,borderRadius:"50%",animation:`pulse 0.8s infinite ${d}s`}}/>)}</div>}
+                </div>
+              )}
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <input type="text" value={briefInput} onChange={e=>setBriefInput(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter")sendBriefMsg();}}
+                  placeholder="Co jeszcze masz do zrobienia? Co zmienić w planie?"
+                  style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:8,padding:"8px 11px",fontSize:12,outline:"none",fontFamily:"'Inter',sans-serif"}}/>
+                <button className="btn" onClick={sendBriefMsg} disabled={briefLoading||!briefInput.trim()}
+                  style={{background:briefLoading||!briefInput.trim()?C.bg4:`linear-gradient(135deg,${C.teal},${C.blue})`,
+                    color:briefLoading||!briefInput.trim()?C.txt3:"#fff",width:34,height:34,borderRadius:8,
+                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>↑</button>
+              </div>
+            </div>
+          )}
+
+          {/* My Plan for today — editable */}
+          {section==="actions"&&(
+            <div style={{background:C.bg2,border:`1px solid ${myPlan?C.blue+"44":C.border}`,borderRadius:12,padding:12}}>
+              <div style={{display:"flex",alignItems:"center",marginBottom:editingPlan?8:myPlan?6:0}}>
+                <span style={{fontSize:10,fontWeight:700,color:C.blue2,letterSpacing:"0.08em",flex:1}}>📝 MÓJ PLAN NA DZIŚ</span>
+                {!editingPlan&&<button className="btn" onClick={()=>setEditingPlan(true)}
+                  style={{background:`${C.blue}15`,color:C.blue2,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.blue}33`}}>
+                  {myPlan?"✎ Edytuj":"+ Dodaj"}
+                </button>}
+              </div>
+              {editingPlan?(
+                <>
+                  <textarea value={myPlan} onChange={e=>savePlan(e.target.value)}
+                    autoFocus rows={5}
+                    placeholder={"Np.:\n1. Zadzwonić do Ice Dyp przed 10:00\n2. Wysłać propozycję do SMEG\n3. 10 nowych kontaktów z Ilfov\n4. Spotkanie online z Handlopex 14:00"}
+                    style={{width:"100%",background:C.bg4,border:`1px solid ${C.blue}`,color:C.txt,borderRadius:8,padding:"9px 11px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.7,outline:"none"}}/>
+                  <button className="btn" onClick={()=>setEditingPlan(false)}
+                    style={{marginTop:6,background:`linear-gradient(135deg,${C.blue},${C.teal})`,color:"#fff",padding:"8px 18px",fontSize:12,borderRadius:8,width:"100%"}}>
+                    ✓ Zapisz plan
+                  </button>
+                </>
+              ):myPlan?(
+                <div style={{fontSize:12,color:C.txt2,lineHeight:1.7,whiteSpace:"pre-wrap",cursor:"pointer"}} onClick={()=>setEditingPlan(true)}>{myPlan}</div>
+              ):null}
+            </div>
+          )}
+
+          {/* Business priorities — editable */}
+          {section==="actions"&&(
+            <div style={{background:C.bg2,border:`1px solid ${C.amber}33`,borderRadius:12,padding:12}}>
+              <div style={{display:"flex",alignItems:"center",marginBottom:editingPriorities?8:6}}>
+                <span style={{fontSize:10,fontWeight:700,color:C.amber,letterSpacing:"0.08em",flex:1}}>🎯 PRIORYTETY BIZNESOWE</span>
+                <button className="btn" onClick={()=>setEditingPriorities(e=>!e)}
+                  style={{background:`${C.amber}15`,color:C.amber,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.amber}33`}}>
+                  {editingPriorities?"✓ Zamknij":"✎ Edytuj"}
+                </button>
+              </div>
+              {editingPriorities?(
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  <div>
+                    <div className="lbl">PRIORYTETOWE REGIONY/COUNTY (oddziel przecinkiem)</div>
+                    <input type="text" className="fi" value={priorities.counties.join(", ")}
+                      onChange={e=>savePriorities({...priorities,counties:e.target.value.split(",").map(s=>s.trim()).filter(Boolean)})}
+                      placeholder="Ilfov, Giurgiu, Bucharest"/>
+                  </div>
+                  <div>
+                    <div className="lbl">PRIORYTETOWE BRANŻE (oddziel przecinkiem)</div>
+                    <input type="text" className="fi" value={priorities.industries.join(", ")}
+                      onChange={e=>savePriorities({...priorities,industries:e.target.value.split(",").map(s=>s.trim()).filter(Boolean)})}
+                      placeholder="Transport, Logistică, Producție"/>
+                  </div>
+                  <div>
+                    <div className="lbl">DODATKOWE UWAGI DLA AI</div>
+                    <textarea className="fi" rows={2} value={priorities.notes||""}
+                      onChange={e=>savePriorities({...priorities,notes:e.target.value})}
+                      placeholder="np. skupiamy się na firmach podobnych do ROAD READY, min 10 nowych leadów/dzień"/>
+                  </div>
+                </div>
+              ):(
+                <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                  {priorities.counties.map(c=><span key={c} style={{background:`${C.amber}15`,color:C.amber,border:`1px solid ${C.amber}33`,borderRadius:12,padding:"2px 9px",fontSize:11}}>📍{c}</span>)}
+                  {priorities.industries.map(i=><span key={i} style={{background:`${C.blue}12`,color:C.blue2,border:`1px solid ${C.blue}33`,borderRadius:12,padding:"2px 9px",fontSize:11}}>🏭{i}</span>)}
+                  {priorities.notes&&<span style={{fontSize:11,color:C.txt3,fontStyle:"italic",width:"100%",marginTop:2}}>{priorities.notes.substring(0,80)}{priorities.notes.length>80?"...":""}</span>}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {section==="actions"&&(
