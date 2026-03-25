@@ -319,6 +319,214 @@ const mapsUrl  = a => a ? "https://www.google.com/maps/search/"+encodeURICompone
 const webUrl   = w => { if(!w) return null; return w.startsWith("http")?w:"https://"+w; };
 
 // ─── CSS ─────────────────────────────────────────────────────────
+
+// ─── TRANSLATIONS ────────────────────────────────────────────────
+const TRANSLATIONS = {
+  en: {
+    // Tabs
+    dashboard:"DASHBOARD", leads:"LEADS", playbook:"PLAYBOOK",
+    team:"TEAM", ai:"🤖 AI", settings:"SETTINGS", archive:"ARCHIVE",
+    // Nav labels
+    pipeline:"Pipeline", stages:t("stages"), reference:t("reference"), scripts:t("scripts"),
+    // Common buttons
+    save:"Save", cancel:"Cancel", edit:t("edit"), close:"Close", add:t("add"),
+    delete:"Delete", archive:"Archive", apply:"Apply", refresh:"↻ Refresh",
+    copy:"📋 Copy", back:t("back"), confirm:"Confirm", reject:"Reject",
+    // Dashboard
+    todaysActions:t("todaysActions"), pipelineStats:t("pipelineStats"),
+    morningBrief:"AI MORNING BRIEF", pipelineIntelligence:"PIPELINE INTELLIGENCE",
+    analyzingPipeline:t("analyzingPipeline"),
+    clickRefresh:t("clickRefresh"),
+    myPlanToday:t("myPlanToday"),
+    businessPriorities:t("businessPriorities"),
+    priorityRegions:t("priorityRegions"),
+    priorityIndustries:t("priorityIndustries"),
+    extraNotesAI:t("extraNotesAI"),
+    whatElseTodo:t("whatElseTodo"),
+    savePlan:t("savePlan"),
+    // Leads
+    search:t("search"),
+    newLead:t("newLead"),
+    hotDeals:"🔥 Hot", warmDeals:"🟡 Warm", coldDeals:"❄️ Cold",
+    // Deal stages
+    stageNew:"New", stageContacted:"Contacted", stageInterested:"Interested",
+    stageMeeting:"Meeting Scheduled", stageDone:"Meeting Done",
+    stageProposal:"Proposal Sent", stageNegotiation:"Negotiation",
+    stageWon:"Closed Won", stageLost:"Closed Lost", stageNoAnswer:"No Answer",
+    // Fields
+    company:"Company", location:"Location", contact:"Contact", phone:"Phone",
+    email:"Email", county:"County", stage:"Stage", workers:"Workers",
+    workerType:"Worker Type", service:"Service", notes:"Notes",
+    nextStep:"Next Step", nextStepDate:"Next Step Date", lastContact:"Last Contact",
+    painScore:"Pain Score", currentSupplier:"Current Supplier",
+    intelligence:"INTELLIGENCE", activities:"ACTIVITY LOG",
+    // Modals
+    quickScript:"Script Workshop", postCallDebrief:"Post-Call Debrief",
+    emailDraft:"Email Draft", preCallBrief:"Pre-Call Brief",
+    // Playbook
+    quickView:t("quickView"), fullManual:"📖 Full manual",
+    // Actions
+    overdue:"Overdue", meetingsToday:"Meetings Today", hotNoStep:t("hotNoStep"),
+    noContact7:t("noContact7"), newUnqualified:t("newUnqualified"),
+    // Team
+    activeDeals:"active", won:"Won", placed:"placed workers",
+    // Settings
+    theme:"Theme", language:"Language", users:"Users", services:"Services",
+    changePassword:"Change Password",
+    // AI
+    aiAssistant:t("aiAssistant"), analyzing:"Analyzing...", generating:"Generating...",
+    applySelected:"✅ Apply selected", discussAI:t("discussAI"),
+    // Post-call
+    suggestedUpdates:t("suggestedUpdates"),
+    applyToCRM:"Apply to CRM", discardClose:t("discardClose"),
+    // Archive
+    archiveConfirm:"Archive this deal?", deleteConfirm:"Delete permanently?",
+    noneFound:"No results found", allClear:t("allClear"),
+  },
+  pl: {
+    dashboard:"PULPIT", leads:"LEADY", playbook:"PODRĘCZNIK",
+    team:"ZESPÓŁ", ai:"🤖 AI", settings:"USTAWIENIA", archive:"ARCHIWUM",
+    pipeline:"Pipeline", stages:"📋 Etapy", reference:"📚 Karty", scripts:"💬 Skrypty",
+    save:"Zapisz", cancel:"Anuluj", edit:"✎ Edytuj", close:"Zamknij", add:"+ Dodaj",
+    delete:"Usuń", archive:"Archiwizuj", apply:"Zastosuj", refresh:"↻ Odśwież",
+    copy:"📋 Kopiuj", back:"← Wróć", confirm:"Potwierdź", reject:"Odrzuć",
+    todaysActions:"⚡ Dzisiejsze Akcje", pipelineStats:"📊 Statystyki Pipeline",
+    morningBrief:"AI PORANNY BRIEF", pipelineIntelligence:"ANALIZA PIPELINE",
+    analyzingPipeline:"Analizuję pipeline...",
+    clickRefresh:"Kliknij ↻ Odśwież aby wygenerować plan dnia",
+    myPlanToday:"📝 MÓJ PLAN NA DZIŚ",
+    businessPriorities:"🎯 PRIORYTETY BIZNESOWE",
+    priorityRegions:"PRIORYTETOWE REGIONY (oddziel przecinkiem)",
+    priorityIndustries:"PRIORYTETOWE BRANŻE (oddziel przecinkiem)",
+    extraNotesAI:"DODATKOWE UWAGI DLA AI",
+    whatElseTodo:"Co jeszcze masz do zrobienia? Co zmienić w planie?",
+    savePlan:"✓ Zapisz plan",
+    search:"Szukaj firm, kontaktów, notatek...",
+    newLead:"+ Nowy Lead",
+    hotDeals:"🔥 Gorący", warmDeals:"🟡 Ciepły", coldDeals:"❄️ Zimny",
+    stageNew:"Nowy", stageContacted:"Skontaktowany", stageInterested:"Zainteresowany",
+    stageMeeting:"Spotkanie zaplanowane", stageDone:"Spotkanie odbyło się",
+    stageProposal:"Propozycja wysłana", stageNegotiation:"Negocjacje",
+    stageWon:"Zamknięty — wygrany", stageLost:"Zamknięty — przegrany", stageNoAnswer:"Brak odpowiedzi",
+    company:"Firma", location:"Lokalizacja", contact:"Kontakt", phone:"Telefon",
+    email:"Email", county:"Województwo/Judet", stage:"Etap", workers:"Pracownicy",
+    workerType:"Typ pracownika", service:"Usługa", notes:"Notatki",
+    nextStep:"Następny krok", nextStepDate:"Data następnego kroku", lastContact:"Ostatni kontakt",
+    painScore:"Poziom bólu", currentSupplier:"Obecny dostawca",
+    intelligence:"INTELLIGENCE", activities:"LOG AKTYWNOŚCI",
+    quickScript:"Warsztat Skryptów", postCallDebrief:"Debrief po rozmowie",
+    emailDraft:"Szkic emaila", preCallBrief:"Brief przed rozmową",
+    quickView:"⚡ SZYBKI PODGLĄD", fullManual:"📖 Pełny podręcznik",
+    overdue:"Zaległe", meetingsToday:"Spotkania dziś", hotNoStep:"Gorące — brak następnego kroku",
+    noContact7:"Bez kontaktu >7 dni", newUnqualified:"Nowe niekwalifikowane",
+    activeDeals:"aktywnych", won:"Wygrane", placed:"rozmieszczonych pracowników",
+    theme:"Motyw", language:"Język", users:"Użytkownicy", services:"Usługi",
+    changePassword:"Zmień hasło",
+    aiAssistant:"Asystent AI", analyzing:"Analizuję...", generating:"Generuję...",
+    applySelected:"✅ Zastosuj zaznaczone", discussAI:"Zapytaj AI",
+    suggestedUpdates:"SUGEROWANE AKTUALIZACJE — zaznacz co zastosować:",
+    applyToCRM:"Zastosuj w CRM", discardClose:"✕ Odrzuć",
+    archiveConfirm:"Archiwizować ten deal?", deleteConfirm:"Usunąć na zawsze?",
+    noneFound:"Brak wyników", allClear:"✅ Pipeline czysty — brak pilnych akcji",
+  },
+  ro: {
+    dashboard:"PANOU", leads:"LEADURI", playbook:"GHID VÂNZĂRI",
+    team:"ECHIPĂ", ai:"🤖 AI", settings:"SETĂRI", archive:"ARHIVĂ",
+    pipeline:"Pipeline", stages:"📋 Etape", reference:"📚 Fișe", scripts:"💬 Scripturi",
+    save:"Salvează", cancel:"Anulează", edit:"✎ Editează", close:"Închide", add:"+ Adaugă",
+    delete:"Șterge", archive:"Arhivează", apply:"Aplică", refresh:"↻ Actualizează",
+    copy:"📋 Copiază", back:"← Înapoi", confirm:"Confirmă", reject:"Respinge",
+    todaysActions:"⚡ Acțiuni Azi", pipelineStats:"📊 Statistici Pipeline",
+    morningBrief:"AI BRIEFING DE DIMINEAȚĂ", pipelineIntelligence:"ANALIZĂ PIPELINE",
+    analyzingPipeline:"Analizez pipeline-ul...",
+    clickRefresh:"Apasă ↻ Actualizează pentru a genera planul zilei",
+    myPlanToday:"📝 PLANUL MEU DE AZI",
+    businessPriorities:"🎯 PRIORITĂȚI BUSINESS",
+    priorityRegions:"REGIUNI PRIORITARE (separat cu virgulă)",
+    priorityIndustries:"INDUSTRII PRIORITARE (separat cu virgulă)",
+    extraNotesAI:"NOTE ADIȚIONALE PENTRU AI",
+    whatElseTodo:"Ce mai ai de făcut? Ce vrei să schimbi în plan?",
+    savePlan:"✓ Salvează planul",
+    search:"Caută companii, contacte, notițe...",
+    newLead:"+ Lead Nou",
+    hotDeals:"🔥 Fierbinte", warmDeals:"🟡 Cald", coldDeals:"❄️ Rece",
+    stageNew:"Nou", stageContacted:"Contactat", stageInterested:"Interesat",
+    stageMeeting:"Întâlnire programată", stageDone:"Întâlnire finalizată",
+    stageProposal:"Propunere trimisă", stageNegotiation:"Negociere",
+    stageWon:"Câștigat", stageLost:"Pierdut", stageNoAnswer:"Fără răspuns",
+    company:"Companie", location:"Locație", contact:"Contact", phone:"Telefon",
+    email:"Email", county:"Județ", stage:"Etapă", workers:"Muncitori",
+    workerType:"Tip muncitor", service:"Serviciu", notes:"Notițe",
+    nextStep:"Pasul următor", nextStepDate:"Data pasului următor", lastContact:"Ultimul contact",
+    painScore:"Scor durere", currentSupplier:"Furnizor actual",
+    intelligence:"INTELLIGENCE", activities:"LOG ACTIVITATE",
+    quickScript:"Atelier Scripturi", postCallDebrief:"Debrief post-apel",
+    emailDraft:"Ciornă email", preCallBrief:"Brief pre-apel",
+    quickView:"⚡ VIZUALIZARE RAPIDĂ", fullManual:"📖 Manual complet",
+    overdue:"Restante", meetingsToday:"Întâlniri azi", hotNoStep:"Fierbinți — fără pas următor",
+    noContact7:"Fără contact >7 zile", newUnqualified:"Noi necalificate",
+    activeDeals:"active", won:"Câștigate", placed:"muncitori plasați",
+    theme:"Temă", language:"Limbă", users:"Utilizatori", services:"Servicii",
+    changePassword:"Schimbă parola",
+    aiAssistant:"Asistent AI", analyzing:"Analizez...", generating:"Generez...",
+    applySelected:"✅ Aplică selectate", discussAI:"Întreabă AI",
+    suggestedUpdates:"ACTUALIZĂRI SUGERATE — bifează ce să aplici:",
+    applyToCRM:"Aplică în CRM", discardClose:"✕ Renunță",
+    archiveConfirm:"Arhivezi acest deal?", deleteConfirm:"Ștergi definitiv?",
+    noneFound:"Niciun rezultat", allClear:"✅ Pipeline curat — nicio acțiune urgentă",
+  },
+  ru: {
+    dashboard:"ДАШБОРД", leads:"ЛИДЫ", playbook:"РУКОВОДСТВО",
+    team:"КОМАНДА", ai:"🤖 AI", settings:"НАСТРОЙКИ", archive:"АРХИВ",
+    pipeline:"Пайплайн", stages:"📋 Этапы", reference:"📚 Карточки", scripts:"💬 Скрипты",
+    save:"Сохранить", cancel:"Отмена", edit:"✎ Редактировать", close:"Закрыть", add:"+ Добавить",
+    delete:"Удалить", archive:"Архивировать", apply:"Применить", refresh:"↻ Обновить",
+    copy:"📋 Копировать", back:"← Назад", confirm:"Подтвердить", reject:"Отклонить",
+    todaysActions:"⚡ Действия на сегодня", pipelineStats:"📊 Статистика пайплайна",
+    morningBrief:"AI УТРЕННИЙ БРИФИНГ", pipelineIntelligence:"АНАЛИЗ ПАЙПЛАЙНА",
+    analyzingPipeline:"Анализирую пайплайн...",
+    clickRefresh:"Нажмите ↻ Обновить для генерации плана дня",
+    myPlanToday:"📝 МОЙ ПЛАН НА СЕГОДНЯ",
+    businessPriorities:"🎯 БИЗНЕС-ПРИОРИТЕТЫ",
+    priorityRegions:"ПРИОРИТЕТНЫЕ РЕГИОНЫ (через запятую)",
+    priorityIndustries:"ПРИОРИТЕТНЫЕ ОТРАСЛИ (через запятую)",
+    extraNotesAI:"ДОПОЛНИТЕЛЬНЫЕ ЗАМЕТКИ ДЛЯ AI",
+    whatElseTodo:"Что ещё нужно сделать? Что изменить в плане?",
+    savePlan:"✓ Сохранить план",
+    search:"Поиск компаний, контактов, заметок...",
+    newLead:"+ Новый лид",
+    hotDeals:"🔥 Горячий", warmDeals:"🟡 Тёплый", coldDeals:"❄️ Холодный",
+    stageNew:"Новый", stageContacted:"Контакт установлен", stageInterested:"Заинтересован",
+    stageMeeting:"Встреча запланирована", stageDone:"Встреча прошла",
+    stageProposal:"Предложение отправлено", stageNegotiation:"Переговоры",
+    stageWon:"Закрыт — выиграно", stageLost:"Закрыт — проиграно", stageNoAnswer:"Нет ответа",
+    company:"Компания", location:"Локация", contact:"Контакт", phone:"Телефон",
+    email:"Email", county:"Регион/Уезд", stage:"Этап", workers:"Работники",
+    workerType:"Тип работника", service:"Услуга", notes:"Заметки",
+    nextStep:"Следующий шаг", nextStepDate:"Дата следующего шага", lastContact:"Последний контакт",
+    painScore:"Уровень боли", currentSupplier:"Текущий поставщик",
+    intelligence:"INTELLIGENCE", activities:"ЛОГ АКТИВНОСТИ",
+    quickScript:"Мастерская скриптов", postCallDebrief:"Дебриф после звонка",
+    emailDraft:"Черновик письма", preCallBrief:"Бриф перед звонком",
+    quickView:"⚡ БЫСТРЫЙ ПРОСМОТР", fullManual:"📖 Полное руководство",
+    overdue:"Просроченные", meetingsToday:"Встречи сегодня", hotNoStep:"Горячие — нет следующего шага",
+    noContact7:"Без контакта >7 дней", newUnqualified:"Новые неквалифицированные",
+    activeDeals:"активных", won:"Выиграно", placed:"размещённых работников",
+    theme:"Тема", language:"Язык", users:"Пользователи", services:"Услуги",
+    changePassword:"Изменить пароль",
+    aiAssistant:"AI Ассистент", analyzing:"Анализирую...", generating:"Генерирую...",
+    applySelected:"✅ Применить выбранные", discussAI:"Спросить AI",
+    suggestedUpdates:"ПРЕДЛОЖЕННЫЕ ОБНОВЛЕНИЯ — отметьте что применить:",
+    applyToCRM:"Применить в CRM", discardClose:"✕ Отклонить",
+    archiveConfirm:"Архивировать этот deal?", deleteConfirm:"Удалить навсегда?",
+    noneFound:"Ничего не найдено", allClear:"✅ Пайплайн чист — нет срочных действий",
+  },
+};
+const LANG_NAMES = {en:"English",pl:"Polski",ro:"Română",ru:"Русский"};
+let _lang = "en";
+const t = (key) => { const tr=TRANSLATIONS[_lang]||TRANSLATIONS.en; return tr[key]||TRANSLATIONS.en[key]||key; };
+const setGlobalLang = (l) => { _lang=l; };
+
 const getCSS = () => `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -1914,7 +2122,7 @@ function AdminPanel({users,setUsers,cur,onClose,services,setServices,entities,se
             {err&&<div style={{padding:"9px",borderRadius:7,fontSize:12,background:`${C.red}18`,border:`1px solid ${C.red}44`,color:C.red}}>{err}</div>}
             <div style={{display:"flex",gap:8}}>
               <button className="btn" onClick={add} style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",borderRadius:8,padding:"10px",fontSize:12}}>Add User</button>
-              <button className="btn" onClick={()=>{setShowAdd(false);setErr("");}} style={{flex:1,background:C.bg4,color:C.txt2,borderRadius:8,padding:"10px",fontSize:12,border:`1px solid ${C.border}`}}>Cancel</button>
+              <button className="btn" onClick={()=>{setShowAdd(false);setErr("");}} style={{flex:1,background:C.bg4,color:C.txt2,borderRadius:8,padding:"10px",fontSize:12,border:`1px solid ${C.border}`}}>{t("cancel")}</button>
             </div>
           </div>
         ):(
@@ -2050,10 +2258,10 @@ Top deals by workers: ${active.filter(l=>parseInt(l.workers)>0).sort((a,b)=>(par
         ))}
       </div>
 
-      <ActionCard icon="⚠" title="Overdue Follow-ups" color={C.red} items={overdue}/>
-      <ActionCard icon="📅" title="Meetings Today/Tomorrow" color={C.amber} items={meetingsToday}/>
+      <ActionCard icon="⚠" title={t("overdue")} color={C.red} items={overdue}/>
+      <ActionCard icon="📅" title={t("meetingsToday")} color={C.amber} items={meetingsToday}/>
       <ActionCard icon="🔥" title="Hot Deals — No Next Step" color={C.orange} items={hotNoStep}/>
-      <ActionCard icon="📭" title="No Contact > 7 days" color={C.blue} items={noContact7}/>
+      <ActionCard icon="📭" title={t("noContact7")} color={C.blue} items={noContact7}/>
       <ActionCard icon="🆕" title="New Unqualified Leads" color={C.teal} items={newUnqualified}/>
 
       {overdue.length===0&&meetingsToday.length===0&&hotNoStep.length===0&&(
@@ -2176,7 +2384,7 @@ Return ONLY valid JSON, no explanation.`;
             {loading?"Parsing...":"→ Parse"}
           </button>
           <button className="btn" onClick={()=>{setOpen(false);setPreview(null);setText("");}}
-            style={{background:"transparent",color:C.txt3,padding:"6px 10px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>Cancel</button>
+            style={{background:"transparent",color:C.txt3,padding:"6px 10px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>{t("cancel")}</button>
         </div>
       </div>
 
@@ -2574,7 +2782,7 @@ ${workloadCtx}`;
     setChatMsgs(prev=>[...prev,{role:"user",content:userMsg}]);
     setDiscussing("");
     const ctx2 = `Current deal: ${loc.company} — ${loc.stage}. Original call note: ${text}. AI suggested: ${JSON.stringify(suggestions)}. User says: ${userMsg}. Respond briefly and if needed provide revised JSON suggestions in a \`\`\`json block.`;
-    const raw = await aiCall("You are a CRM AI for Gremi Personal Romania. The user wants to discuss or modify the suggested CRM updates. Be concise. If suggesting revised fields, put them in a ```json block.", ctx2, 500);
+    const raw = await aiCall(`You are a CRM AI for Gremi Personal Romania. The user wants to discuss or modify the suggested CRM updates. Be concise. Respond in ${LANG_NAMES[localStorage.getItem("gremi_lang")||"en"]||"English"}. If suggesting revised fields, put them in a \`\`\`json block.`, ctx2, 500);
     setChatMsgs(prev=>[...prev,{role:"assistant",content:raw}]);
     // Try to extract revised suggestions
     const m = raw.match(/```json\s*([\s\S]*?)```/);
@@ -2656,7 +2864,7 @@ ${workloadCtx}`;
             </button>
           )}
           <button className="btn" onClick={onClose} style={{background:C.bg3,color:C.txt3,padding:"12px 16px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>
-            {suggestions?"✕ Discard":"Close"}
+            {suggestions?t("discardClose"):"Close"}
           </button>
         </div>
       </div>
@@ -2728,7 +2936,7 @@ Recent activity:\n${acts||"none"}`;
             style={{flex:1,background:copied?`${C.green}22`:`${C.teal}18`,color:copied?C.green:C.teal,padding:"11px",fontSize:13,borderRadius:9,border:`1px solid ${copied?C.green+"44":C.teal+"33"}`}}>
             {copied?"✓ Copied!":"📋 Copy to Clipboard"}
           </button>
-          <button className="btn" onClick={onClose} style={{background:C.bg3,color:C.txt3,padding:"11px 14px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>Close</button>
+          <button className="btn" onClick={onClose} style={{background:C.bg3,color:C.txt3,padding:"11px 14px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>{t("close")}</button>
         </div>
       </div>
     </div>
@@ -2795,7 +3003,7 @@ Return ONLY valid JSON.`,
     <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:show||acts.length>0?10:0}}>
         <div className="lbl" style={{marginBottom:0}}>ACTIVITY LOG ({acts.length})</div>
-        <button className="btn" onClick={()=>{setShow(!show);setEditId(null);}} style={{background:`${C.blue}22`,color:C.blue2,padding:"4px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.blue}44`}}>{show?"Cancel":"+ Add"}</button>
+        <button className="btn" onClick={()=>{setShow(!show);setEditId(null);}} style={{background:`${C.blue}22`,color:C.blue2,padding:"4px 10px",fontSize:10,borderRadius:6,border:`1px solid ${C.blue}44`}}>{show?"Cancel":t("add")}</button>
       </div>
 
       {aiSuggest&&(
@@ -2836,8 +3044,8 @@ Return ONLY valid JSON.`,
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>{TYPES.map(t=><button key={t} className="btn" onClick={()=>setEditType(t)} style={{padding:"3px 8px",fontSize:10,borderRadius:5,background:editType===t?`${C.blue}22`:C.bg2,color:editType===t?C.blue2:C.txt3,border:`1px solid ${editType===t?C.blue+"44":C.border}`}}>{t}</button>)}</div>
               <textarea value={editNote} onChange={e=>setEditNote(e.target.value)} rows={3} className="fi" style={{fontSize:12,resize:"vertical",marginBottom:6}}/>
               <div style={{display:"flex",gap:6}}>
-                <button className="btn" onClick={saveEdit} style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"7px",fontSize:11,borderRadius:7}}>Save</button>
-                <button className="btn" onClick={()=>setEditId(null)} style={{flex:1,background:C.bg2,color:C.txt3,padding:"7px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>Cancel</button>
+                <button className="btn" onClick={saveEdit} style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"7px",fontSize:11,borderRadius:7}}>{t("save")}</button>
+                <button className="btn" onClick={()=>setEditId(null)} style={{flex:1,background:C.bg2,color:C.txt3,padding:"7px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>{t("cancel")}</button>
               </div>
             </div>
           ):(
@@ -3035,7 +3243,7 @@ function NotesField({value, onSave, label="NOTES"}) {
       <div style={{display:"flex",alignItems:"center",marginBottom:editing?8:6}}>
         <div className="lbl" style={{marginBottom:0,flex:1}}>{label}</div>
         {!editing&&onSave&&<button className="btn" onClick={()=>setEditing(true)}
-          style={{background:`${C.blue}15`,color:C.blue2,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.blue}33`}}>✎ Edit</button>}
+          style={{background:`${C.blue}15`,color:C.blue2,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.blue}33`}}>{t("edit")}</button>}
       </div>
       {editing?(
         <>
@@ -3043,7 +3251,7 @@ function NotesField({value, onSave, label="NOTES"}) {
             style={{width:"100%",background:C.bg4,border:`1px solid ${C.blue}`,color:C.txt,borderRadius:8,padding:"9px 11px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.7,outline:"none"}}/>
           <div style={{display:"flex",gap:6,marginTop:8}}>
             <button className="btn" onClick={save} style={{flex:1,background:`linear-gradient(135deg,${C.blue},${C.teal})`,color:"#fff",padding:"9px",fontSize:12,borderRadius:8}}>✓ Save</button>
-            <button className="btn" onClick={cancel} style={{background:C.bg4,color:C.txt3,padding:"9px 14px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>Cancel</button>
+            <button className="btn" onClick={cancel} style={{background:C.bg4,color:C.txt3,padding:"9px 14px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>{t("cancel")}</button>
           </div>
         </>
       ):(
@@ -3069,7 +3277,7 @@ function IntelligenceField({hq, onUpdateHQ}) {
     <div style={{background:C.bg3,border:`1px solid ${editing?C.indigo:C.indigo+"44"}`,borderRadius:10,padding:12}}>
       <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
         <div className="lbl" style={{color:C.indigo,marginBottom:0,flex:1}}>INTELLIGENCE</div>
-        {!editing&&onUpdateHQ&&<button className="btn" onClick={()=>setEditing(true)} style={{background:`${C.indigo}15`,color:C.indigo,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.indigo}33`}}>✎ Edit</button>}
+        {!editing&&onUpdateHQ&&<button className="btn" onClick={()=>setEditing(true)} style={{background:`${C.indigo}15`,color:C.indigo,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.indigo}33`}}>{t("edit")}</button>}
       </div>
       {editing?(
         <>
@@ -3077,7 +3285,7 @@ function IntelligenceField({hq, onUpdateHQ}) {
             style={{width:"100%",background:C.bg4,border:`1px solid ${C.indigo}`,color:C.txt,borderRadius:8,padding:"9px 11px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.8,outline:"none"}}/>
           <div style={{display:"flex",gap:6,marginTop:8}}>
             <button className="btn" onClick={save} style={{flex:1,background:`linear-gradient(135deg,${C.indigo},${C.blue})`,color:"#fff",padding:"9px",fontSize:12,borderRadius:8}}>✓ Save</button>
-            <button className="btn" onClick={cancel} style={{background:C.bg4,color:C.txt3,padding:"9px 14px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>Cancel</button>
+            <button className="btn" onClick={cancel} style={{background:C.bg4,color:C.txt3,padding:"9px 14px",fontSize:12,borderRadius:8,border:`1px solid ${C.border}`}}>{t("cancel")}</button>
           </div>
         </>
       ):(
@@ -3356,7 +3564,7 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
         {onUpdateHQ&&(
           <button className="btn" onClick={()=>setShowAI(v=>!v)}
             style={{width:"100%",background:showAI?`${C.teal}22`:`${C.teal}12`,color:C.teal,padding:"11px",fontSize:13,borderRadius:10,border:`1px solid ${C.teal}44`}}>
-            🤖 {showAI?"Hide AI Assistant":"AI Assistant"}
+            🤖 {showAI?"Hide AI Assistant":t("aiAssistant")}
           </button>
         )}
         {showAI&&onUpdateHQ&&curUser&&(
@@ -3643,9 +3851,9 @@ function LocDetailModal({loc,hqs,locs,users,isAdmin,canArchive,canEdit,onClose,o
         <button className="btn" onClick={()=>setShowDebrief(true)} style={{background:`${C.blue}18`,color:C.blue2,padding:"12px 14px",fontSize:13,borderRadius:10,border:`1px solid ${C.blue}33`}} title="Post-Call Debrief">📞</button>
         <button className="btn" onClick={()=>setShowEmail(true)} style={{background:`${C.teal}18`,color:C.teal,padding:"12px 14px",fontSize:13,borderRadius:10,border:`1px solid ${C.teal}33`}} title="AI Email Draft">✉️</button>
         <button className="btn" onClick={()=>setShowQuickScript(v=>!v)} style={{background:showQuickScript?`${C.amber}28`:`${C.amber}15`,color:C.amber,padding:"12px 14px",fontSize:13,borderRadius:10,border:`1px solid ${showQuickScript?C.amber:C.amber+"44"}`}} title="Quick Script for this client">📋</button>
-        {canEdit?<button className="btn" onClick={onEdit} style={{flex:1,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"13px",fontSize:14,borderRadius:10}}>✎ Edit</button>
+        {canEdit?<button className="btn" onClick={onEdit} style={{flex:1,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"13px",fontSize:14,borderRadius:10}}>{t("edit")}</button>
         :<div style={{flex:1,padding:"13px",fontSize:12,color:C.txt3,textAlign:"center"}}>View only</div>}
-        <button className="btn" onClick={()=>setShowAI(!showAI)} style={{background:showAI?`${C.teal}28`:`${C.teal}18`,color:C.teal,padding:"13px 16px",fontSize:14,borderRadius:10,border:`1px solid ${showAI?C.teal:C.teal+"44"}`}} title="AI Assistant">🤖</button>
+        <button className="btn" onClick={()=>setShowAI(!showAI)} style={{background:showAI?`${C.teal}28`:`${C.teal}18`,color:C.teal,padding:"13px 16px",fontSize:14,borderRadius:10,border:`1px solid ${showAI?C.teal:C.teal+"44"}`}} title={t("aiAssistant")}>🤖</button>
       </div>
       {showAI&&<InlineAI loc={loc} hq={hq} onUpdate={onUpdate} onUpdateHQ={onUpdateHQ} locs={locs} users={users}/>}
       {showQuickScript&&<QuickScriptModal loc={loc} hq={hq} onClose={()=>setShowQuickScript(false)} locs={locs} users={users}/>}
@@ -3689,7 +3897,7 @@ function LocDetailModal({loc,hqs,locs,users,isAdmin,canArchive,canEdit,onClose,o
                 )}
               </div>
               <div style={{padding:"12px 14px",borderTop:`1px solid ${C.border}`,flexShrink:0}}>
-                <button className="btn" onClick={()=>setShowStageGuide(false)} style={{width:"100%",background:C.bg3,color:C.txt2,padding:"11px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>Close</button>
+                <button className="btn" onClick={()=>setShowStageGuide(false)} style={{width:"100%",background:C.bg3,color:C.txt2,padding:"11px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>{t("close")}</button>
               </div>
             </div>
           </div>
@@ -3997,7 +4205,7 @@ function HQFormModal({form,setForm,onSave,onClose}) {
         <div><div className="lbl">INTELLIGENCE</div><textarea id="hq-intelligence" value={form.intelligence||""} onChange={e=>setForm({...form,intelligence:e.target.value})} rows={4} className="fi" style={{resize:"vertical",lineHeight:1.7}} placeholder="Financials: revenue, growth dynamics...&#10;Products & Markets: what they make, for whom...&#10;Vacancies: open positions, how long posted...&#10;Competitor: current suppliers, who else they work with...&#10;Decision Maker LinkedIn: what they post, concerns..."/></div>
         <div><div className="lbl">NOTES</div><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} className="fi" style={{resize:"vertical",lineHeight:1.7}}/></div>
       </div>
-      <div className="mf"><button className="btn" onClick={onSave} style={{width:"100%",background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"14px",fontSize:15,borderRadius:10}}>Save</button></div>
+      <div className="mf"><button className="btn" onClick={onSave} style={{width:"100%",background:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:"#fff",padding:"14px",fontSize:15,borderRadius:10}}>{t("save")}</button></div>
     </div>
   );
 }
@@ -4516,7 +4724,7 @@ function TemplatesTab({isAdmin, templates, setTemplates}) {
             {editMode?(
               <div style={{display:"flex",gap:8}}>
                 <button className="btn" onClick={saveTpl} style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"12px",fontSize:13,borderRadius:9}}>✓ Save</button>
-                <button className="btn" onClick={()=>{setEditText(selTpl.text);setEditTitle(selTpl.title);setEditMode(false);}} style={{background:C.bg3,color:C.txt3,padding:"12px 16px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>Cancel</button>
+                <button className="btn" onClick={()=>{setEditText(selTpl.text);setEditTitle(selTpl.title);setEditMode(false);}} style={{background:C.bg3,color:C.txt3,padding:"12px 16px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>{t("cancel")}</button>
               </div>
             ):(
               <>
@@ -4544,7 +4752,7 @@ function ConfirmDelete({label, onConfirm}) {
     <div style={{display:"flex",gap:6,alignItems:"center",background:`${C.red}10`,border:`1px solid ${C.red}44`,borderRadius:8,padding:"6px 10px"}}>
       <span style={{fontSize:11,color:C.red,fontWeight:600}}>Sure? This cannot be undone.</span>
       <button className="btn" onClick={onConfirm} style={{background:C.red,color:"#fff",padding:"5px 12px",fontSize:11,borderRadius:6,fontWeight:700}}>Yes, delete</button>
-      <button className="btn" onClick={()=>setStep(0)} style={{background:C.bg3,color:C.txt3,padding:"5px 10px",fontSize:11,borderRadius:6,border:`1px solid ${C.border}`}}>Cancel</button>
+      <button className="btn" onClick={()=>setStep(0)} style={{background:C.bg3,color:C.txt3,padding:"5px 10px",fontSize:11,borderRadius:6,border:`1px solid ${C.border}`}}>{t("cancel")}</button>
     </div>
   );
 }
@@ -4603,7 +4811,7 @@ function ScriptsTab({tplData, isAdmin, setTemplates}) {
             {editMode?(
               <div style={{display:"flex",gap:8}}>
                 <button className="btn" onClick={saveTpl} style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"11px",fontSize:13,borderRadius:9}}>✓ Save</button>
-                <button className="btn" onClick={()=>{setEditText(selTpl.text);setEditTitle(selTpl.title);setEditMode(false);}} style={{background:C.bg3,color:C.txt3,padding:"11px 14px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>Cancel</button>
+                <button className="btn" onClick={()=>{setEditText(selTpl.text);setEditTitle(selTpl.title);setEditMode(false);}} style={{background:C.bg3,color:C.txt3,padding:"11px 14px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>{t("cancel")}</button>
               </div>
             ):(
               <>
@@ -4698,7 +4906,7 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,templates,setTemplates}) {
   return(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,flexShrink:0,alignItems:"center"}}>
-        {[["stages","📋 Pipeline"],["extras","📚 Reference"],["scripts","💬 Scripts"]].map(([id,label])=>(
+        {[["stages",t("stages")],["extras",t("reference")],["scripts",t("scripts")]].map(([id,label])=>(
           <button key={id} className="tab" onClick={()=>{setTab(id);setSelId(null);}}
             style={{background:tab===id?C.bg2:C.bg0,color:tab===id?C.txt:C.txt3,borderBottomColor:tab===id?C.blue:"transparent",padding:"10px 14px",fontSize:12}}>
             {label}
@@ -4743,7 +4951,7 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,templates,setTemplates}) {
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
               <button className="btn" onClick={()=>setSelId(null)} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Back</button>
               <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt,flex:1}}>{selStage.stage}</div>
-              {isAdmin&&<button className="btn" onClick={()=>setEditing({mode:"stage",item:{...selStage}})} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>✎ Edit</button>}
+              {isAdmin&&<button className="btn" onClick={()=>setEditing({mode:"stage",item:{...selStage}})} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>{t("edit")}</button>}
             </div>
             {/* Quick View card */}
             {selStage.quick&&selStage.quick.length>0&&(
@@ -4819,7 +5027,7 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,templates,setTemplates}) {
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
               <button className="btn" onClick={()=>setSelId(null)} style={{background:C.bg3,color:C.txt3,padding:"6px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.border}`}}>← Back</button>
               <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:14,color:C.txt,flex:1}}>{selExtra.title}</div>
-              {isAdmin&&<button className="btn" onClick={()=>setEditing({mode:"extra",item:{...selExtra}})} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>✎ Edit</button>}
+              {isAdmin&&<button className="btn" onClick={()=>setEditing({mode:"extra",item:{...selExtra}})} style={{background:`${C.blue}18`,color:C.blue2,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.blue}33`}}>{t("edit")}</button>}
             </div>
             {selExtra.quick&&selExtra.quick.length>0&&(
               <div style={{background:`linear-gradient(135deg,${C.amber}15,${C.orange}08)`,border:`2px solid ${C.amber}44`,borderRadius:10,padding:"12px 14px"}}>
@@ -4894,7 +5102,7 @@ Create new lead:
 {"action":"create_lead","hq_company":"Name","hq_industry":"Auto Parts","hq_address":"address","hq_employees":"300","hq_intelligence":"research","loc_location":"City","loc_county":"County","loc_workers":"20","loc_worker_type":"UA Ukrainian","loc_service":"Outsourcing","loc_contact":"Name","loc_role":"HR Director","loc_phone":"07xx","loc_email":"email","loc_notes":"notes","spin_p":"pain"}
 \`\`\`
 
-IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's language.
+IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's selected language: ${LANG_NAMES[localStorage.getItem('gremi_lang')||'en']||'English'}.
 
 ${buildWorkloadContext(cur.id, locs, users, null, null)}`;
   };
@@ -5202,7 +5410,7 @@ Top hot deals: ${hot.slice(0,5).map(l=>`${l.company} (${l.workers||"?"}w, ${l.st
 }
 
 // ─── DASHBOARD TAB (Today actions + KPI stats merged) ────────────
-function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead}) {
+function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead, uiLang="en"}) {
   const [summary,setSummary]=useState(""); const [summaryLoading,setSummaryLoading]=useState(false);
   const [aiAnalysis,setAiAnalysis]=useState(""); const [aiLoading,setAiLoading]=useState(false);
   const [section,setSection]=useState("actions"); // actions | stats
@@ -5220,7 +5428,7 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
     const newChat=[...briefChat,{role:"user",content:txt}];
     setBriefChat(newChat); setBriefInput(""); setBriefLoading(true);
     const ctx=`Aktualny brief:\n${summary}\n\nPlan handlowca:\n${myPlan||"brak"}\n\nPriorytety: ${priorities.counties.join(", ")} | ${priorities.industries.join(", ")}`;
-    const t=await aiCall("Jesteś AI asystentem sprzedaży Gremi Personal Romania. Handlowiec mówi co chce zmienić w planie lub co jeszcze ma do zrobienia. Odpowiedz krótko i konkretnie po polsku. Jeśli prosi o aktualizację planu — zaproponuj nową wersję.",ctx+"\n\nHandlowiec: "+txt,500);
+    const t=await aiCall(`You are the sales AI assistant for Gremi Personal Romania. The salesperson is telling you what to change in the plan or what else they need to do. Respond briefly and concretely. IMPORTANT: Always reply in ${LANG_NAMES[uiLang]||"English"} (this is the user interface language). If they ask for a plan update, propose a new version.`,ctx+"\n\nHandlowiec: "+txt,500);
     setBriefChat(prev=>[...prev,{role:"assistant",content:t}]); setBriefLoading(false);
   };
   const today=new Date();
@@ -5252,65 +5460,66 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
     const noContactList=active.filter(l=>{if(!l.lastContact)return true;return (new Date()-new Date(l.lastContact))>7*24*3600*1000;}).slice(0,5).map(l=>`- ${l.company} [${l.stage}] last contact: ${l.lastContact||"nigdy"}`).join("\n");
     const newUnqList=active.filter(l=>l.stage==="New"&&!l.spin?.p).slice(0,5).map(l=>`- ${l.company} county:${l.county||"?"} workers:${l.workers||"?"}`).join("\n");
     const workload=buildWorkloadContext(cur.id, locs, users, null, null);
-    const prioCtx=`\nBIZNESOWE PRIORYTETY HANDLOWCA:
-Priorytetowe county/region: ${priorities.counties.join(", ")}
-Priorytetowe branże: ${priorities.industries.join(", ")}
-Uwagi: ${priorities.notes||"brak"}
-Plan handlowca na dziś (jeśli jest): ${myPlan||"nie wpisany"}`;
+    const prioCtx=`\nSALESPERSON BUSINESS PRIORITIES:
+Priority regions/counties: ${priorities.counties.join(", ")}
+Priority industries: ${priorities.industries.join(", ")}
+Notes: ${priorities.notes||"brak"}
+Salesperson's plan for today: ${myPlan||"not set"}`;
 
     // What was already done today (from activity logs)
     const todayDone=locs.flatMap(l=>(l.activities||[]).filter(a=>a.date===today2).map(a=>({company:l.company,type:a.type,note:a.note||""})));
     const todayDoneList=todayDone.map(a=>`- ${a.company}: ${a.type} — ${a.note.substring(0,80)}`).join("\n");
 
-    const ctx=`Dzisiaj: ${today2} (${dayName})
-Handlowiec: ${cur.name}
-Pipeline: ${active.length} aktywnych, ${won.length} wygranych, ${placed} pracowników, pipeline RON ~${Math.round(pipe/1000)}k
+    const ctx=`Today: ${today2} (${dayName})
+Salesperson: ${cur.name}
+Pipeline: ${active.length} active, ${won.length} won, ${placed} workers placed, pipeline RON ~${Math.round(pipe/1000)}k
 
-ZALEGŁE (${overdue.length}):
-${overdueList||"Brak zaległości ✅"}
+OVERDUE (${overdue.length}):
+${overdueList||"None ✅"}
 
-ZAPLANOWANE DZISIAJ/JUTRO (${meetingsToday.length}):
-${todayList||"Brak zaplanowanych działań"}
+SCHEDULED TODAY/TOMORROW (${meetingsToday.length}):
+${todayList||"None scheduled"}
 
 HOT DEALS (${active.filter(l=>l.temp==="🔥 Hot").length}):
-${hotList||"Brak hot dealów"}
+${hotList||"No hot deals"}
 
-W NEGOCJACJI / PROPOZYCJA WYSŁANA:
-${negotiList||"Brak"}
+IN NEGOTIATION / PROPOSAL SENT:
+${negotiList||"None"}
 
-BEZ KONTAKTU >7 DNI:
-${noContactList||"Brak"}
+NO CONTACT >7 DAYS:
+${noContactList||"None"}
 
-NOWE NIEKWALIFIKOWANE LEADY:
-${newUnqList||"Brak"}
+NEW UNQUALIFIED LEADS:
+${newUnqList||"None"}
 
-JUŻ ZROBIONE DZISIAJ (${todayDone.length} akcji):
-${todayDoneList||"Nic jeszcze nie zalogowano dzisiaj"}
+DONE TODAY (${todayDone.length} actions):
+${todayDoneList||"Nothing logged today yet"}
 
-ETAPY: ${STAGES.map(s=>stageCount[s]>0?s+":"+stageCount[s]:null).filter(Boolean).join(", ")}
+STAGES: ${STAGES.map(s=>stageCount[s]>0?s+":"+stageCount[s]:null).filter(Boolean).join(", ")}
 ${workload}${prioCtx}`;
 
-    const sys=`Jesteś AI asystentem sprzedaży dla Gremi Personal Romania. 
-Piszesz poranny briefing dla handlowca ${cur.name}.
+    const sys=`You are the AI sales assistant for Gremi Personal Romania.
+You are writing a morning briefing for ${cur.name}.
 
-Twoje zadanie: napisz ZAKTUALIZOWANY plan na resztę dnia — uwzględnij co już zostało zrobione dziś.
+Your task: write an UPDATED action plan for the rest of the day — account for what's already been done today.
 
-STRUKTURA ODPOWIEDZI (zawsze po polsku, konkretnie, bez owijania w bawełnę):
+STRUCTURE (use these exact emoji headers, be specific, no fluff):
 
-✅ JUŻ ZROBIONE DZIŚ — krótko co zostało wykonane (jeśli są dane)
-🔴 PILNE — zrób teraz (zaległości, hot deals bez next step)
-🟡 ZAPLANOWANE NA DZIŚ — co już jest w harmonogramie  
-🟢 REKOMENDOWANE DZIŚ — co proponujesz zrobić (uzasadnij dlaczego)
-🔵 NOWE LEADY — ile i jakie nowe firmy warto dziś prospektować (zawsze min. 10 nowych kontaktów dziennie jako norma minimalna)
-⚡ PRIORYTET #1 — jeden deal/akcja którą MUSISZ wykonać dziś
+✅ DONE TODAY — brief list of completed actions (if any logged)
+🔴 URGENT — overdue follow-ups, hot deals with no next step
+🟡 SCHEDULED TODAY — what's already in the calendar
+🟢 RECOMMENDED — what you suggest doing and why
+🔵 NEW LEADS — how many and what type to prospect today (min. 10 new contacts/day is the baseline)
+⚡ PRIORITY #1 — the single most important action today
 
-Zasady:
-- Wymieniaj konkretne nazwy firm, nie ogólniki
-- UWZGLĘDNIAJ BIZNESOWE PRIORYTETY: premiuj firmy z priorytetowych regionów i branż
-- Przy prospektingu nowych leadów sugeruj konkretne branże/regiony z listy priorytetów
-- Uwzględnij capacity handlowca (ile czasu ma realnie)
-- Nie zapomnij o pozyskiwaniu nowych leadów — to zawsze w planie
-- Bądź jak doświadczony sales manager który dobrze zna pipeline`;
+Rules:
+- Name specific companies, not generalities
+- PRIORITIZE business priorities: favor companies from priority regions and industries
+- For prospecting, suggest specific industries/regions from the priority list
+- Consider the salesperson's real capacity (time available)
+- Always include new lead prospecting in the plan
+- Write as an experienced sales manager who knows this pipeline well
+- IMPORTANT: respond in ${LANG_NAMES[uiLang]||'English'} — this is the user's selected interface language`;
 
     const t=await aiCall(sys,ctx,900);
     setSummary(t);setSummaryLoading(false);
@@ -5358,7 +5567,7 @@ Zasady:
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minHeight:0}}>
       {/* Section toggle */}
       <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,background:C.bg0,flexShrink:0}}>
-        {[["actions","⚡ Today's Actions"],["stats","📊 Pipeline Stats"]].map(([id,label])=>(
+        {[["actions",t("todaysActions")],["stats",t("pipelineStats")]].map(([id,label])=>(
           <button key={id} className="tab" onClick={()=>setSection(id)}
             style={{flex:1,background:section===id?`${C.blue}12`:"transparent",color:section===id?C.blue2:C.txt3,borderBottom:`2px solid ${section===id?C.blue:"transparent"}`}}>
             {label}
@@ -5375,7 +5584,7 @@ Zasady:
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:(summaryLoading||summary||aiLoading||aiAnalysis)?10:0}}>
               <div style={{width:26,height:26,borderRadius:7,background:`linear-gradient(135deg,${C.blue},${C.teal})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div>
               <div style={{flex:1}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.teal,letterSpacing:"0.06em"}}>{section==="actions"?"AI MORNING BRIEF":"PIPELINE INTELLIGENCE"}</div>
+                <div style={{fontSize:11,fontWeight:700,color:C.teal,letterSpacing:"0.06em"}}>{section==="actions"?t("morningBrief"):t("pipelineIntelligence")}</div>
                 <div style={{fontSize:10,color:C.txt3}}>{new Date().toLocaleDateString("pl-PL",{weekday:"long",day:"2-digit",month:"long"})}</div>
               </div>
               <button className="btn" onClick={section==="actions"?loadSummary:loadAnalysis} disabled={summaryLoading||aiLoading}
@@ -5384,11 +5593,11 @@ Zasady:
                 {(summaryLoading||aiLoading)?"⏳":"↻ Refresh"}
               </button>
             </div>
-            {(summaryLoading||aiLoading)&&<div style={{display:"flex",gap:4,padding:"4px 0"}}>{[0,.2,.4].map((d,i)=><span key={i} style={{width:6,height:6,background:C.teal,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}<span style={{fontSize:11,color:C.txt3,marginLeft:6}}>Analizuję pipeline...</span></div>}
+            {(summaryLoading||aiLoading)&&<div style={{display:"flex",gap:4,padding:"4px 0"}}>{[0,.2,.4].map((d,i)=><span key={i} style={{width:6,height:6,background:C.teal,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}<span style={{fontSize:11,color:C.txt3,marginLeft:6}}>Analyzing pipeline...</span></div>}
             {section==="actions"&&summary&&!summaryLoading&&<div style={{fontSize:12,color:C.txt2,lineHeight:1.75,whiteSpace:"pre-wrap"}}>{summary}</div>}
             {section==="stats"&&aiAnalysis&&!aiLoading&&<div style={{fontSize:13,color:C.txt2,lineHeight:1.7}}>{aiAnalysis}</div>}
             {section==="actions"&&!summary&&!summaryLoading&&(
-              <div style={{fontSize:12,color:C.txt3,fontStyle:"italic"}}>Kliknij ↻ Refresh żeby wygenerować plan dnia</div>
+              <div style={{fontSize:12,color:C.txt3,fontStyle:"italic"}}>Click ↻ Refresh to generate your daily plan</div>
             )}
           </div>
 
@@ -5414,7 +5623,7 @@ Zasady:
               <div style={{display:"flex",gap:6,alignItems:"center"}}>
                 <input type="text" value={briefInput} onChange={e=>setBriefInput(e.target.value)}
                   onKeyDown={e=>{if(e.key==="Enter")sendBriefMsg();}}
-                  placeholder="Co jeszcze masz do zrobienia? Co zmienić w planie?"
+                  placeholder="What else do you need to do? Any changes to the plan?"
                   style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:8,padding:"8px 11px",fontSize:12,outline:"none",fontFamily:"'Inter',sans-serif"}}/>
                 <button className="btn" onClick={sendBriefMsg} disabled={briefLoading||!briefInput.trim()}
                   style={{background:briefLoading||!briefInput.trim()?C.bg4:`linear-gradient(135deg,${C.teal},${C.blue})`,
@@ -5428,10 +5637,10 @@ Zasady:
           {section==="actions"&&(
             <div style={{background:C.bg2,border:`1px solid ${myPlan?C.blue+"44":C.border}`,borderRadius:12,padding:12}}>
               <div style={{display:"flex",alignItems:"center",marginBottom:editingPlan?8:myPlan?6:0}}>
-                <span style={{fontSize:10,fontWeight:700,color:C.blue2,letterSpacing:"0.08em",flex:1}}>📝 MÓJ PLAN NA DZIŚ</span>
+                <span style={{fontSize:10,fontWeight:700,color:C.blue2,letterSpacing:"0.08em",flex:1}}>📝 MY PLAN FOR TODAY</span>
                 {!editingPlan&&<button className="btn" onClick={()=>setEditingPlan(true)}
                   style={{background:`${C.blue}15`,color:C.blue2,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.blue}33`}}>
-                  {myPlan?"✎ Edytuj":"+ Dodaj"}
+                  {myPlan?t("edit"):t("add")}
                 </button>}
               </div>
               {editingPlan?(
@@ -5442,7 +5651,7 @@ Zasady:
                     style={{width:"100%",background:C.bg4,border:`1px solid ${C.blue}`,color:C.txt,borderRadius:8,padding:"9px 11px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"vertical",lineHeight:1.7,outline:"none"}}/>
                   <button className="btn" onClick={()=>setEditingPlan(false)}
                     style={{marginTop:6,background:`linear-gradient(135deg,${C.blue},${C.teal})`,color:"#fff",padding:"8px 18px",fontSize:12,borderRadius:8,width:"100%"}}>
-                    ✓ Zapisz plan
+                    ✓ Save plan
                   </button>
                 </>
               ):myPlan?(
@@ -5455,28 +5664,28 @@ Zasady:
           {section==="actions"&&(
             <div style={{background:C.bg2,border:`1px solid ${C.amber}33`,borderRadius:12,padding:12}}>
               <div style={{display:"flex",alignItems:"center",marginBottom:editingPriorities?8:6}}>
-                <span style={{fontSize:10,fontWeight:700,color:C.amber,letterSpacing:"0.08em",flex:1}}>🎯 PRIORYTETY BIZNESOWE</span>
+                <span style={{fontSize:10,fontWeight:700,color:C.amber,letterSpacing:"0.08em",flex:1}}>🎯 BUSINESS PRIORITIES</span>
                 <button className="btn" onClick={()=>setEditingPriorities(e=>!e)}
                   style={{background:`${C.amber}15`,color:C.amber,padding:"3px 10px",fontSize:10,borderRadius:5,border:`1px solid ${C.amber}33`}}>
-                  {editingPriorities?"✓ Zamknij":"✎ Edytuj"}
+                  {editingPriorities?"✓ Zamknij":t("edit")}
                 </button>
               </div>
               {editingPriorities?(
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   <div>
-                    <div className="lbl">PRIORYTETOWE REGIONY/COUNTY (oddziel przecinkiem)</div>
+                    <div className="lbl">PRIORITY REGIONS / COUNTY (comma separated)</div>
                     <input type="text" className="fi" value={priorities.counties.join(", ")}
                       onChange={e=>savePriorities({...priorities,counties:e.target.value.split(",").map(s=>s.trim()).filter(Boolean)})}
                       placeholder="Ilfov, Giurgiu, Bucharest"/>
                   </div>
                   <div>
-                    <div className="lbl">PRIORYTETOWE BRANŻE (oddziel przecinkiem)</div>
+                    <div className="lbl">PRIORITY INDUSTRIES (comma separated)</div>
                     <input type="text" className="fi" value={priorities.industries.join(", ")}
                       onChange={e=>savePriorities({...priorities,industries:e.target.value.split(",").map(s=>s.trim()).filter(Boolean)})}
                       placeholder="Transport, Logistică, Producție"/>
                   </div>
                   <div>
-                    <div className="lbl">DODATKOWE UWAGI DLA AI</div>
+                    <div className="lbl">EXTRA NOTES FOR AI</div>
                     <textarea className="fi" rows={2} value={priorities.notes||""}
                       onChange={e=>savePriorities({...priorities,notes:e.target.value})}
                       placeholder="np. skupiamy się na firmach podobnych do ROAD READY, min 10 nowych leadów/dzień"/>
@@ -5504,11 +5713,11 @@ Zasady:
                 </div>
               ))}
             </div>
-            <ActionGroup icon="⚠" title="Overdue Follow-ups" color={C.red} items={overdue}/>
-            <ActionGroup icon="📅" title="Meetings Today/Tomorrow" color={C.amber} items={meetingsToday}/>
-            <ActionGroup icon="🔥" title="Hot — No Next Step" color={C.orange} items={hotNoStep}/>
-            <ActionGroup icon="📭" title="No Contact > 7 days" color={C.blue} items={noContact7}/>
-            <ActionGroup icon="🆕" title="New Unqualified" color={C.teal} items={newUnqualified}/>
+            <ActionGroup icon="⚠" title={t("overdue")} color={C.red} items={overdue}/>
+            <ActionGroup icon="📅" title={t("meetingsToday")} color={C.amber} items={meetingsToday}/>
+            <ActionGroup icon="🔥" title={t("hotNoStep")} color={C.orange} items={hotNoStep}/>
+            <ActionGroup icon="📭" title={t("noContact7")} color={C.blue} items={noContact7}/>
+            <ActionGroup icon="🆕" title={t("newUnqualified")} color={C.teal} items={newUnqualified}/>
             {!overdue.length&&!meetingsToday.length&&!hotNoStep.length&&(
               <div style={{padding:40,textAlign:"center",color:C.green,fontSize:14}}>✅ Pipeline is clean — no urgent actions</div>
             )}
@@ -5685,6 +5894,9 @@ export default function GremiCRM() {
   const [templates,setTemplates]=useState(TPL_DATA);
   const [archive,setArchive]=useState([]);
   const [theme,setTheme]=useState(()=>{ try { return localStorage.getItem("gremi_theme")||"navy"; } catch(e){ return "navy"; } });
+  const [uiLang,setUiLang]=useState(()=>{ try { const l=localStorage.getItem("gremi_lang")||"en"; setGlobalLang(l); return l; } catch(e){ return "en"; } });
+  const setLang=(l)=>{ setUiLang(l); setGlobalLang(l); try{localStorage.setItem("gremi_lang",l);}catch(e){} };
+  useEffect(()=>{ setGlobalLang(uiLang); },[uiLang]);
   const [fontSize,setFontSize]=useState(()=>{ try { return parseInt(localStorage.getItem("gremi_fontsize")||"13"); } catch(e){ return 13; } });
   const applyFontSize=(s)=>{ setFontSize(s); try{localStorage.setItem("gremi_fontsize",String(s));}catch(e){} };
   const [tab,setTab]=useState("dashboard");
@@ -5927,11 +6139,11 @@ export default function GremiCRM() {
   const kpiLate = kpiActive.filter(l=>isOD(l.nextStepDate,l.stage)).length;
   const kpiHot = kpiActive.filter(l=>l.temp==="🔥 Hot").length;
   const TABS_DEF = [
-    {id:"dashboard",label:"DASHBOARD"},
-    {id:"leads",label:"LEADS"},
-    {id:"playbook",label:"PLAYBOOK"},
-    {id:"team",label:"TEAM"},
-    {id:"ai",label:"🤖 AI"},
+    {id:"dashboard",label:t("dashboard")},
+    {id:"leads",label:t("leads")},
+    {id:"playbook",label:t("playbook")},
+    {id:"team",label:t("team")},
+    {id:"ai",label:t("ai")},
     ...(isAdmin?[{id:"settings",label:"SETTINGS"}]:[]),
     ...(archive.length>0||isAdmin||isTeamLead?[{id:"archive",label:"ARCHIVE"+(archive.length?" ("+archive.length+")":"")}]:[]),
   ];
@@ -5953,6 +6165,17 @@ export default function GremiCRM() {
           {syncStatus==="syncing"&&<div style={{width:6,height:6,borderRadius:"50%",background:C.amber,animation:"pulse 1s infinite"}} title="Syncing"/>}
           {syncStatus==="error"&&<div style={{width:6,height:6,borderRadius:"50%",background:C.red}} title="DB error"/>}
           {syncStatus==="idle"&&dbReady&&<div style={{width:6,height:6,borderRadius:"50%",background:C.green}} title="Connected"/>}
+          {/* Language switcher */}
+          <div style={{display:"flex",gap:2,background:C.bg3,borderRadius:7,border:`1px solid ${C.border}`,padding:"2px 3px"}}>
+            {["en","pl","ro","ru"].map(l=>(
+              <button key={l} className="btn" onClick={()=>setLang(l)}
+                style={{padding:"3px 6px",fontSize:10,borderRadius:5,
+                  background:uiLang===l?`${C.blue}25`:"transparent",
+                  color:uiLang===l?C.blue2:C.txt3,border:"none",fontWeight:uiLang===l?700:400}}>
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
           {/* Font size control */}
           <div style={{display:"flex",alignItems:"center",gap:2,background:C.bg3,borderRadius:7,border:`1px solid ${C.border}`,padding:"2px 4px"}}>
             <button className="btn" onClick={()=>applyFontSize(Math.max(11,fontSize-1))} disabled={fontSize<=11}
@@ -6004,7 +6227,7 @@ export default function GremiCRM() {
 
       {/* Tab content */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        {tab==="dashboard"&&<DashboardTab locs={locs} hqs={hqs} users={users} cur={curUser} onSelectLoc={l=>{setSelLoc(l);setTab("leads");}} isAdmin={isAdmin} isTeamLead={isTeamLead}/>}
+        {tab==="dashboard"&&<DashboardTab locs={locs} hqs={hqs} users={users} cur={curUser} onSelectLoc={l=>{setSelLoc(l);setTab("leads");}} isAdmin={isAdmin} isTeamLead={isTeamLead} uiLang={uiLang}/>}
 
         {tab==="leads"&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
@@ -6090,7 +6313,7 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-
+                    
                     </div>)}
                   </div>
                 );
