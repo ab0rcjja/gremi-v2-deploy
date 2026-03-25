@@ -2576,7 +2576,7 @@ ${workloadCtx}`;
     setChatMsgs(prev=>[...prev,{role:"user",content:userMsg}]);
     setDiscussing("");
     const ctx2 = `Current deal: ${loc.company} — ${loc.stage}. Original call note: ${text}. AI suggested: ${JSON.stringify(suggestions)}. User says: ${userMsg}. Respond briefly and if needed provide revised JSON suggestions in a \`\`\`json block.`;
-    const raw = await aiCall(`You are a CRM AI for Gremi Personal Romania. The user wants to discuss or modify the suggested CRM updates. Be concise. Respond in ${LANG_NAMES[localStorage.getItem("gremi_brief_lang")||"en"]||"English"}. If suggesting revised fields, put them in a \`\`\`json block.`, ctx2, 500);
+    const raw = await aiCall(`You are a CRM AI for Gremi Personal Romania. The user wants to discuss or modify the suggested CRM updates. Be concise. Respond in ${LANG_NAMES["en"||"en"]||"English"}. If suggesting revised fields, put them in a \`\`\`json block.`, ctx2, 500);
     setChatMsgs(prev=>[...prev,{role:"assistant",content:raw}]);
     // Try to extract revised suggestions
     const m = raw.match(/```json\s*([\s\S]*?)```/);
@@ -3764,10 +3764,76 @@ function FilterBar({filters,setFilters,users,isAdmin,isTeamLead,curId,services,e
 }
 
 // ─── TEAM TAB ────────────────────────────────────────────────────
-function TeamTab({users,locs,onSelect}) {
+function TeamTab({users,locs,onSelect,isAdmin,isTeamLead,curUser}) {
   const [exp,setExp]=useState(null);
+  const [showTeamToday,setShowTeamToday]=useState(false);
   return(
     <div style={{flex:1,overflowY:"auto",padding:"12px 12px 80px",display:"flex",flexDirection:"column",gap:10}}>
+      {/* Team Today button — admin/TL only */}
+      {(isAdmin||isTeamLead)&&showTeamToday&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setShowTeamToday(false);}}>
+          <div style={{background:C.bg1,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:700,maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:15,color:C.txt}}>📅 Team Today</div>
+                <div style={{fontSize:11,color:C.txt3}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long"})}</div>
+              </div>
+              <button className="xb" onClick={()=>setShowTeamToday(false)}>×</button>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:8}}>
+              {(()=>{
+                const todayStr=new Date().toISOString().slice(0,10);
+                return users.filter(u=>u.active).map(u=>{
+                  const todayActs=locs.flatMap(l=>(l.activities||[]).filter(a=>a.date===todayStr&&l.salesId===u.id).map(a=>({company:l.company,type:a.type,note:a.note||""})));
+                  const overdueCount=locs.filter(l=>l.salesId===u.id&&isOD(l.nextStepDate,l.stage)).length;
+                  const hasPlan=u.daily_plan&&u.daily_plan_date===todayStr;
+                  return(
+                    <div key={u.id} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:hasPlan||todayActs.length>0?8:0}}>
+                        <div style={{width:32,height:32,borderRadius:9,background:`linear-gradient(135deg,${C.blue},${C.indigo})`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:14,color:"#fff",flexShrink:0}}>{u.name[0]}</div>
+                        <div style={{flex:1}}>
+                          <span style={{fontWeight:600,fontSize:13,color:C.txt}}>{u.name}</span>
+                          <span style={{fontSize:10,color:u.role==="admin"?C.purple:u.role==="team_lead"?C.amber:C.txt3,marginLeft:6}}>{u.role==="admin"?"ADMIN":u.role==="team_lead"?"TL":""}</span>
+                          <span style={{fontSize:10,color:C.txt3,marginLeft:8}}>{todayActs.length} actions today</span>
+                          {overdueCount>0&&<span style={{fontSize:10,color:C.red,marginLeft:8,fontWeight:600}}>⚠ {overdueCount} overdue</span>}
+                        </div>
+                        <span style={{fontSize:13}}>{{en:"🇬🇧",pl:"🇵🇱",ro:"🇷🇴",ru:"🇷🇺"}[u.brief_lang||"en"]}</span>
+                      </div>
+                      {hasPlan&&(
+                        <div style={{fontSize:11,color:C.txt2,lineHeight:1.65,whiteSpace:"pre-wrap",background:C.bg3,borderRadius:7,padding:"8px 10px",borderLeft:`3px solid ${C.blue}`,marginBottom:todayActs.length>0?6:0}}>
+                          <div style={{fontSize:9,color:C.blue2,fontWeight:700,marginBottom:3}}>📝 PLAN</div>
+                          {u.daily_plan.substring(0,300)}{u.daily_plan.length>300?"...":""}
+                        </div>
+                      )}
+                      {todayActs.length>0&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                          <div style={{fontSize:9,color:C.teal,fontWeight:700,marginBottom:2}}>✅ DONE TODAY</div>
+                          {todayActs.slice(0,5).map((a,i)=>(
+                            <div key={i} style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                              · {a.company}: {a.type}{a.note?" — "+a.note.substring(0,60):""}
+                            </div>
+                          ))}
+                          {todayActs.length>5&&<div style={{fontSize:10,color:C.txt3}}>+{todayActs.length-5} more</div>}
+                        </div>
+                      )}
+                      {!hasPlan&&todayActs.length===0&&<div style={{fontSize:11,color:C.txt3,fontStyle:"italic"}}>No plan, no activity yet today</div>}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+      <div style={{display:"flex",alignItems:"center",marginBottom:2}}>
+        <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",flex:1}}>TEAM OVERVIEW</div>
+        {(isAdmin||isTeamLead)&&(
+          <button className="btn" onClick={()=>setShowTeamToday(true)}
+            style={{background:`${C.teal}18`,color:C.teal,padding:"5px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.teal}33`,fontWeight:600}}>
+            📅 Team Today
+          </button>
+        )}
+      </div>
       <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:11,color:C.txt3,letterSpacing:"0.1em",marginBottom:2}}>TEAM OVERVIEW</div>
       {users.filter(u=>u.active).map(u=>{
         const ul=locs.filter(l=>l.salesId===u.id);const won=ul.filter(l=>l.stage==="Closed Won");const pipe=ul.filter(l=>l.stage!=="Closed Won"&&l.stage!=="Closed Lost");const late=ul.filter(l=>isOD(l.nextStepDate,l.stage));const placed=won.reduce((s,l)=>s+(parseInt(l.workers)||0),0);const isE=exp===u.id;
@@ -4896,7 +4962,7 @@ Create new lead:
 {"action":"create_lead","hq_company":"Name","hq_industry":"Auto Parts","hq_address":"address","hq_employees":"300","hq_intelligence":"research","loc_location":"City","loc_county":"County","loc_workers":"20","loc_worker_type":"UA Ukrainian","loc_service":"Outsourcing","loc_contact":"Name","loc_role":"HR Director","loc_phone":"07xx","loc_email":"email","loc_notes":"notes","spin_p":"pain"}
 \`\`\`
 
-IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's selected language: ${LANG_NAMES[localStorage.getItem('gremi_brief_lang')||'en']||'English'}.
+IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's selected language: ${LANG_NAMES['en'||'en']||'English'}.
 
 ${buildWorkloadContext(cur.id, locs, users, null, null)}`;
   };
@@ -5208,15 +5274,28 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead, 
   const [summary,setSummary]=useState(""); const [summaryLoading,setSummaryLoading]=useState(false);
   const [aiAnalysis,setAiAnalysis]=useState(""); const [aiLoading,setAiLoading]=useState(false);
   const [section,setSection]=useState("actions"); // actions | stats
-  const [myPlan,setMyPlan]=useState(()=>{try{return localStorage.getItem("gremi_plan_"+new Date().toISOString().slice(0,10))||"";}catch(e){return "";}});
+  const todayDate=new Date().toISOString().slice(0,10);
+  // Load plan: use DB value if it's for today, else empty
+  const [myPlan,setMyPlan]=useState(
+    (cur?.daily_plan_date===todayDate ? cur?.daily_plan : "") || ""
+  );
   const [editingPlan,setEditingPlan]=useState(false);
   const [priorities,setPriorities]=useState(()=>{try{return JSON.parse(localStorage.getItem("gremi_priorities")||"null")||{counties:["Ilfov","Ilfov County"],industries:["Transport","Logistică","Depozitare","Producție"],notes:"Prioritate: firme din Ilfov + transport/logistică (similar ROAD READY). Min 10 nowych leadów/dzień."};}catch(e){return {counties:["Ilfov"],industries:["Transport","Logistică"],notes:""};}}); 
   const [editingPriorities,setEditingPriorities]=useState(false);
-  const savePlan=(v)=>{setMyPlan(v);try{localStorage.setItem("gremi_plan_"+new Date().toISOString().slice(0,10),v);}catch(e){}};
+  const savePlan=(v)=>{
+    setMyPlan(v);
+    // Save to DB — accessible from any device
+    dbPatch("crm_users",`id=eq.${cur.id}`,{daily_plan:v,daily_plan_date:todayDate}).catch(()=>{});
+  };
   const savePriorities=(v)=>{setPriorities(v);try{localStorage.setItem("gremi_priorities",JSON.stringify(v));}catch(e){}};
-  const [briefLang,setBriefLang]=useState(()=>{try{return localStorage.getItem("gremi_brief_lang")||"en";}catch(e){return "en";}});
   const BRIEF_LANGS=[{id:"en",flag:"🇬🇧",label:"English"},{id:"pl",flag:"🇵🇱",label:"Polski"},{id:"ro",flag:"🇷🇴",label:"Română"},{id:"ru",flag:"🇷🇺",label:"Русский"}];
-  const setBriefLangSave=(l)=>{setBriefLang(l);try{localStorage.setItem("gremi_brief_lang",l);}catch(e){}setSummary("");};
+  const [briefLang,setBriefLang]=useState(cur?.brief_lang||"en");
+  const setBriefLangSave=(l)=>{
+    setBriefLang(l);
+    setSummary("");
+    // Save to DB so it follows user across devices
+    dbPatch("crm_users",`id=eq.${cur.id}`,{brief_lang:l}).catch(()=>{});
+  };
   const [briefInput,setBriefInput]=useState("");
   const [briefChat,setBriefChat]=useState([]); // [{role,content}]
   const [briefLoading,setBriefLoading]=useState(false);
@@ -5768,8 +5847,8 @@ export default function GremiCRM() {
     users.forEach(async u=>{
       try {
         const existing=await dbGet("crm_users",`id=eq.${u.id}`);
-        if(existing.length>0) await dbPatch("crm_users",`id=eq.${u.id}`,{name:u.name,username:u.username,password:u.password,role:u.role,active:u.active});
-        else await dbPost("crm_users",{id:u.id,name:u.name,username:u.username,password:u.password,role:u.role,active:u.active||true});
+        if(existing.length>0) await dbPatch("crm_users",`id=eq.${u.id}`,{name:u.name,username:u.username,password:u.password,role:u.role,active:u.active,brief_lang:u.brief_lang||"en",daily_plan:u.daily_plan||"",daily_plan_date:u.daily_plan_date||""});
+        else await dbPost("crm_users",{id:u.id,name:u.name,username:u.username,password:u.password,role:u.role,active:u.active||true,brief_lang:"en",daily_plan:"",daily_plan_date:""});
       } catch(e){}
     });
   },[users,dbReady]);
@@ -6110,7 +6189,7 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-                    
+                   
                     </div>)}
                   </div>
                 );
