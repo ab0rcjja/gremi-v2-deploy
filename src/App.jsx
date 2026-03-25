@@ -323,7 +323,7 @@ const getCSS = () => `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   :root{--app-fs:13px;}
-  body{background:${C.bg1};color:${C.txt};direction:ltr;font-size:var(--app-fs);}
+  body{background:${C.bg1};color:${C.txt};direction:ltr;font-size:13px;}
   ::-webkit-scrollbar{width:8px;height:8px;}
   ::-webkit-scrollbar-track{background:${C.bg0};}
   ::-webkit-scrollbar-thumb{background:${C.border2};border-radius:4px;}
@@ -5414,8 +5414,7 @@ export default function GremiCRM() {
   const [archive,setArchive]=useState([]);
   const [theme,setTheme]=useState(()=>{ try { return localStorage.getItem("gremi_theme")||"navy"; } catch(e){ return "navy"; } });
   const [fontSize,setFontSize]=useState(()=>{ try { return parseInt(localStorage.getItem("gremi_fontsize")||"13"); } catch(e){ return 13; } });
-  const applyFontSize=(s)=>{ setFontSize(s); try{localStorage.setItem("gremi_fontsize",String(s));}catch(e){} document.documentElement.style.setProperty("--app-fs",s+"px"); };
-  useEffect(()=>{ document.documentElement.style.setProperty("--app-fs",fontSize+"px"); },[fontSize]);
+  const applyFontSize=(s)=>{ setFontSize(s); try{localStorage.setItem("gremi_fontsize",String(s));}catch(e){} };
   const [tab,setTab]=useState("dashboard");
   const [search,setSearch]=useState("");
   const [filters,setFilters]=useState({stage:"All",temp:"All",service:"All",entity:"All",county:"All",industry:"All",salesId:"All",overdueOnly:false,myOnly:false,showLocs:true});
@@ -5669,7 +5668,7 @@ export default function GremiCRM() {
   const TAB_ICONS = {dashboard:"📊",leads:"🏭",playbook:"📖",team:"👥",ai:"🤖",archive:"📦",settings:"⚙"};
 
   return(
-    <div style={{fontFamily:"'Inter',sans-serif",background:C.bg1,height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",color:C.txt}}>
+    <div style={{fontFamily:"'Inter',sans-serif",background:C.bg1,height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",color:C.txt,zoom:fontSize/13}}>
       <style>{getCSS()}</style>
 
       {/* HEADER */}
@@ -5819,7 +5818,7 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-                    
+
                     </div>)}
                   </div>
                 );
