@@ -22,7 +22,7 @@ const aiCall = async (system, userMsg, maxTok=1500) => {
   try {
     const res = await fetch(AI_PROXY, {
       method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
-      body:JSON.stringify({model:"claude-sonnet-4-5-20251001",max_tokens:maxTok,system,messages:[{role:"user",content:userMsg}]}),
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:maxTok,system,messages:[{role:"user",content:userMsg}]}),
     });
     if(!res.ok) {
       const errText = await res.text();
@@ -2313,7 +2313,7 @@ YOUR ROLE:
         const res = await fetch(AI_PROXY,{
           method:"POST",
           headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
-          body:JSON.stringify({model:"claude-sonnet-4-5-20251001",max_tokens:1400,
+          body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1400,
             system:buildSysPrompt(),
             messages:[{role:"user",content:`Look at everything: the stage, SPIN data, activity log, last contact, next step, pain score, supplier info. What is really happening with this lead right now? What does this person actually need from the salesperson today? Write the most useful script for this exact situation — and explain your reasoning in 2 sentences before the script.`}]
           })
@@ -2349,7 +2349,7 @@ YOUR ROLE:
       const res = await fetch(AI_PROXY,{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
-        body:JSON.stringify({model:"claude-sonnet-4-5-20251001",max_tokens:1400,system:buildSysPrompt(),messages:apiMsgs})
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1400,system:buildSysPrompt(),messages:apiMsgs})
       });
       const d = await res.json();
       const raw = d.content?.[0]?.text || "Error.";
@@ -2651,7 +2651,7 @@ LANGUAGE: Respond in the same language the user writes in.`;
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
         body:JSON.stringify({
-          model:"claude-sonnet-4-5-20251001",
+          model:"claude-sonnet-4-6",
           max_tokens:1200,
           system:buildSys(),
           messages:newMsgs.map(m=>({role:m.role,content:m.content}))
@@ -3424,7 +3424,7 @@ function InlineAI({loc,hq,onUpdate,onUpdateHQ,locs,users}) {
     try{
       const ctx=buildCtx();const workload=buildWorkloadContext(loc.salesId,locs||[],users||[],null,loc.stage);const sysMsg=AI_SYS_INLINE+"\n\n--- CRM CONTEXT ---"+ctx+workload;
       const apiMsgs=newMsgs.filter(m=>m.role!=="system").map(m=>({role:m.role,content:m.content}));
-      const res=await fetch(AI_PROXY,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},body:JSON.stringify({model:"claude-sonnet-4-5-20251001",max_tokens:2000,system:sysMsg,messages:apiMsgs})});
+      const res=await fetch(AI_PROXY,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,system:sysMsg,messages:apiMsgs})});
       if(!res.ok){const e=await res.text();throw new Error("HTTP "+res.status+": "+e.substring(0,80));}
 const data=await res.json();const raw=data.content?.[0]?.text||(data.error?"Error: "+data.error.message:"Error.");
       const fields=parseFields(raw);const clean=stripFields(raw);
@@ -5311,7 +5311,7 @@ ${buildWorkloadContext(cur.id, locs, users, null, null)}`;
     const text=input.trim(); if(!text||loading) return;
     const newMsgs=[...msgs,{role:"user",content:text}]; setMsgs(newMsgs); setInput(""); setLoading(true); setPending(null);
     try{
-      const res=await fetch(AI_PROXY,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},body:JSON.stringify({model:"claude-sonnet-4-5-20251001",max_tokens:2000,system:ctx(),messages:newMsgs.filter(m=>m.role!=="system").map(m=>({role:m.role,content:m.content}))})});
+      const res=await fetch(AI_PROXY,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,system:ctx(),messages:newMsgs.filter(m=>m.role!=="system").map(m=>({role:m.role,content:m.content}))})});
       if(!res.ok){const e=await res.text();throw new Error("HTTP "+res.status+": "+e.substring(0,80));}
 const d=await res.json(); const raw=d.content?.[0]?.text||(d.error?"Error: "+d.error.message:"Error.");
       const action=parseAction(raw); const clean=stripAction(raw);
