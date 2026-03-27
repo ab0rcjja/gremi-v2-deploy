@@ -321,6 +321,8 @@ const webUrl   = w => { if(!w) return null; return w.startsWith("http")?w:"https
 // ─── CSS ─────────────────────────────────────────────────────────
 
 
+const LANG_NAMES = {en:"English",pl:"Polish",ro:"Romanian",ru:"Russian"};
+
 const getCSS = () => `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -2576,7 +2578,7 @@ ${workloadCtx}`;
     setChatMsgs(prev=>[...prev,{role:"user",content:userMsg}]);
     setDiscussing("");
     const ctx2 = `Current deal: ${loc.company} — ${loc.stage}. Original call note: ${text}. AI suggested: ${JSON.stringify(suggestions)}. User says: ${userMsg}. Respond briefly and if needed provide revised JSON suggestions in a \`\`\`json block.`;
-    const raw = await aiCall(`You are a CRM AI for Gremi Personal Romania. The user wants to discuss or modify the suggested CRM updates. Be concise. Respond in ${LANG_NAMES["en"||"en"]||"English"}. If suggesting revised fields, put them in a \`\`\`json block.`, ctx2, 500);
+    const raw = await aiCall(`You are a CRM AI for Gremi Personal Romania. The user wants to discuss or modify the suggested CRM updates. Be concise. Respond in the same language the user writes in. If suggesting revised fields, put them in a \`\`\`json block.`, ctx2, 500);
     setChatMsgs(prev=>[...prev,{role:"assistant",content:raw}]);
     // Try to extract revised suggestions
     const m = raw.match(/```json\s*([\s\S]*?)```/);
@@ -4961,7 +4963,7 @@ Create new lead:
 {"action":"create_lead","hq_company":"Name","hq_industry":"Auto Parts","hq_address":"address","hq_employees":"300","hq_intelligence":"research","loc_location":"City","loc_county":"County","loc_workers":"20","loc_worker_type":"UA Ukrainian","loc_service":"Outsourcing","loc_contact":"Name","loc_role":"HR Director","loc_phone":"07xx","loc_email":"email","loc_notes":"notes","spin_p":"pain"}
 \`\`\`
 
-IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's selected language: ${LANG_NAMES['en'||'en']||'English'}.
+IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's preferred language (detect from their messages or use English).
 
 ${buildWorkloadContext(cur.id, locs, users, null, null)}`;
   };
@@ -5269,7 +5271,7 @@ Top hot deals: ${hot.slice(0,5).map(l=>`${l.company} (${l.workers||"?"}w, ${l.st
 }
 
 // ─── DASHBOARD TAB (Today actions + KPI stats merged) ────────────
-function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead, uiLang="en"}) {
+function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead}) {
   const [summary,setSummary]=useState(""); const [summaryLoading,setSummaryLoading]=useState(false);
   const [aiAnalysis,setAiAnalysis]=useState(""); const [aiLoading,setAiLoading]=useState(false);
   const [section,setSection]=useState("actions"); // actions | stats
