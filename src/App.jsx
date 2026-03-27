@@ -31,9 +31,10 @@ const aiCall = async (system, userMsg, maxTok=1500) => {
 // ─── GLOBAL WORKLOAD + SCHEDULING CONTEXT ────────────────────────
 // Inject into any AI prompt that involves scheduling or next steps
 const buildWorkloadContext = (salesId, locs, users, playbook, currentStage) => {
+  const now = getNow();
   const today = new Date();
-  const todayStr = today.toISOString().slice(0,10);
-  const dayName = today.toLocaleDateString("en-GB",{weekday:"long"});
+  const todayStr = now.date;
+  const dayName = now.dayOfWeek;
   const salesperson = (users||[]).find(u=>u.id===salesId);
   const myLocs = (locs||[]).filter(l=>l.salesId===salesId&&!["Closed Won","Closed Lost"].includes(l.stage));
 
@@ -116,7 +117,7 @@ const buildWorkloadContext = (salesId, locs, users, playbook, currentStage) => {
 
   return `
 ━━━ SALESPERSON SCHEDULE & CAPACITY ━━━
-Person: ${salesperson?.name||"salesperson"} | Today: ${todayStr} (${dayName})
+Person: ${salesperson?.name||"salesperson"} | Today: ${todayStr} (${dayName}) | Current time: ${now.time}
 Active deals: ${myLocs.length} | Overdue: ${overdue.length}
 
 DAILY CAPACITY: ${DAILY_WORK_MINUTES} productive minutes/day
@@ -322,6 +323,17 @@ const webUrl   = w => { if(!w) return null; return w.startsWith("http")?w:"https
 
 
 const LANG_NAMES = {en:"English",pl:"Polish",ro:"Romanian",ru:"Russian"};
+
+const getNow = () => {
+  const now = new Date();
+  return {
+    date: now.toISOString().slice(0,10),
+    time: now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}),
+    datetime: now.toLocaleString("en-GB",{weekday:"long",day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}),
+    dayOfWeek: now.toLocaleDateString("en-GB",{weekday:"long"}),
+    hour: now.getHours(),
+  };
+};
 
 const getCSS = () => `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
@@ -2509,7 +2521,7 @@ Return ONLY a JSON object with these possible keys (omit fields you cannot deter
   "activity_note": "brief log entry describing what happened",
   "stage_suggestion": "one of: New,Contacted,Interested,Meeting Scheduled,Meeting Done,Proposal Sent,Negotiation,Closed Won,Closed Lost,No Answer"
 }
-Return ONLY valid JSON.`;
+Return ONLY valid JSON. For next_step and stage_suggestion, follow the Playbook: only suggest actions appropriate for the current stage. Never suggest skipping stages.`
     const workloadCtx = buildWorkloadContext(loc.salesId, locs||[], users||[], playbook, loc.stage);
     const ctx = `Current deal: ${loc.company} — ${loc.location}
 Stage: ${loc.stage} | Workers: ${loc.workers||"?"} | Pain Score: ${loc.painScore||"?"}
@@ -2532,6 +2544,13 @@ ${workloadCtx}`;
   const [discussing, setDiscussing] = useState("");  // user comment input
   const [chatMsgs, setChatMsgs] = useState([]);
 
+  const labelMap={
+    spin_s:"Situation",spin_p:"Problem/Pain",spin_i:"Implication",spin_n:"Need-Payoff",
+    pain_summary:"Pain Summary",pain_score:"Pain Score",workers:"Workers",
+    current_supplier:"Current Supplier",next_step:"Next Step",next_step_date:"Next Step Date",
+    decision_criteria:"Decision Criteria",economic_buyer:"Economic Buyer",
+    champion:"Champion",activity_note:"Activity Log",stage_suggestion:"Stage Change",
+  };
   const initAccepted = (sugg) => {
     const acc = {};
     Object.keys(sugg).filter(k=>!k.startsWith("_")&&sugg[k]).forEach(k=>{ acc[k]=true; });
@@ -3129,6 +3148,17 @@ function HqDetailsSection({hq, onUpdateHQ}) {
 // ─── INLINE AI (inside deal modal) ───────────────────────────────
 const AI_SYS_INLINE = `You are the internal sales AI for Gremi Personal Romania. You help the BD Director analyze leads and fill CRM fields.
 
+PLAYBOOK RULES — follow these strictly when suggesting next steps:
+- New: Research + first contact. DO NOT suggest "send proposal" at this stage.
+- Contacted: 3 attempts over 7 days (Day1 call+email, Day3 call+LinkedIn, Day7 email). If no reply → No Answer.
+- Interested: Book discovery meeting within 5 days. SPIN questions. DO NOT suggest proposal yet.
+- Meeting Scheduled: Confirm 24h before. Prepare Commercial Insight. 
+- Meeting Done: Send proposal within 24h. MUST book follow-up call for Day 3.
+- Proposal Sent: Day 3 call, Day 7 value email, Day 14 breakup. DO NOT suggest "schedule meeting" — proposal is already sent.
+- Negotiation: Handle objections, Ackerman pricing. Close or escalate.
+- No Answer: Max 4 attempts then breakup message. DO NOT suggest immediate call if 3+ already done.
+NEVER suggest an action that skips stages. ALWAYS check current stage before recommending next step.
+
 CRITICAL INSTRUCTION — FIELD SUGGESTIONS:
 When you analyze a lead or answer a question, ALWAYS include a section at the END of your response with suggested CRM field values in this EXACT format:
 
@@ -3366,7 +3396,7 @@ function HQDetailModal({hq,locs,users,isAdmin,onClose,onEditHQ,onDeleteHQ,onAddL
         {showAI&&onUpdateHQ&&curUser&&(
           <div style={{background:C.bg2,border:`1px solid ${C.teal}33`,borderRadius:12,overflow:"hidden",maxHeight:420,display:"flex",flexDirection:"column"}}>
             <AIChatTab locs={allLocs||hqLocs} hqs={[hq]} users={users} cur={curUser}
-              onUpdateLoc={onUpdateLoc} onUpdateHQ={onUpdateHQ}/>
+              onUpdateLoc={onUpdateLoc} onUpdateHQ={onUpdateHQ} hqFocus={hq}/>
           </div>
         )}
         <button className="btn" onClick={onEditHQ} style={{width:"100%",background:C.bg3,color:C.txt2,padding:"13px",fontSize:13,borderRadius:10,border:`1px solid ${C.border}`}}>✎ Edit HQ Info</button>
@@ -4915,13 +4945,14 @@ function PlaybookTab({playbook,setPlaybook,isAdmin,templates,setTemplates}) {
 }
 
 // ─── AI CHAT TAB ─────────────────────────────────────────────────
-function AIChatTab({locs,hqs,users,cur,onUpdateLoc,onUpdateHQ,onSaveLoc,onSaveHQ}) {
+function AIChatTab({locs,hqs,users,cur,onUpdateLoc,onUpdateHQ,onSaveLoc,onSaveHQ,hqFocus}) {
   const [msgs,setMsgs]=useState([]); const [input,setInput]=useState(""); const [loading,setLoading]=useState(false);
   const [pending,setPending]=useState(null);
   const bottomRef=useRef(null); const taRef=useRef(null);
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
 
   const ctx=()=>{
+    const now=getNow();
     const active=locs.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
     const won=locs.filter(l=>l.stage==="Closed Won");
     const placed=won.reduce((s,l)=>s+(parseInt(l.workers)||0),0);
@@ -4963,6 +4994,15 @@ Create new lead:
 {"action":"create_lead","hq_company":"Name","hq_industry":"Auto Parts","hq_address":"address","hq_employees":"300","hq_intelligence":"research","loc_location":"City","loc_county":"County","loc_workers":"20","loc_worker_type":"UA Ukrainian","loc_service":"Outsourcing","loc_contact":"Name","loc_role":"HR Director","loc_phone":"07xx","loc_email":"email","loc_notes":"notes","spin_p":"pain"}
 \`\`\`
 
+${hqFocus?`
+━━━ FOCUSED ON COMPANY: "${hqFocus.company}" ━━━
+You are helping with THIS specific company. Prioritize information about ${hqFocus.company}.
+Industry: ${hqFocus.industry||"?"} | Employees: ${hqFocus.employees||"?"} | Turnover: ${hqFocus.annualTurnover||"?"}
+HQ Contact: ${hqFocus.centralContact||"none"} (${hqFocus.centralRole||"?"}) ${hqFocus.centralPhone||""}
+Intelligence: ${hqFocus.intelligence?.substring(0,300)||"none"}
+Locations/Deals for this company: ${locs.filter(l=>l.parentId===hqFocus.id).map(l=>'"'+l.location+'" ['+l.stage+']').join(", ")||"none"}
+`:""}
+CURRENT TIME: ${now.datetime}
 IMPORTANT: For updates, copy company/location names EXACTLY as they appear in quotes above. Respond in the user's preferred language (detect from their messages or use English).
 
 ${buildWorkloadContext(cur.id, locs, users, null, null)}`;
