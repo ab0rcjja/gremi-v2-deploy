@@ -2494,6 +2494,18 @@ YOUR ROLE:
 }
 
 // ─── POST-CALL DEBRIEF MODAL ─────────────────────────────────────
+// Playbook next-step rules (module level)
+const STAGE_NEXT = {
+    "New": "First contact: call + email same day. Goal: reach the decision maker.",
+    "Contacted": "Follow-up sequence: Day3 call+LinkedIn, Day7 email. If no reply after 3 attempts → No Answer.",
+    "Interested": "Book discovery meeting within 5 business days. Prepare SPIN questions.",
+    "Meeting Scheduled": "Confirm 24h before. Prepare Commercial Insight specific to their industry.",
+    "Meeting Done": "Send proposal within 24h. Book follow-up call for Day 3.",
+    "Proposal Sent": "Day 3: call to walk through proposal. Day 7: value email (not 'just checking in'). Day 14: breakup message.",
+    "Negotiation": "Handle objections with labeling. Ackerman method for price. Close or escalate to manager.",
+    "No Answer": "4th attempt = breakup message: 'closing file, available if situation changes'. Set 60-day reminder.",
+};
+
 function PostCallDebrief({loc, hq, onClose, onApply, locs, users, playbook}) {
   // ALL hooks at top - no exceptions
   const [text, setText] = useState("");
@@ -2512,17 +2524,7 @@ function PostCallDebrief({loc, hq, onClose, onApply, locs, users, playbook}) {
     champion:"Champion", activity_note:"Activity Log Entry", stage_suggestion:"Stage",
   };
 
-  // Playbook next-step rules per stage
-  const STAGE_NEXT = {
-    "New": "First contact: call + email same day. Goal: reach the decision maker.",
-    "Contacted": "Follow-up sequence: Day3 call+LinkedIn, Day7 email. If no reply after 3 attempts → No Answer.",
-    "Interested": "Book discovery meeting within 5 business days. Prepare SPIN questions.",
-    "Meeting Scheduled": "Confirm 24h before. Prepare Commercial Insight specific to their industry.",
-    "Meeting Done": "Send proposal within 24h. Book follow-up call for Day 3.",
-    "Proposal Sent": "Day 3: call to walk through proposal. Day 7: value email (not 'just checking in'). Day 14: breakup message.",
-    "Negotiation": "Handle objections with labeling. Ackerman method for price. Close or escalate to manager.",
-    "No Answer": "4th attempt = breakup message: 'closing file, available if situation changes'. Set 60-day reminder.",
-  };
+
 
   const initAccepted = (sugg) => {
     const acc = {};
@@ -2533,11 +2535,12 @@ function PostCallDebrief({loc, hq, onClose, onApply, locs, users, playbook}) {
 
   const analyze = async () => {
     if (!text.trim()) return;
+    try {
     setLoading(true);
     setSuggestions(null);
     const now = getNow();
-    const playbookRule = STAGE_NEXT[loc.stage] || "Follow up based on deal temperature.";
-    const workload = buildWorkloadContext(loc.salesId, locs||[], users||[], playbook, loc.stage);
+    const playbookRule = (STAGE_NEXT&&STAGE_NEXT[loc.stage]) || "Follow up based on deal temperature.";
+    const workload = (typeof buildWorkloadContext==="function") ? buildWorkloadContext(loc.salesId, locs||[], users||[], playbook, loc.stage) : "";
     const sys = `You are a senior sales coach AND CRM AI for Gremi Personal Romania. Analyze this post-call note.
 
 Respond with TWO sections:
@@ -2604,6 +2607,10 @@ Return ONLY valid JSON with these keys (omit what you cannot determine):
       setSuggestions({_error: "Could not parse response. Try rewording your note."});
     }
     setLoading(false);
+    } catch(fatal) {
+      setSuggestions({_error: "Error: " + fatal.message});
+      setLoading(false);
+    }
   };
 
   const sendChat = async () => {
@@ -2673,7 +2680,7 @@ Return ONLY valid JSON with these keys (omit what you cannot determine):
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,fontSize:14,color:C.txt}}>Post-Call Debrief</div>
             <div style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-              {loc.company} · <span style={{color:getSC()[loc.stage]||C.txt3}}>{loc.stage}</span>
+              {loc.company} · <span style={{color:(getSC&&getSC()[loc.stage])||C.txt3||"#94a3b8"}}>{loc.stage}</span>
               {loc.painScore?<span style={{marginLeft:6,color:loc.painScore>=4?C.red:C.amber}}> · Pain {loc.painScore}/5</span>:null}
             </div>
           </div>
@@ -3591,7 +3598,7 @@ function InlineEditField({label, value, onSave, color, multiline=false, placehol
 }
 
 // ─── LOCATION DETAIL MODAL ───────────────────────────────────────
-function LocDetailModal({loc,hqs,locs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate,onUpdateHQ}) {
+function LocDetailModal({loc,hqs,locs,users,isAdmin,canArchive,canEdit,onClose,onEdit,onArchive,onUpdate,onUpdateHQ,playbook}) {
   const hq=hqs.find(h=>h.id===loc.parentId);
   const sc=getSC()[loc.stage]||C.txt3;
   const uN=id=>users.find(u=>u.id===id)?.name||"—";
@@ -5518,6 +5525,17 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
     // Full pipeline data
     const overdueList=overdue.map(l=>`- ${l.company}/${l.location} [${l.stage}] next step: "${l.nextStep||"brak"}" było na ${l.nextStepDate}`).join("\n");
     const todayList=meetingsToday.map(l=>`- ${l.company} [${l.stage}] ${l.nextStep||""}`).join("\n");
+    // Full next-step schedule for all active deals (next 14 days)
+    const allNextSteps = active
+      .filter(l=>l.nextStep&&l.nextStepDate)
+      .sort((a,b)=>a.nextStepDate.localeCompare(b.nextStepDate))
+      .map(l=>{
+        const daysUntil=Math.round((new Date(l.nextStepDate)-new Date(today2))/(1000*60*60*24));
+        const status=daysUntil<0?"⚠️ OVERDUE":daysUntil===0?"📍 TODAY":daysUntil===1?"📍 TOMORROW":`in ${daysUntil}d`;
+        return `- [${status}] ${l.company} [${l.stage}]: "${l.nextStep}" on ${l.nextStepDate}`;
+      });
+    const noNextStep = active.filter(l=>!l.nextStep||!l.nextStepDate).map(l=>`- ${l.company} [${l.stage}] ${l.temp}`);
+
     // Deals with incomplete critical fields
     const incompleteDeals = active.filter(l=>!l.spin?.p||!l.painScore||!l.nextStep).slice(0,5).map(l=>`- ${l.company} [${l.stage}]: missing ${[!l.spin?.p?"SPIN-P":"",!l.painScore?"pain score":"",!l.nextStep?"next step":""].filter(Boolean).join(", ")}`).join("\n");
     const hotList=active.filter(l=>l.temp==="🔥 Hot").map(l=>`- ${l.company} [${l.stage}] pain:${l.painScore||"?"}/5 workers:${l.workers||"?"} nextStep:"${l.nextStep||"brak"}" on ${l.nextStepDate||"—"}`).join("\n");
@@ -5559,6 +5577,12 @@ ${newUnqList||"None"}
 
 DEALS WITH INCOMPLETE DATA (SPIN/pain/next step missing):
 ${incompleteDeals||"All good ✅"}
+
+FULL NEXT-STEP SCHEDULE (all active deals):
+${allNextSteps.length ? allNextSteps.join("\n") : "No next steps set"}
+
+ACTIVE DEALS WITHOUT NEXT STEP (${noNextStep.length}):
+${noNextStep.slice(0,5).join("\n")||"None ✅"}
 
 DONE TODAY (${todayDone.length} actions):
 ${todayDoneList||"Nothing logged today yet"}
@@ -6421,7 +6445,7 @@ export default function GremiCRM() {
 
       {/* Modals */}
       {selLoc&&(
-        <LocDetailModal loc={selLoc} hqs={hqs} locs={locs} users={users} isAdmin={isAdmin} canArchive={isAdmin} canEdit={isAdmin||isTeamLead||selLoc.salesId===curUser.id}
+        <LocDetailModal loc={selLoc} hqs={hqs} locs={locs} users={users} isAdmin={isAdmin} canArchive={isAdmin} canEdit={isAdmin||isTeamLead||selLoc.salesId===curUser.id} playbook={playbook}
           onClose={()=>setSelLoc(null)}
           onEdit={()=>{setEditLoc({...selLoc});setSelLoc(null);}}
           onArchive={()=>archiveLoc(selLoc)}
