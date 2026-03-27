@@ -2313,7 +2313,7 @@ YOUR ROLE:
         const res = await fetch(AI_PROXY,{
           method:"POST",
           headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
-          body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1400,
+          body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1400,
             system:buildSysPrompt(),
             messages:[{role:"user",content:`Look at everything: the stage, SPIN data, activity log, last contact, next step, pain score, supplier info. What is really happening with this lead right now? What does this person actually need from the salesperson today? Write the most useful script for this exact situation — and explain your reasoning in 2 sentences before the script.`}]
           })
@@ -2349,7 +2349,7 @@ YOUR ROLE:
       const res = await fetch(AI_PROXY,{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
-        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1400,system:buildSysPrompt(),messages:apiMsgs})
+        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1400,system:buildSysPrompt(),messages:apiMsgs})
       });
       const d = await res.json();
       const raw = d.content?.[0]?.text || "Error.";
@@ -3424,7 +3424,7 @@ function InlineAI({loc,hq,onUpdate,onUpdateHQ,locs,users}) {
     try{
       const ctx=buildCtx();const workload=buildWorkloadContext(loc.salesId,locs||[],users||[],null,loc.stage);const sysMsg=AI_SYS_INLINE+"\n\n--- CRM CONTEXT ---"+ctx+workload;
       const apiMsgs=newMsgs.filter(m=>m.role!=="system").map(m=>({role:m.role,content:m.content}));
-      const res=await fetch(AI_PROXY,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,system:sysMsg,messages:apiMsgs})});
+      const res=await fetch(AI_PROXY,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:2000,system:sysMsg,messages:apiMsgs})});
       if(!res.ok){const e=await res.text();throw new Error("HTTP "+res.status+": "+e.substring(0,80));}
 const data=await res.json();const raw=data.content?.[0]?.text||(data.error?"Error: "+data.error.message:"Error.");
       const fields=parseFields(raw);const clean=stripFields(raw);
@@ -5149,17 +5149,30 @@ function AIChatTab({locs,hqs,users,cur,onUpdateLoc,onUpdateHQ,onSaveLoc,onSaveHQ
     // ALL companies with exact names (critical for updates)
     const hqList = hqs.map(h=>`- "${h.company}" [${h.industry||"?"}] ${h.employees||"?"}emp contact:"${h.centralContact||""}"(${h.centralRole||""}) phone:"${h.centralPhone||""}" email:"${h.centralEmail||""}"${h.intelligence?", intel: "+h.intelligence.substring(0,80):""}`) .join("\n");
 
-    // ALL deals with exact names
+    // ALL deals — full data
     const dealList = locs.map(l=>{
-      return `- "${l.company}" / "${l.location}" [${l.stage}/${l.temp}] ${l.workers||"?"}w ${l.workerType||""} contact:"${l.contact||""}"(${l.role||""}) phone:"${l.phone||""}" pain:${l.painScore||"?"}/5 nextStep:"${l.nextStep||""}" supplier:"${l.currentSupplier||""}"`;
+      const sp = l.spin||{};
+      const recentActs = (l.activities||[]).slice(0,3).map(a=>`${a.date} ${a.type}: ${a.note?.substring(0,60)||""}`).join(" | ");
+      return `- "${l.company}" / "${l.location}" [${l.stage}/${l.temp}] ${l.workers||"?"}w ${l.workerType||""}
+  contact:"${l.contact||""}"(${l.role||""}) phone:"${l.phone||""}" email:"${l.email||""}"
+  pain:${l.painScore||"?"}/5 supplier:"${l.currentSupplier||""}" econBuyer:"${l.economicBuyer||""}" champion:"${l.champion||""}"
+  SPIN-S:"${sp.s||""}" SPIN-P:"${sp.p||""}" SPIN-I:"${sp.i||""}" SPIN-N:"${sp.n||""}"
+  nextStep:"${l.nextStep||""}" due:${l.nextStepDate||"not set"} lastContact:${l.lastContact||"never"}
+  decisionProcess:"${l.decisionProcess||""}" notes:"${l.notes?.substring(0,100)||""}"
+  recentActivity:${recentActs||"none"}`;
     }).join("\n");
+
+    // HQs with full intelligence
+    const hqListFull = hqs.map(h=>`- "${h.company}" [${h.industry||"?"}] ${h.employees||"?"}emp turnover:${h.annualTurnover||"?"} seasonal:${h.seasonality||"?"}
+  contact:"${h.centralContact||""}"(${h.centralRole||""}) ${h.centralPhone||""} ${h.centralEmail||""}
+  intel:"${h.intelligence?.substring(0,300)||"none"}" address:"${h.address||""}" web:${h.website||""}`).join("\n");
 
     return `You are the internal sales AI for Gremi Personal Romania. Talking with ${cur.name} (${cur.role}).
 
 PIPELINE: ${locs.length} deals total, ${active.length} active, ${won.length} won, ${placed} workers placed. Hot:${hot.length} Overdue:${overdue.length}
 
 ALL COMPANIES IN CRM (use EXACT names from quotes for updates):
-${hqList}
+${hqListFull}
 
 ALL DEALS IN CRM (use EXACT company/location names from quotes for updates):
 ${dealList}
@@ -5512,7 +5525,7 @@ Top hot deals: ${hot.slice(0,5).map(l=>`${l.company} (${l.workers||"?"}w, ${l.st
 
 // ─── DASHBOARD TAB (Today actions + KPI stats merged) ────────────
 function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead}) {
-  const [summary,setSummary]=useState(""); const [summaryLoading,setSummaryLoading]=useState(false);
+  const [summary,setSummary]=useState("👆 Click ↻ Refresh to generate your AI Morning Brief."); const [summaryLoading,setSummaryLoading]=useState(false);
   const [aiAnalysis,setAiAnalysis]=useState(""); const [aiLoading,setAiLoading]=useState(false);
   const [section,setSection]=useState("actions"); // actions | stats
   const todayDate=new Date().toISOString().slice(0,10);
@@ -5685,7 +5698,7 @@ Rules:
     const t=await aiCall("Sales analyst for Gremi Personal Romania. 4-5 sentences: top bottleneck, stuck stage, biggest opportunity, specific action recommendation. Direct and specific.",ctx,500);
     setAiAnalysis(t);setAiLoading(false);
   };
-  useEffect(()=>{loadSummary();loadAnalysis();},[]);
+  useEffect(()=>{loadAnalysis();},[]);  // Brief only on manual Refresh
 
   const DealRow=({l})=>{
     const sc=getSC()[l.stage]||C.txt3;const od=isOD(l.nextStepDate,l.stage);
