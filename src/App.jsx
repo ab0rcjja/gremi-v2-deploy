@@ -2495,190 +2495,284 @@ YOUR ROLE:
 
 // ─── POST-CALL DEBRIEF MODAL ─────────────────────────────────────
 function PostCallDebrief({loc, hq, onClose, onApply, locs, users, playbook}) {
+  // ALL hooks at top - no exceptions
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
-
-  const analyze = async () => {
-    if(!text.trim()) return;
-    setLoading(true);
-    const sys = `You are a CRM AI for Gremi Personal Romania. Analyze a post-call note and suggest CRM field updates.
-Return ONLY a JSON object with these possible keys (omit fields you cannot determine):
-{
-  "spin_s": "situation facts from call",
-  "spin_p": "problems/pain discovered",
-  "spin_i": "implications of the problem",
-  "spin_n": "need-payoff / value of solving",
-  "pain_summary": "one sentence pain summary",
-  "pain_score": 1-5 number,
-  "workers": "number as string",
-  "current_supplier": "name",
-  "next_step": "specific action",
-  "next_step_date": "YYYY-MM-DD — use a date within the next 14 days from today (today = " + new Date().toISOString().slice(0,10) + ")",
-  "decision_criteria": "what matters to them",
-  "economic_buyer": "who holds budget",
-  "champion": "internal ally",
-  "activity_note": "brief log entry describing what happened",
-  "stage_suggestion": "one of: New,Contacted,Interested,Meeting Scheduled,Meeting Done,Proposal Sent,Negotiation,Closed Won,Closed Lost,No Answer"
-}
-Return ONLY valid JSON. For next_step and stage_suggestion, follow the Playbook: only suggest actions appropriate for the current stage. Never suggest skipping stages.`
-    const workloadCtx = buildWorkloadContext(loc.salesId, locs||[], users||[], playbook, loc.stage);
-    const ctx = `Current deal: ${loc.company} — ${loc.location}
-Stage: ${loc.stage} | Workers: ${loc.workers||"?"} | Pain Score: ${loc.painScore||"?"}
-SPIN-P: ${loc.spin?.p||"empty"}
-Next Step: ${loc.nextStep||"none"} by ${loc.nextStepDate||"not set"} | Last Contact: ${loc.lastContact||"never"}
-Call note: ${text}
-${workloadCtx}`;
-    const raw = await aiCall(sys, ctx, 700);
-    try {
-      const clean = raw.replace(/```json|```/g,"").trim();
-      const parsed=JSON.parse(clean);setSuggestions(parsed);initAccepted(parsed);
-    } catch(e) {
-      setSuggestions({_error:"Parse error — try rewording the note."});
-    }
-    setLoading(false);
-  };
-
-  const [accepted, setAccepted] = useState({});   // field -> true/false
-  const [fieldEdits, setFieldEdits] = useState({}); // field -> edited value
-  const [discussing, setDiscussing] = useState("");  // user comment input
+  const [accepted, setAccepted] = useState({});
+  const [fieldEdits, setFieldEdits] = useState({});
+  const [chatInput, setChatInput] = useState("");
   const [chatMsgs, setChatMsgs] = useState([]);
 
-  const labelMap={
-    spin_s:"Situation",spin_p:"Problem/Pain",spin_i:"Implication",spin_n:"Need-Payoff",
-    pain_summary:"Pain Summary",pain_score:"Pain Score",workers:"Workers",
-    current_supplier:"Current Supplier",next_step:"Next Step",next_step_date:"Next Step Date",
-    decision_criteria:"Decision Criteria",economic_buyer:"Economic Buyer",
-    champion:"Champion",activity_note:"Activity Log",stage_suggestion:"Stage Change",
+  const labelMap = {
+    spin_s:"Situation", spin_p:"Problem/Pain", spin_i:"Implication", spin_n:"Need-Payoff",
+    pain_summary:"Pain Summary", pain_score:"Pain Score", workers:"Workers",
+    current_supplier:"Current Supplier", next_step:"Next Step", next_step_date:"Next Step Date",
+    decision_criteria:"Decision Criteria", economic_buyer:"Economic Buyer",
+    champion:"Champion", activity_note:"Activity Log Entry", stage_suggestion:"Stage",
   };
+
+  // Playbook next-step rules per stage
+  const STAGE_NEXT = {
+    "New": "First contact: call + email same day. Goal: reach the decision maker.",
+    "Contacted": "Follow-up sequence: Day3 call+LinkedIn, Day7 email. If no reply after 3 attempts → No Answer.",
+    "Interested": "Book discovery meeting within 5 business days. Prepare SPIN questions.",
+    "Meeting Scheduled": "Confirm 24h before. Prepare Commercial Insight specific to their industry.",
+    "Meeting Done": "Send proposal within 24h. Book follow-up call for Day 3.",
+    "Proposal Sent": "Day 3: call to walk through proposal. Day 7: value email (not 'just checking in'). Day 14: breakup message.",
+    "Negotiation": "Handle objections with labeling. Ackerman method for price. Close or escalate to manager.",
+    "No Answer": "4th attempt = breakup message: 'closing file, available if situation changes'. Set 60-day reminder.",
+  };
+
   const initAccepted = (sugg) => {
     const acc = {};
-    Object.keys(sugg).filter(k=>!k.startsWith("_")&&sugg[k]).forEach(k=>{ acc[k]=true; });
+    Object.keys(sugg).filter(k => !k.startsWith("_") && sugg[k]).forEach(k => { acc[k] = true; });
     setAccepted(acc);
     setFieldEdits({});
   };
 
+  const analyze = async () => {
+    if (!text.trim()) return;
+    setLoading(true);
+    setSuggestions(null);
+    const now = getNow();
+    const playbookRule = STAGE_NEXT[loc.stage] || "Follow up based on deal temperature.";
+    const workload = buildWorkloadContext(loc.salesId, locs||[], users||[], playbook, loc.stage);
+    const sys = `You are a senior sales coach AND CRM AI for Gremi Personal Romania. Analyze this post-call note.
+
+Respond with TWO sections:
+
+SECTION 1 — CALL ANALYSIS (3-5 sentences):
+- What went well / what was missed
+- Key signals from the client (buying signals, objections, hesitation)
+- Your honest assessment of where this deal really stands
+- One specific recommendation for the next interaction
+Format: plain text, no bullet points, direct and honest.
+
+---ANALYSIS_END---
+
+SECTION 2 — CRM UPDATE (JSON only):
+
+CURRENT DEAL:
+Company: ${loc.company} — ${loc.location}
+Stage: ${loc.stage} | Temp: ${loc.temp} | Pain: ${loc.painScore||"?"}/5
+Current next step: ${loc.nextStep||"none"} by ${loc.nextStepDate||"not set"}
+Last contact: ${loc.lastContact||"never"}
+SPIN-P: ${loc.spin?.p||"empty"}
+
+PLAYBOOK RULE FOR STAGE "${loc.stage}":
+${playbookRule}
+
+TODAY: ${now.datetime}
+${workload}
+
+INSTRUCTIONS:
+- next_step must be the SPECIFIC action from the playbook rule above, personalized to this call
+- next_step_date must be a real working day (Mon-Fri), calculated from today ${now.date}
+- stage_suggestion: only advance if THIS call clearly justified it (e.g. meeting was held → Meeting Done)
+- activity_note: concise summary of what happened on this call
+
+Return ONLY valid JSON with these keys (omit what you cannot determine):
+{
+  "spin_s": "situation facts",
+  "spin_p": "problem/pain discovered",
+  "spin_i": "implication of the problem",
+  "spin_n": "need-payoff / value of solving",
+  "pain_summary": "one sentence",
+  "pain_score": 1-5,
+  "workers": "number as string",
+  "current_supplier": "supplier name if mentioned",
+  "next_step": "specific action per playbook",
+  "next_step_date": "YYYY-MM-DD",
+  "decision_criteria": "what matters to them",
+  "economic_buyer": "who holds budget",
+  "champion": "internal ally",
+  "activity_note": "call summary for log",
+  "stage_suggestion": "stage name only if change justified"
+}`;
+    const raw = await aiCall(sys, `Call note: ${text}`, 800);
+    try {
+      // Extract analysis section
+      const analysisPart = raw.split("---ANALYSIS_END---")[0]?.trim() || "";
+      const jsonPart = raw.split("---ANALYSIS_END---")[1] || raw;
+      const clean = jsonPart.replace(/\`\`\`json|\`\`\`/g,"").trim();
+      const parsed = JSON.parse(clean);
+      parsed._analysis = analysisPart;
+      setSuggestions(parsed);
+      initAccepted(parsed);
+    } catch(e) {
+      setSuggestions({_error: "Could not parse response. Try rewording your note."});
+    }
+    setLoading(false);
+  };
+
+  const sendChat = async () => {
+    const msg = chatInput.trim();
+    if (!msg || !suggestions) return;
+    const newMsgs = [...chatMsgs, {role:"user", content:msg}];
+    setChatMsgs(newMsgs);
+    setChatInput("");
+    const raw = await aiCall(
+      "You are a CRM AI. The user wants to discuss or change the suggested CRM updates. Reply concisely. If revising fields, include them in a ```json block.",
+      `Deal: ${loc.company} [${loc.stage}]\nCall note: ${text}\nCurrent suggestions: ${JSON.stringify(suggestions)}\nUser: ${msg}`,
+      400
+    );
+    setChatMsgs(prev => [...prev, {role:"assistant", content:raw}]);
+    const m = raw.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/);
+    if (m) {
+      try {
+        const revised = JSON.parse(m[1].trim());
+        setSuggestions(s => ({...s, ...revised}));
+        initAccepted({...suggestions, ...revised});
+      } catch(e) {}
+    }
+  };
+
   const applySelected = () => {
-    if(!suggestions || suggestions._error) return;
+    if (!suggestions || suggestions._error) return;
     const patch = {};
     const spin = {...(loc.spin||{})};
     let spinChanged = false;
-    const effective = {...suggestions,...fieldEdits};
-    const toApply = Object.entries(effective).filter(([k])=>accepted[k]&&!k.startsWith("_")&&effective[k]);
-    toApply.forEach(([k,v])=>{
-      if(k==="spin_s"){spin.s=v;spinChanged=true;}
+    const effective = {...suggestions, ...fieldEdits};
+    Object.entries(effective).filter(([k]) => accepted[k] && !k.startsWith("_") && effective[k]).forEach(([k,v]) => {
+      if (k==="spin_s"){spin.s=v;spinChanged=true;}
       else if(k==="spin_p"){spin.p=v;spinChanged=true;}
       else if(k==="spin_i"){spin.i=v;spinChanged=true;}
       else if(k==="spin_n"){spin.n=v;spinChanged=true;}
       else if(k==="pain_summary"){spin.painSummary=v;spinChanged=true;}
-      else if(k==="pain_score")patch.painScore=parseInt(v);
-      else if(k==="workers")patch.workers=v;
-      else if(k==="current_supplier")patch.currentSupplier=v;
-      else if(k==="next_step")patch.nextStep=v;
-      else if(k==="next_step_date")patch.nextStepDate=v;
-      else if(k==="decision_criteria")patch.decisionCriteria=v;
-      else if(k==="economic_buyer")patch.economicBuyer=v;
-      else if(k==="champion")patch.champion=v;
-      else if(k==="stage_suggestion")patch.stage=v;
+      else if(k==="pain_score") patch.painScore=parseInt(v)||null;
+      else if(k==="workers") patch.workers=String(v);
+      else if(k==="current_supplier") patch.currentSupplier=String(v);
+      else if(k==="next_step") patch.nextStep=String(v);
+      else if(k==="next_step_date") patch.nextStepDate=String(v);
+      else if(k==="decision_criteria") patch.decisionCriteria=String(v);
+      else if(k==="economic_buyer") patch.economicBuyer=String(v);
+      else if(k==="champion") patch.champion=String(v);
+      else if(k==="stage_suggestion") patch.stage=String(v);
     });
-    if(spinChanged) patch.spin=spin;
-    if(accepted["activity_note"]&&(fieldEdits["activity_note"]||suggestions.activity_note)){
+    if (spinChanged) patch.spin = spin;
+    if (accepted["activity_note"] && (fieldEdits["activity_note"]||suggestions.activity_note)) {
       const note = fieldEdits["activity_note"]||suggestions.activity_note;
-      const act={id:Date.now(),type:"Post-Call",note,date:new Date().toISOString().slice(0,10),time:new Date().toTimeString().slice(0,5)};
-      patch.activities=[act,...(loc.activities||[])];
+      const now = getNow();
+      patch.activities = [{id:Date.now(),type:"Post-Call",note,date:now.date,time:now.time}, ...(loc.activities||[])];
     }
-    if(Object.keys(patch).length>0){onApply(loc.id,patch);}
+    patch.lastContact = getNow().date;
+    if (Object.keys(patch).length > 0) onApply(loc.id, patch);
     onClose();
   };
 
-  const discussWithAI = async () => {
-    if(!discussing.trim()||!suggestions) return;
-    const userMsg = discussing;
-    setChatMsgs(prev=>[...prev,{role:"user",content:userMsg}]);
-    setDiscussing("");
-    const ctx2 = `Current deal: ${loc.company} — ${loc.stage}. Original call note: ${text}. AI suggested: ${JSON.stringify(suggestions)}. User says: ${userMsg}. Respond briefly and if needed provide revised JSON suggestions in a \`\`\`json block.`;
-    const raw = await aiCall(`You are a CRM AI for Gremi Personal Romania. The user wants to discuss or modify the suggested CRM updates. Be concise. Respond in the same language the user writes in. If suggesting revised fields, put them in a \`\`\`json block.`, ctx2, 500);
-    setChatMsgs(prev=>[...prev,{role:"assistant",content:raw}]);
-    // Try to extract revised suggestions
-    const m = raw.match(/```json\s*([\s\S]*?)```/);
-    if(m){try{const revised=JSON.parse(m[1].trim());setSuggestions(s=>({...s,...revised}));initAccepted({...suggestions,...revised});}catch(e){}}
-  };
+  const selectedCount = Object.values(accepted).filter(Boolean).length;
 
-
-  return(
+  return (
     <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div className="sheet" style={{maxHeight:"85vh"}}>
-        <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+      <div className="sheet" style={{maxHeight:"92vh"}}>
+
+        {/* Header */}
+        <div style={{padding:"13px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
           <div style={{width:28,height:28,borderRadius:7,background:`linear-gradient(135deg,${C.blue},${C.teal})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>📞</div>
-          <div style={{flex:1}}>
+          <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,fontSize:14,color:C.txt}}>Post-Call Debrief</div>
-            <div style={{fontSize:11,color:C.txt3}}>{loc.company} — {loc.location}</div>
+            <div style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              {loc.company} · <span style={{color:getSC()[loc.stage]||C.txt3}}>{loc.stage}</span>
+              {loc.painScore?<span style={{marginLeft:6,color:loc.painScore>=4?C.red:C.amber}}> · Pain {loc.painScore}/5</span>:null}
+            </div>
           </div>
           <button className="xb" onClick={onClose}>×</button>
         </div>
 
+        {/* Playbook hint */}
+        <div style={{padding:"8px 14px",background:`${C.blue}08`,borderBottom:`1px solid ${C.blue}22`,flexShrink:0}}>
+          <div style={{fontSize:10,color:C.blue2,fontWeight:700,marginBottom:2}}>📖 PLAYBOOK — {loc.stage}:</div>
+          <div style={{fontSize:11,color:C.txt2,lineHeight:1.5}}>{STAGE_NEXT[loc.stage]||"Follow up based on deal temperature."}</div>
+        </div>
+
         <div style={{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:12}}>
+
+          {/* Note input */}
           <div>
-            <div style={{fontSize:11,color:C.txt3,marginBottom:6}}>What happened on the call? Write naturally in any language:</div>
+            <div style={{fontSize:11,color:C.txt3,marginBottom:6}}>Tell me what happened on the call — any language, naturally:</div>
             <textarea value={text} onChange={e=>setText(e.target.value)} rows={5}
-              placeholder="e.g. 'Rozmawiałem z Marią, mają problem z sezonem, potrzebują 25 ludzi do maja, obecny dostawca Lugera nie daje rady, chce ofertę do piątku'"
-              style={{width:"100%",background:C.bg4,border:`1.5px solid ${C.border}`,color:C.txt,borderRadius:8,padding:"10px 12px",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.6,outline:"none"}}/>
+              placeholder={"e.g. 'Spoke with Maria, they need 25 workers by May, current supplier Lugera can't deliver on time, she wants a proposal by Friday, budget around 6000 RON/worker'"}
+              style={{width:"100%",background:C.bg4,border:`1.5px solid ${text?C.blue:C.border}`,color:C.txt,borderRadius:8,padding:"10px 12px",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.6,outline:"none"}}/>
           </div>
 
           <button className="btn" onClick={analyze} disabled={loading||!text.trim()}
-            style={{width:"100%",background:loading||!text.trim()?C.bg4:`linear-gradient(135deg,${C.blue},${C.indigo})`,color:loading||!text.trim()?C.txt3:"#fff",padding:"12px",fontSize:13,borderRadius:9}}>
-            {loading?"🤖 Analyzing...":"🤖 Analyze & Extract Fields"}
+            style={{width:"100%",background:loading||!text.trim()?C.bg4:`linear-gradient(135deg,${C.blue},${C.indigo})`,
+              color:loading||!text.trim()?C.txt3:"#fff",padding:"13px",fontSize:14,borderRadius:9,fontWeight:600}}>
+            {loading?"🤖 Analyzing call...":"🤖 Extract & Update Lead"}
           </button>
 
-          {suggestions && !suggestions._error && (
-            <div className="anim-in" style={{display:"flex",flexDirection:"column",gap:6}}>
-              <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.08em"}}>SUGGESTED UPDATES — check what to apply, edit inline:</div>
+          {/* Suggestions */}
+          {suggestions&&!suggestions._error&&(
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              {suggestions._analysis&&(
+                <div style={{background:C.bg3,border:`1px solid ${C.teal}33`,borderRadius:10,padding:12,marginBottom:4}}>
+                  <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.08em",marginBottom:6}}>🎯 CALL ANALYSIS & RECOMMENDATION</div>
+                  <div style={{fontSize:13,color:C.txt,lineHeight:1.75,whiteSpace:"pre-wrap"}}>{suggestions._analysis}</div>
+                </div>
+              )}
+              <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.08em",marginTop:4}}>
+                ✅ CRM UPDATES — check what to apply:
+              </div>
               {Object.entries(suggestions).filter(([k])=>!k.startsWith("_")&&suggestions[k]).map(([k,v])=>(
-                <div key={k} style={{background:accepted[k]?`${C.teal}08`:C.bg4,border:`1px solid ${accepted[k]?C.teal+"44":C.border}`,borderRadius:8,padding:"7px 10px"}}>
+                <div key={k} style={{background:accepted[k]?`${C.teal}08`:C.bg4,border:`1px solid ${accepted[k]?C.teal+"55":C.border}`,borderRadius:8,padding:"8px 10px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <input type="checkbox" checked={!!accepted[k]} onChange={e=>setAccepted(a=>({...a,[k]:e.target.checked}))} style={{cursor:"pointer",flexShrink:0}}/>
-                    <span style={{fontSize:10,fontWeight:700,color:C.teal,minWidth:110,flexShrink:0}}>{labelMap[k]||k}</span>
-                    <span style={{fontSize:12,color:C.txt2,flex:1,lineHeight:1.4,wordBreak:"break-word"}}>{fieldEdits[k]!==undefined?fieldEdits[k]:String(v)}</span>
+                    <input type="checkbox" checked={!!accepted[k]} onChange={e=>setAccepted(a=>({...a,[k]:e.target.checked}))} style={{cursor:"pointer",flexShrink:0,width:16,height:16}}/>
+                    <span style={{fontSize:10,fontWeight:700,color:C.teal,minWidth:120,flexShrink:0}}>{labelMap[k]||k}</span>
+                    <span style={{fontSize:12,color:C.txt,flex:1,lineHeight:1.5,wordBreak:"break-word"}}>
+                      {fieldEdits[k]!==undefined?fieldEdits[k]:String(v)}
+                    </span>
                     <button className="btn" onClick={()=>setFieldEdits(e=>e[k]!==undefined?Object.fromEntries(Object.entries(e).filter(([kk])=>kk!==k)):{...e,[k]:String(v)})}
-                      style={{background:`${C.blue}15`,color:C.blue2,padding:"2px 7px",fontSize:9,borderRadius:4,border:`1px solid ${C.blue}33`,flexShrink:0}}>
-                      {fieldEdits[k]!==undefined?"✕ revert":"✏️"}
+                      style={{background:`${C.blue}15`,color:C.blue2,padding:"3px 8px",fontSize:10,borderRadius:4,border:`1px solid ${C.blue}33`,flexShrink:0}}>
+                      {fieldEdits[k]!==undefined?"✕":"✏️"}
                     </button>
                   </div>
                   {fieldEdits[k]!==undefined&&(
-                    <input type="text" value={fieldEdits[k]} onChange={e=>setFieldEdits(f=>({...f,[k]:e.target.value}))}
-                      style={{marginTop:5,width:"100%",background:C.bg4,border:`1px solid ${C.blue}`,color:C.txt,borderRadius:6,padding:"5px 8px",fontSize:12,outline:"none"}}/>
+                    <input value={fieldEdits[k]} onChange={e=>setFieldEdits(f=>({...f,[k]:e.target.value}))}
+                      style={{marginTop:6,width:"100%",background:C.bg4,border:`1px solid ${C.blue}`,color:C.txt,borderRadius:6,padding:"6px 8px",fontSize:12,outline:"none"}}/>
                   )}
                 </div>
               ))}
             </div>
           )}
-          {suggestions?._error&&<div style={{color:C.red,fontSize:12,padding:"8px 12px",background:`${C.red}10`,borderRadius:8}}>{suggestions._error}</div>}
-          {/* Discuss with AI */}
+          {suggestions?._error&&(
+            <div style={{color:C.red,fontSize:12,padding:"10px 12px",background:`${C.red}10`,borderRadius:8,border:`1px solid ${C.red}33`}}>
+              ⚠ {suggestions._error}
+            </div>
+          )}
+
+          {/* Discuss */}
           {suggestions&&!suggestions._error&&(
             <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {chatMsgs.map((m,i)=>(
-                <div key={i} style={{background:m.role==="user"?`${C.blue}10`:C.bg3,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",fontSize:12,color:C.txt,lineHeight:1.6}}>{m.content}</div>
+                <div key={i} style={{background:m.role==="user"?`${C.blue}10`:C.bg3,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",fontSize:12,color:C.txt,lineHeight:1.6}}>
+                  <span style={{fontSize:9,color:m.role==="user"?C.blue2:C.teal,fontWeight:700,marginRight:6}}>{m.role==="user"?"You:":"AI:"}</span>
+                  {m.content}
+                </div>
               ))}
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <input type="text" value={discussing} onChange={e=>setDiscussing(e.target.value)}
-                  onKeyDown={e=>{if(e.key==="Enter")discussWithAI();}}
-                  placeholder="Discuss a suggestion or disagree..."
-                  style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:7,padding:"7px 10px",fontSize:12,outline:"none"}}/>
-                <button className="btn" onClick={discussWithAI} disabled={!discussing.trim()}
-                  style={{background:`${C.teal}18`,color:C.teal,padding:"7px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.teal}44`}}>Ask AI</button>
+              <div style={{display:"flex",gap:6}}>
+                <input value={chatInput} onChange={e=>setChatInput(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter")sendChat();}}
+                  placeholder="Disagree? Ask to change something..."
+                  style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:7,padding:"8px 10px",fontSize:12,outline:"none"}}/>
+                <button className="btn" onClick={sendChat} disabled={!chatInput.trim()}
+                  style={{background:`${C.teal}18`,color:C.teal,padding:"8px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.teal}44`}}>Ask AI</button>
               </div>
             </div>
           )}
         </div>
 
+        {/* Footer */}
         <div style={{padding:"12px 14px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,flexShrink:0}}>
           {suggestions&&!suggestions._error&&(
             <button className="btn" onClick={applySelected}
-              style={{flex:1,background:`linear-gradient(135deg,${C.green},${C.teal})`,color:"#fff",padding:"12px",fontSize:13,borderRadius:9}}>
-              ✅ Apply {Object.values(accepted).filter(Boolean).length} selected fields
+              style={{flex:1,background:selectedCount>0?`linear-gradient(135deg,${C.green},${C.teal})`:C.bg3,
+                color:selectedCount>0?"#fff":C.txt3,padding:"13px",fontSize:14,borderRadius:9,fontWeight:600}}>
+              {selectedCount>0?`✅ Apply ${selectedCount} fields`:"Select fields to apply"}
             </button>
           )}
-          <button className="btn" onClick={onClose} style={{background:C.bg3,color:C.txt3,padding:"12px 16px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>
+          <button className="btn" onClick={onClose}
+            style={{background:C.bg3,color:C.txt3,padding:"13px 18px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>
             {suggestions?"✕ Discard":"Close"}
           </button>
         </div>
@@ -2688,7 +2782,6 @@ ${workloadCtx}`;
 }
 
 
-// ─── QUICK EMAIL DRAFT ───────────────────────────────────────────
 function EmailDraftModal({loc, hq, onClose}) {
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
@@ -3159,6 +3252,24 @@ PLAYBOOK RULES — follow these strictly when suggesting next steps:
 - No Answer: Max 4 attempts then breakup message. DO NOT suggest immediate call if 3+ already done.
 NEVER suggest an action that skips stages. ALWAYS check current stage before recommending next step.
 
+LEAD INTAKE PROTOCOL:
+When a user provides information about a new company/contact, treat it as a lead intake session:
+1. Extract ALL fields you can from what they share
+2. Map naturally: "they need 30 people" → workers=30, "HR called Maria" → contact=Maria role=HR
+3. Infer what you can: large factory + automotive → industry=Automotive, employees=200+
+4. After creating, ask 3 targeted follow-up questions about missing critical fields:
+   - If no pain stated: "What's not working with their current setup?"
+   - If no economic buyer: "Who approves budgets of this size — owner, CFO, or HR independently?"
+   - If no timeline: "When do they need workers — is there a deadline or penalty if delayed?"
+5. Never ask all questions at once — pick the 3 most important missing ones.
+
+FIELD COMPLETENESS RULE:
+When MISSING FIELDS are listed in the context, ALWAYS:
+1. Point out the most critical missing field first
+2. Suggest HOW to fill it (e.g. "Check Termene.ro for turnover", "Ask directly: 'Who approves this purchase?'")
+3. Include filling it as a recommended action BEFORE moving to the next stage
+You cannot advance a deal without key SPIN fields and Economic Buyer.
+
 CRITICAL INSTRUCTION — FIELD SUGGESTIONS:
 When you analyze a lead or answer a question, ALWAYS include a section at the END of your response with suggested CRM field values in this EXACT format:
 
@@ -3192,11 +3303,34 @@ function InlineAI({loc,hq,onUpdate,onUpdateHQ,locs,users}) {
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
 
   const buildCtx=()=>{
+    const now = getNow();
+    // Field completeness audit
+    const missing = [];
+    if(!hq?.intelligence) missing.push("HQ Intelligence (research company on Termene.ro)");
+    if(!hq?.annualTurnover) missing.push("Annual Turnover");
+    if(!hq?.employees) missing.push("Employees count");
+    if(!hq?.centralContact) missing.push("HQ central contact person");
+    if(!loc.spin?.s) missing.push("SPIN-S (situation)");
+    if(!loc.spin?.p) missing.push("SPIN-P (pain/problem)");
+    if(!loc.painScore) missing.push("Pain Score");
+    if(!loc.workers) missing.push("Workers needed");
+    if(!loc.decisionProcess) missing.push("Decision process");
+    if(!loc.economicBuyer) missing.push("Economic buyer");
+    if(!loc.nextStep) missing.push("Next step");
+    if(!loc.currentSupplier) missing.push("Current supplier");
+    // Pre-call checklist completion
+    const checklist = hq?.preCallChecklist || {};
+    const checklistDone = Object.values(checklist).filter(Boolean).length;
+    const checklistTotal = Object.keys(checklist).length;
+
     let ctx="";
-    if(hq) ctx+=`\nCOMPANY: ${hq.company}\nIndustry: ${hq.industry||"?"}\nTurnover: ${hq.annualTurnover||"?"}\nEmployees: ${hq.employees||"?"}\nSeasonality: ${hq.seasonality||"?"}\nIntelligence: ${hq.intelligence||"not collected"}\nContact: ${hq.centralContact||"?"} (${hq.centralRole||"?"})`;
+    if(hq) ctx+=`\nCOMPANY: ${hq.company}\nIndustry: ${hq.industry||"?"}\nTurnover: ${hq.annualTurnover||"?"}\nEmployees: ${hq.employees||"?"}\nSeasonality: ${hq.seasonality||"?"}\nIntelligence: ${hq.intelligence||"not collected"}\nContact: ${hq.centralContact||"?"} (${hq.centralRole||"?"})\nPre-call checklist: ${checklistDone}/${checklistTotal} done`;
     const sp=loc.spin||{};
     const acts=(loc.activities||[]).slice(0,5).map(a=>`${a.date} ${a.type}: ${a.note}`).join("\n");
+    const missingStr = missing.length > 0 ? `MISSING FIELDS (${missing.length}): ${missing.join(", ")}` : "All key fields filled ✅";
+    ctx += `\nPRE-CALL CHECKLIST: ${checklistDone}/${checklistTotal} items done`;
     ctx+=`\nLOCATION: ${loc.location}\nContact: ${loc.contact||"?"} (${loc.role||"?"})\nCounty: ${loc.county||"?"}\nStage: ${loc.stage}\nTemp: ${loc.temp}\nWorkers: ${loc.workers||"?"}\nType: ${loc.workerType||"?"}\nPain Score: ${loc.painScore||"?"}\nDecision Process: ${loc.decisionProcess||"?"}\nEconomic Buyer: ${loc.economicBuyer||"?"}\nSPIN-S: ${sp.s||"empty"}\nSPIN-P: ${sp.p||"empty"}\nSPIN-I: ${sp.i||"empty"}\nSPIN-N: ${sp.n||"empty"}\nPain Summary: ${sp.painSummary||"empty"}\nNotes: ${loc.notes||""}\nActivity:\n${acts||"none"}`;
+    ctx += `\n\nFIELD COMPLETENESS: ${missingStr}\nNote: Prioritize filling missing fields in your suggestions.`;
     return ctx;
   };
 
@@ -4977,6 +5111,18 @@ ${hqList}
 ALL DEALS IN CRM (use EXACT company/location names from quotes for updates):
 ${dealList}
 
+LEAD INTAKE TEMPLATE — when user provides new lead info, extract ALL possible fields:
+If user pastes lead data, extract and create using create_lead with maximum field coverage.
+Map their data to: hq_company, hq_industry, hq_address, hq_employees, hq_intelligence (Termene data + research),
+loc_location, loc_county, loc_workers, loc_worker_type, loc_service, loc_contact, loc_role, loc_phone, loc_email,
+spin_s (situation: current setup, how many employees, what they do),
+spin_p (problem: what's not working, why they're looking),
+spin_i (implication: what happens if unsolved — costs, delays, penalties),
+spin_n (need-payoff: what they gain by solving it),
+loc_notes (economic buyer, decision process, timeline, seasonality, source),
+loc_current_supplier (their current agency or recruiting method).
+Always ask clarifying questions if key fields are missing (especially: pain, economic buyer, timeline).
+
 CAPABILITIES — end response with ONE JSON block:
 
 Update deal fields:
@@ -5372,6 +5518,8 @@ function DashboardTab({locs, hqs, users, cur, onSelectLoc, isAdmin, isTeamLead})
     // Full pipeline data
     const overdueList=overdue.map(l=>`- ${l.company}/${l.location} [${l.stage}] next step: "${l.nextStep||"brak"}" było na ${l.nextStepDate}`).join("\n");
     const todayList=meetingsToday.map(l=>`- ${l.company} [${l.stage}] ${l.nextStep||""}`).join("\n");
+    // Deals with incomplete critical fields
+    const incompleteDeals = active.filter(l=>!l.spin?.p||!l.painScore||!l.nextStep).slice(0,5).map(l=>`- ${l.company} [${l.stage}]: missing ${[!l.spin?.p?"SPIN-P":"",!l.painScore?"pain score":"",!l.nextStep?"next step":""].filter(Boolean).join(", ")}`).join("\n");
     const hotList=active.filter(l=>l.temp==="🔥 Hot").map(l=>`- ${l.company} [${l.stage}] pain:${l.painScore||"?"}/5 workers:${l.workers||"?"} nextStep:"${l.nextStep||"brak"}" on ${l.nextStepDate||"—"}`).join("\n");
     const negotiList=active.filter(l=>["Negotiation","Proposal Sent"].includes(l.stage)).map(l=>`- ${l.company} ${l.workers||"?"}w [${l.stage}] contact:${l.contact||"?"}`).join("\n");
     const noContactList=active.filter(l=>{if(!l.lastContact)return true;return (new Date()-new Date(l.lastContact))>7*24*3600*1000;}).slice(0,5).map(l=>`- ${l.company} [${l.stage}] last contact: ${l.lastContact||"nigdy"}`).join("\n");
@@ -5387,7 +5535,7 @@ Salesperson's plan for today: ${myPlan||"not set"}`;
     const todayDone=locs.flatMap(l=>(l.activities||[]).filter(a=>a.date===today2).map(a=>({company:l.company,type:a.type,note:a.note||""})));
     const todayDoneList=todayDone.map(a=>`- ${a.company}: ${a.type} — ${a.note.substring(0,80)}`).join("\n");
 
-    const ctx=`Today: ${today2} (${dayName})
+    const ctx=`Today: ${today2} (${dayName}) | Current time: ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} | Hour: ${new Date().getHours()}
 Salesperson: ${cur.name}
 Pipeline: ${active.length} active, ${won.length} won, ${placed} workers placed, pipeline RON ~${Math.round(pipe/1000)}k
 
@@ -5409,6 +5557,9 @@ ${noContactList||"None"}
 NEW UNQUALIFIED LEADS:
 ${newUnqList||"None"}
 
+DEALS WITH INCOMPLETE DATA (SPIN/pain/next step missing):
+${incompleteDeals||"All good ✅"}
+
 DONE TODAY (${todayDone.length} actions):
 ${todayDoneList||"Nothing logged today yet"}
 
@@ -5420,6 +5571,14 @@ You are writing a morning briefing for ${cur.name}.
 
 Your task: write an UPDATED action plan for the rest of the day — account for what's already been done today.
 
+IF it's after 15:00 (current hour will be in context), ALSO add a section:
+📅 TOMORROW'S PLAN — propose the top 5 priorities for the next working day, based on:
+1. Overdue items that weren't resolved today
+2. Follow-up sequences (Day 3/7/14 from Proposal Sent deals)
+3. Hot deals requiring attention
+4. New leads to prospect (always include min. 10 new contacts)
+5. Any deals with incomplete SPIN/Economic Buyer data
+
 STRUCTURE (use these exact emoji headers, be specific, no fluff):
 
 ✅ DONE TODAY — brief list of completed actions (if any logged)
@@ -5428,6 +5587,14 @@ STRUCTURE (use these exact emoji headers, be specific, no fluff):
 🟢 RECOMMENDED — what you suggest doing and why
 🔵 NEW LEADS — how many and what type to prospect today (min. 10 new contacts/day is the baseline)
 ⚡ PRIORITY #1 — the single most important action today
+
+If after 15:00, add:
+📅 TOMORROW (next working day) — top 5 priorities:
+1. [most urgent overdue/follow-up]
+2. [next sequence step for hot deals]
+3. [deals needing SPIN/data completion]
+4. [new lead prospecting — region/industry focus]
+5. [one strategic action]
 
 Rules:
 - Name specific companies, not generalities
@@ -6191,7 +6358,6 @@ export default function GremiCRM() {
                         </div>
                       );
                     })}
-                    
                     </div>)}
                   </div>
                 );
