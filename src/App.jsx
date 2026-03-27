@@ -2507,142 +2507,172 @@ const STAGE_NEXT = {
 };
 
 function PostCallDebrief({loc, hq, onClose, onApply, locs, users, playbook}) {
-  // ALL hooks at top - no exceptions
-  const [text, setText] = useState("");
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState(null);
+  const [pendingPatch, setPendingPatch] = useState(null); // fields AI proposes to apply
   const [accepted, setAccepted] = useState({});
   const [fieldEdits, setFieldEdits] = useState({});
-  const [chatInput, setChatInput] = useState("");
-  const [chatMsgs, setChatMsgs] = useState([]);
+  const bottomRef = useRef(null);
+  const taRef = useRef(null);
 
-  const labelMap = {
+  useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); }, [msgs, loading]);
+
+  const LABEL = {
     spin_s:"Situation", spin_p:"Problem/Pain", spin_i:"Implication", spin_n:"Need-Payoff",
     pain_summary:"Pain Summary", pain_score:"Pain Score", workers:"Workers",
     current_supplier:"Current Supplier", next_step:"Next Step", next_step_date:"Next Step Date",
     decision_criteria:"Decision Criteria", economic_buyer:"Economic Buyer",
-    champion:"Champion", activity_note:"Activity Log Entry", stage_suggestion:"Stage",
+    champion:"Champion", activity_note:"Activity Log", stage_suggestion:"Stage",
+    last_contact:"Last Contact",
   };
 
-
-
-  const initAccepted = (sugg) => {
-    const acc = {};
-    Object.keys(sugg).filter(k => !k.startsWith("_") && sugg[k]).forEach(k => { acc[k] = true; });
-    setAccepted(acc);
-    setFieldEdits({});
-  };
-
-  const analyze = async () => {
-    if (!text.trim()) return;
-    try {
-    setLoading(true);
-    setSuggestions(null);
+  const buildSys = () => {
     const now = getNow();
-    const playbookRule = (STAGE_NEXT&&STAGE_NEXT[loc.stage]) || "Follow up based on deal temperature.";
-    const workload = (typeof buildWorkloadContext==="function") ? buildWorkloadContext(loc.salesId, locs||[], users||[], playbook, loc.stage) : "";
-    const sys = `You are a senior sales coach AND CRM AI for Gremi Personal Romania. Analyze this post-call note.
+    const playbookRule = (STAGE_NEXT&&STAGE_NEXT[loc.stage]) || "Follow up per deal temperature.";
+    const workload = (typeof buildWorkloadContext==="function")
+      ? buildWorkloadContext(loc.salesId, locs||[], users||[], playbook, loc.stage) : "";
+    const missingFields = [];
+    if(!hq?.intelligence) missingFields.push("HQ Intelligence (Termene.ro research)");
+    if(!hq?.annualTurnover) missingFields.push("Annual Turnover");
+    if(!loc.spin?.s) missingFields.push("SPIN-S (situation)");
+    if(!loc.spin?.p) missingFields.push("SPIN-P (pain)");
+    if(!loc.spin?.i) missingFields.push("SPIN-I (implication)");
+    if(!loc.spin?.n) missingFields.push("SPIN-N (need-payoff)");
+    if(!loc.painScore) missingFields.push("Pain Score");
+    if(!loc.economicBuyer) missingFields.push("Economic Buyer");
+    if(!loc.decisionProcess) missingFields.push("Decision Process");
+    if(!loc.currentSupplier) missingFields.push("Current Supplier");
+    if(!loc.workers) missingFields.push("Workers needed");
 
-Respond with TWO sections:
+    return `You are an experienced B2B sales coach for Gremi Personal Romania — direct, specific, and honest.
 
-SECTION 1 — CALL ANALYSIS (3-5 sentences):
-- What went well / what was missed
-- Key signals from the client (buying signals, objections, hesitation)
-- Your honest assessment of where this deal really stands
-- One specific recommendation for the next interaction
-Format: plain text, no bullet points, direct and honest.
-
----ANALYSIS_END---
-
-SECTION 2 — CRM UPDATE (JSON only):
-
-CURRENT DEAL:
+━━━ DEAL CONTEXT ━━━
 Company: ${loc.company} — ${loc.location}
 Stage: ${loc.stage} | Temp: ${loc.temp} | Pain: ${loc.painScore||"?"}/5
-Current next step: ${loc.nextStep||"none"} by ${loc.nextStepDate||"not set"}
+SPIN-S: ${loc.spin?.s||"❌ empty"} | SPIN-P: ${loc.spin?.p||"❌ empty"}
+SPIN-I: ${loc.spin?.i||"❌ empty"} | SPIN-N: ${loc.spin?.n||"❌ empty"}
+Current next step: "${loc.nextStep||"none"}" due ${loc.nextStepDate||"not set"}
 Last contact: ${loc.lastContact||"never"}
-SPIN-P: ${loc.spin?.p||"empty"}
+Current supplier: ${loc.currentSupplier||"❌ unknown"}
+Economic buyer: ${loc.economicBuyer||"❌ not identified"}
+Decision process: ${loc.decisionProcess||"❌ unknown"}
+Workers needed: ${loc.workers||"❌ not set"}
+Champion: ${loc.champion||"none"}
+HQ Intel: ${hq?.intelligence?.substring(0,300)||"❌ none collected"}
+HQ Employees: ${hq?.employees||"?"} | Turnover: ${hq?.annualTurnover||"?"}
 
-PLAYBOOK RULE FOR STAGE "${loc.stage}":
-${playbookRule}
+PLAYBOOK FOR "${loc.stage}": ${playbookRule}
+
+MISSING FIELDS: ${missingFields.length>0 ? missingFields.join(", ") : "All key fields filled ✅"}
 
 TODAY: ${now.datetime}
+DATE CALCULATION — CRITICAL:
+- Today is ${now.date} (${now.dayOfWeek})
+- "lunea viitoare"/"next Monday" = first Monday after ${now.date}
+- "in 3 zile"/"in 3 days" = add 3 calendar days to ${now.date}
+- NEVER use example dates. NEVER use dates from training data.
+- All dates MUST be in YYYY-MM-DD format and be in the future.
+
 ${workload}
 
-INSTRUCTIONS:
-- next_step must be the SPECIFIC action from the playbook rule above, personalized to this call
-- next_step_date must be a real working day (Mon-Fri), calculated from today ${now.date}
-- stage_suggestion: only advance if THIS call clearly justified it (e.g. meeting was held → Meeting Done)
-- activity_note: concise summary of what happened on this call
+━━━ YOUR ROLE AS SALES COACH ━━━
+When the user shares what happened on the call, you MUST:
 
-Return ONLY valid JSON with these keys (omit what you cannot determine):
-{
-  "spin_s": "situation facts",
-  "spin_p": "problem/pain discovered",
-  "spin_i": "implication of the problem",
-  "spin_n": "need-payoff / value of solving",
-  "pain_summary": "one sentence",
-  "pain_score": 1-5,
-  "workers": "number as string",
-  "current_supplier": "supplier name if mentioned",
-  "next_step": "specific action per playbook",
-  "next_step_date": "YYYY-MM-DD",
-  "decision_criteria": "what matters to them",
-  "economic_buyer": "who holds budget",
-  "champion": "internal ally",
-  "activity_note": "call summary for log",
-  "stage_suggestion": "stage name only if change justified"
-}`;
-    const raw = await aiCall(sys, `Call note: ${text}`, 800);
-    try {
-      // Extract analysis section
-      const analysisPart = raw.split("---ANALYSIS_END---")[0]?.trim() || "";
-      const jsonPart = raw.split("---ANALYSIS_END---")[1] || raw;
-      const clean = jsonPart.replace(/\`\`\`json|\`\`\`/g,"").trim();
-      const parsed = JSON.parse(clean);
-      parsed._analysis = analysisPart;
-      setSuggestions(parsed);
-      initAccepted(parsed);
-    } catch(e) {
-      setSuggestions({_error: "Could not parse response. Try rewording your note."});
-    }
-    setLoading(false);
-    } catch(fatal) {
-      setSuggestions({_error: "Error: " + fatal.message});
-      setLoading(false);
-    }
+1. CALL QUALITY ASSESSMENT (2-3 sentences):
+   - What went well
+   - What was MISSED or done wrong (be honest and direct)
+   - Overall call rating: Excellent / Good / Average / Poor — explain why
+
+2. MISSED OPPORTUNITIES — list specifically:
+   - Questions not asked (e.g. "Did you ask who approves budget?")
+   - Signals not followed up (e.g. "They mentioned Lugera problems — did you dig into cost impact?")
+   - SPIN questions not covered
+
+3. WHAT TO DO NEXT — concrete and sequenced:
+   - Specific next step with exact date calculated from TODAY (${now.date})
+   - What to prepare, what to ask in next interaction
+   - If missing economic buyer → HOW to find out in next call
+
+4. FIELD UPDATES — propose ALL relevant updates, not just next step:
+   - Any field mentioned or implied in the call
+   - Update pain score based on what you heard (justify the score)
+   - Update SPIN fields from what was shared
+   - If they mentioned their supplier → current_supplier
+   - If they mentioned budget or decision maker → economic_buyer
+   - Stage change only if clearly justified
+
+5. WHAT TO LEARN — one insight about this type of client/industry
+
+After your coaching analysis, if you have field proposals, output them as JSON:
+
+[JSON with updated fields — example format:
+spin_p, spin_s, spin_i, spin_n, pain_score, pain_summary,
+workers, current_supplier, economic_buyer, decision_process,
+champion, next_step, next_step_date, stage_suggestion, activity_note]
+Only include fields you actually have information about. Omit empty fields.
+
+TONE: Direct, like a senior colleague debriefing after a call. Not diplomatic — honest.
+LANGUAGE: Respond in the same language the user writes in.`;
   };
 
-  const sendChat = async () => {
-    const msg = chatInput.trim();
-    if (!msg || !suggestions) return;
-    const newMsgs = [...chatMsgs, {role:"user", content:msg}];
-    setChatMsgs(newMsgs);
-    setChatInput("");
-    const raw = await aiCall(
-      "You are a CRM AI. The user wants to discuss or change the suggested CRM updates. Reply concisely. If revising fields, include them in a ```json block.",
-      `Deal: ${loc.company} [${loc.stage}]\nCall note: ${text}\nCurrent suggestions: ${JSON.stringify(suggestions)}\nUser: ${msg}`,
-      400
-    );
-    setChatMsgs(prev => [...prev, {role:"assistant", content:raw}]);
-    const m = raw.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/);
-    if (m) {
-      try {
-        const revised = JSON.parse(m[1].trim());
-        setSuggestions(s => ({...s, ...revised}));
-        initAccepted({...suggestions, ...revised});
-      } catch(e) {}
+  const extractPatch = (text) => {
+    // Try ```json blocks first, then ---JSON_START--- markers
+    let jsonStr = null;
+    const m1 = text.match(/```json\s*([\s\S]*?)```/);
+    if (m1) jsonStr = m1[1];
+    else {
+      const m2 = text.match(/---JSON_START---\s*([\s\S]*?)---JSON_END---/);
+      if (m2) jsonStr = m2[1];
     }
+    if (!jsonStr) return null;
+    try {
+      const p = JSON.parse(jsonStr.trim());
+      const acc = {};
+      Object.keys(p).filter(k=>!k.startsWith("_")&&p[k]).forEach(k=>{ acc[k]=true; });
+      return { patch: p, accepted: acc };
+    } catch(e) { return null; }
+  };
+
+  const send = async (userText) => {
+    const txt = (userText||input).trim();
+    if (!txt || loading) return;
+    const newMsgs = [...msgs, {role:"user", content:txt}];
+    setMsgs(newMsgs); setInput(""); setLoading(true); setPendingPatch(null);
+    try {
+      const res = await fetch(AI_PROXY, {
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer ${SB_KEY}`},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1200,
+          system:buildSys(),
+          messages:newMsgs.map(m=>({role:m.role,content:m.content}))
+        })
+      });
+      const d = await res.json();
+      const raw = d.content?.[0]?.text || "Error.";
+      setMsgs(prev=>[...prev,{role:"assistant",content:raw}]);
+      const extracted = extractPatch(raw);
+      if (extracted) {
+        setPendingPatch(extracted.patch);
+        setAccepted(extracted.accepted);
+        setFieldEdits({});
+      }
+    } catch(e) {
+      setMsgs(prev=>[...prev,{role:"assistant",content:"Connection error: "+e.message}]);
+    }
+    setLoading(false);
   };
 
   const applySelected = () => {
-    if (!suggestions || suggestions._error) return;
+    if (!pendingPatch) return;
     const patch = {};
     const spin = {...(loc.spin||{})};
     let spinChanged = false;
-    const effective = {...suggestions, ...fieldEdits};
-    Object.entries(effective).filter(([k]) => accepted[k] && !k.startsWith("_") && effective[k]).forEach(([k,v]) => {
-      if (k==="spin_s"){spin.s=v;spinChanged=true;}
+    const effective = {...pendingPatch, ...fieldEdits};
+    Object.entries(effective).filter(([k])=>accepted[k]&&effective[k]).forEach(([k,v])=>{
+      if(k==="spin_s"){spin.s=v;spinChanged=true;}
       else if(k==="spin_p"){spin.p=v;spinChanged=true;}
       else if(k==="spin_i"){spin.i=v;spinChanged=true;}
       else if(k==="spin_n"){spin.n=v;spinChanged=true;}
@@ -2656,31 +2686,41 @@ Return ONLY valid JSON with these keys (omit what you cannot determine):
       else if(k==="economic_buyer") patch.economicBuyer=String(v);
       else if(k==="champion") patch.champion=String(v);
       else if(k==="stage_suggestion") patch.stage=String(v);
+      else if(k==="last_contact") patch.lastContact=String(v);
     });
-    if (spinChanged) patch.spin = spin;
-    if (accepted["activity_note"] && (fieldEdits["activity_note"]||suggestions.activity_note)) {
-      const note = fieldEdits["activity_note"]||suggestions.activity_note;
-      const now = getNow();
-      patch.activities = [{id:Date.now(),type:"Post-Call",note,date:now.date,time:now.time}, ...(loc.activities||[])];
+    if(spinChanged) patch.spin=spin;
+    if(accepted["activity_note"]&&(fieldEdits["activity_note"]||pendingPatch.activity_note)){
+      const note=fieldEdits["activity_note"]||pendingPatch.activity_note;
+      const now=getNow();
+      patch.activities=[{id:Date.now(),type:"Post-Call",note,date:now.date,time:now.time},...(loc.activities||[])];
     }
     patch.lastContact = getNow().date;
-    if (Object.keys(patch).length > 0) onApply(loc.id, patch);
+    if(Object.keys(patch).length>0) onApply(loc.id, patch);
     onClose();
   };
+
+  const chips = [
+    "Nu sunt de acord cu next step",
+    "Data e greșită — recalculează",
+    "Pain score prea mic",
+    "Adaugă obiecție principală",
+    "Ce lipsea din apel?",
+    "Propune email de follow-up",
+  ];
 
   const selectedCount = Object.values(accepted).filter(Boolean).length;
 
   return (
     <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div className="sheet" style={{maxHeight:"92vh"}}>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,top:0,display:"flex",flexDirection:"column",background:C.bg1,zIndex:201}}>
 
         {/* Header */}
-        <div style={{padding:"13px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+        <div style={{padding:"11px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0,background:C.bg0}}>
           <div style={{width:28,height:28,borderRadius:7,background:`linear-gradient(135deg,${C.blue},${C.teal})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>📞</div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,fontSize:14,color:C.txt}}>Post-Call Debrief</div>
             <div style={{fontSize:11,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-              {loc.company} · <span style={{color:(getSC&&getSC()[loc.stage])||C.txt3||"#94a3b8"}}>{loc.stage}</span>
+              {loc.company} · <span style={{color:getSC()[loc.stage]||C.txt3}}>{loc.stage}</span>
               {loc.painScore?<span style={{marginLeft:6,color:loc.painScore>=4?C.red:C.amber}}> · Pain {loc.painScore}/5</span>:null}
             </div>
           </div>
@@ -2688,100 +2728,97 @@ Return ONLY valid JSON with these keys (omit what you cannot determine):
         </div>
 
         {/* Playbook hint */}
-        <div style={{padding:"8px 14px",background:`${C.blue}08`,borderBottom:`1px solid ${C.blue}22`,flexShrink:0}}>
-          <div style={{fontSize:10,color:C.blue2,fontWeight:700,marginBottom:2}}>📖 PLAYBOOK — {loc.stage}:</div>
-          <div style={{fontSize:11,color:C.txt2,lineHeight:1.5}}>{STAGE_NEXT[loc.stage]||"Follow up based on deal temperature."}</div>
+        <div style={{padding:"6px 14px",background:`${C.blue}08`,borderBottom:`1px solid ${C.blue}22`,flexShrink:0}}>
+          <div style={{fontSize:10,color:C.blue2,fontWeight:700,marginBottom:1}}>📖 {loc.stage}:</div>
+          <div style={{fontSize:11,color:C.txt2}}>{STAGE_NEXT[loc.stage]||"Follow up based on deal temperature."}</div>
         </div>
 
-        <div style={{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:12}}>
-
-          {/* Note input */}
-          <div>
-            <div style={{fontSize:11,color:C.txt3,marginBottom:6}}>Tell me what happened on the call — any language, naturally:</div>
-            <textarea value={text} onChange={e=>setText(e.target.value)} rows={5}
-              placeholder={"e.g. 'Spoke with Maria, they need 25 workers by May, current supplier Lugera can't deliver on time, she wants a proposal by Friday, budget around 6000 RON/worker'"}
-              style={{width:"100%",background:C.bg4,border:`1.5px solid ${text?C.blue:C.border}`,color:C.txt,borderRadius:8,padding:"10px 12px",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.6,outline:"none"}}/>
-          </div>
-
-          <button className="btn" onClick={analyze} disabled={loading||!text.trim()}
-            style={{width:"100%",background:loading||!text.trim()?C.bg4:`linear-gradient(135deg,${C.blue},${C.indigo})`,
-              color:loading||!text.trim()?C.txt3:"#fff",padding:"13px",fontSize:14,borderRadius:9,fontWeight:600}}>
-            {loading?"🤖 Analyzing call...":"🤖 Extract & Update Lead"}
-          </button>
-
-          {/* Suggestions */}
-          {suggestions&&!suggestions._error&&(
-            <div style={{display:"flex",flexDirection:"column",gap:5}}>
-              {suggestions._analysis&&(
-                <div style={{background:C.bg3,border:`1px solid ${C.teal}33`,borderRadius:10,padding:12,marginBottom:4}}>
-                  <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.08em",marginBottom:6}}>🎯 CALL ANALYSIS & RECOMMENDATION</div>
-                  <div style={{fontSize:13,color:C.txt,lineHeight:1.75,whiteSpace:"pre-wrap"}}>{suggestions._analysis}</div>
-                </div>
-              )}
-              <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.08em",marginTop:4}}>
-                ✅ CRM UPDATES — check what to apply:
+        {/* Chat */}
+        <div style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column",gap:10}}>
+          {msgs.length===0&&(
+            <div style={{padding:"20px 0",textAlign:"center"}}>
+              <div style={{fontSize:13,color:C.txt3,marginBottom:8}}>Povestește-mi ce s-a întâmplat în apel...</div>
+              <div style={{fontSize:11,color:C.txt3,fontStyle:"italic"}}>Orice limbă, natural — ca unui coleg</div>
+            </div>
+          )}
+          {msgs.map((m,i)=>(
+            <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",flexDirection:m.role==="user"?"row-reverse":"row"}}>
+              <div style={{width:26,height:26,borderRadius:7,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,
+                background:m.role==="user"?`${C.blue}22`:`linear-gradient(135deg,${C.blue},${C.teal})`}}>
+                {m.role==="user"?"👤":"📞"}
               </div>
-              {Object.entries(suggestions).filter(([k])=>!k.startsWith("_")&&suggestions[k]).map(([k,v])=>(
-                <div key={k} style={{background:accepted[k]?`${C.teal}08`:C.bg4,border:`1px solid ${accepted[k]?C.teal+"55":C.border}`,borderRadius:8,padding:"8px 10px"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <input type="checkbox" checked={!!accepted[k]} onChange={e=>setAccepted(a=>({...a,[k]:e.target.checked}))} style={{cursor:"pointer",flexShrink:0,width:16,height:16}}/>
-                    <span style={{fontSize:10,fontWeight:700,color:C.teal,minWidth:120,flexShrink:0}}>{labelMap[k]||k}</span>
-                    <span style={{fontSize:12,color:C.txt,flex:1,lineHeight:1.5,wordBreak:"break-word"}}>
-                      {fieldEdits[k]!==undefined?fieldEdits[k]:String(v)}
-                    </span>
-                    <button className="btn" onClick={()=>setFieldEdits(e=>e[k]!==undefined?Object.fromEntries(Object.entries(e).filter(([kk])=>kk!==k)):{...e,[k]:String(v)})}
-                      style={{background:`${C.blue}15`,color:C.blue2,padding:"3px 8px",fontSize:10,borderRadius:4,border:`1px solid ${C.blue}33`,flexShrink:0}}>
-                      {fieldEdits[k]!==undefined?"✕":"✏️"}
-                    </button>
-                  </div>
-                  {fieldEdits[k]!==undefined&&(
-                    <input value={fieldEdits[k]} onChange={e=>setFieldEdits(f=>({...f,[k]:e.target.value}))}
-                      style={{marginTop:6,width:"100%",background:C.bg4,border:`1px solid ${C.blue}`,color:C.txt,borderRadius:6,padding:"6px 8px",fontSize:12,outline:"none"}}/>
-                  )}
-                </div>
-              ))}
+              <div style={{maxWidth:"88%",background:m.role==="user"?`${C.blue}10`:C.bg2,
+                border:`1px solid ${m.role==="user"?C.blue+"22":C.border}`,borderRadius:10,padding:"9px 13px"}}>
+                <div style={{fontSize:12,color:C.txt,lineHeight:1.75,whiteSpace:"pre-wrap"}}>{m.content}</div>
+              </div>
             </div>
-          )}
-          {suggestions?._error&&(
-            <div style={{color:C.red,fontSize:12,padding:"10px 12px",background:`${C.red}10`,borderRadius:8,border:`1px solid ${C.red}33`}}>
-              ⚠ {suggestions._error}
-            </div>
-          )}
-
-          {/* Discuss */}
-          {suggestions&&!suggestions._error&&(
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {chatMsgs.map((m,i)=>(
-                <div key={i} style={{background:m.role==="user"?`${C.blue}10`:C.bg3,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",fontSize:12,color:C.txt,lineHeight:1.6}}>
-                  <span style={{fontSize:9,color:m.role==="user"?C.blue2:C.teal,fontWeight:700,marginRight:6}}>{m.role==="user"?"You:":"AI:"}</span>
-                  {m.content}
-                </div>
-              ))}
-              <div style={{display:"flex",gap:6}}>
-                <input value={chatInput} onChange={e=>setChatInput(e.target.value)}
-                  onKeyDown={e=>{if(e.key==="Enter")sendChat();}}
-                  placeholder="Disagree? Ask to change something..."
-                  style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:7,padding:"8px 10px",fontSize:12,outline:"none"}}/>
-                <button className="btn" onClick={sendChat} disabled={!chatInput.trim()}
-                  style={{background:`${C.teal}18`,color:C.teal,padding:"8px 12px",fontSize:11,borderRadius:7,border:`1px solid ${C.teal}44`}}>Ask AI</button>
+          ))}
+          {loading&&(
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <div style={{width:26,height:26,borderRadius:7,background:`linear-gradient(135deg,${C.blue},${C.teal})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>📞</div>
+              <div style={{display:"flex",gap:4,padding:"8px 12px",background:C.bg2,borderRadius:10,border:`1px solid ${C.border}`}}>
+                {[0,.2,.4].map((d,i)=><span key={i} style={{width:6,height:6,background:C.teal,borderRadius:"50%",animation:`pulse 1s infinite ${d}s`}}/>)}
               </div>
             </div>
           )}
+          <div ref={bottomRef}/>
         </div>
 
-        {/* Footer */}
-        <div style={{padding:"12px 14px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,flexShrink:0}}>
-          {suggestions&&!suggestions._error&&(
+        {/* Pending CRM patch */}
+        {pendingPatch&&!loading&&(
+          <div style={{borderTop:`1px solid ${C.teal}44`,background:`${C.teal}05`,padding:"10px 14px",flexShrink:0,maxHeight:"40%",overflowY:"auto"}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.teal,letterSpacing:"0.08em",marginBottom:8}}>
+              ✅ PROPOSED CRM UPDATES — select to apply:
+            </div>
+            {Object.entries(pendingPatch).filter(([k])=>!k.startsWith("_")&&pendingPatch[k]).map(([k,v])=>(
+              <div key={k} style={{background:accepted[k]?`${C.teal}08`:C.bg4,border:`1px solid ${accepted[k]?C.teal+"44":C.border}`,borderRadius:8,padding:"6px 10px",marginBottom:5}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <input type="checkbox" checked={!!accepted[k]} onChange={e=>setAccepted(a=>({...a,[k]:e.target.checked}))} style={{cursor:"pointer",flexShrink:0}}/>
+                  <span style={{fontSize:10,fontWeight:700,color:C.teal,minWidth:100,flexShrink:0}}>{LABEL[k]||k}</span>
+                  <span style={{fontSize:12,color:C.txt,flex:1,lineHeight:1.4,wordBreak:"break-word"}}>{fieldEdits[k]!==undefined?fieldEdits[k]:String(v)}</span>
+                  <button className="btn" onClick={()=>setFieldEdits(e=>e[k]!==undefined?Object.fromEntries(Object.entries(e).filter(([kk])=>kk!==k)):{...e,[k]:String(v)})}
+                    style={{background:`${C.blue}15`,color:C.blue2,padding:"2px 7px",fontSize:9,borderRadius:4,border:`1px solid ${C.blue}33`,flexShrink:0}}>
+                    {fieldEdits[k]!==undefined?"✕":"✏️"}
+                  </button>
+                </div>
+                {fieldEdits[k]!==undefined&&(
+                  <input value={fieldEdits[k]} onChange={e=>setFieldEdits(f=>({...f,[k]:e.target.value}))}
+                    style={{marginTop:5,width:"100%",background:C.bg4,border:`1px solid ${C.blue}`,color:C.txt,borderRadius:6,padding:"5px 8px",fontSize:12,outline:"none"}}/>
+                )}
+              </div>
+            ))}
             <button className="btn" onClick={applySelected}
-              style={{flex:1,background:selectedCount>0?`linear-gradient(135deg,${C.green},${C.teal})`:C.bg3,
-                color:selectedCount>0?"#fff":C.txt3,padding:"13px",fontSize:14,borderRadius:9,fontWeight:600}}>
-              {selectedCount>0?`✅ Apply ${selectedCount} fields`:"Select fields to apply"}
+              style={{width:"100%",marginTop:8,background:selectedCount>0?`linear-gradient(135deg,${C.green},${C.teal})`:C.bg3,
+                color:selectedCount>0?"#fff":C.txt3,padding:"11px",fontSize:13,borderRadius:9,fontWeight:600}}>
+              {selectedCount>0?`✅ Apply ${selectedCount} fields`:"Select fields above"}
             </button>
-          )}
-          <button className="btn" onClick={onClose}
-            style={{background:C.bg3,color:C.txt3,padding:"13px 18px",fontSize:13,borderRadius:9,border:`1px solid ${C.border}`}}>
-            {suggestions?"✕ Discard":"Close"}
-          </button>
+          </div>
+        )}
+
+        {/* Chips */}
+        {msgs.length>0&&!loading&&(
+          <div style={{padding:"5px 10px",display:"flex",gap:4,flexWrap:"wrap",flexShrink:0,borderTop:`1px solid ${C.border}`,background:C.bg0}}>
+            {chips.map(c=>(
+              <button key={c} className="btn" onClick={()=>send(c)}
+                style={{padding:"4px 9px",fontSize:10,borderRadius:12,background:C.bg3,color:C.txt3,border:`1px solid ${C.border}`}}>
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Input */}
+        <div style={{padding:"10px 12px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,flexShrink:0,background:C.bg0,alignItems:"flex-end"}}>
+          <textarea ref={taRef} value={input} onChange={e=>setInput(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+            placeholder="Ce s-a întâmplat? Scrie natural... / Co się wydarzyło? / What happened on the call?"
+            rows={2}
+            style={{flex:1,background:C.bg3,border:`1px solid ${C.border}`,color:C.txt,borderRadius:8,
+              padding:"9px 12px",fontSize:12,fontFamily:"'Inter',sans-serif",resize:"none",lineHeight:1.5,outline:"none"}}/>
+          <button className="btn" onClick={()=>send()} disabled={loading||!input.trim()}
+            style={{background:loading||!input.trim()?C.bg4:`linear-gradient(135deg,${C.blue},${C.teal})`,
+              color:loading||!input.trim()?C.txt3:"#fff",width:38,height:38,borderRadius:8,
+              display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>↑</button>
         </div>
       </div>
     </div>
